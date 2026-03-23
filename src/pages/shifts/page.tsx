@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Spinner } from "@/components/ui/spinner.tsx";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
@@ -28,6 +29,7 @@ import ScheduleGrid from "./_components/schedule-grid.tsx";
 import type { CellShift } from "./_components/schedule-grid.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
+import PatternsTab from "./_components/patterns-tab.tsx";
 
 export default function ShiftsPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
@@ -53,15 +55,55 @@ export default function ShiftsPage() {
 
   return (
     <div className="w-full">
-      <AdminScheduleView />
+      <AdminView />
     </div>
   );
 }
 
-/** Admin-only weekly schedule with unassigned pool and drag-and-drop */
-function AdminScheduleView() {
+/** Admin view with Schedule and Patterns tabs */
+function AdminView() {
   const staff = useQuery(api.users.getAllStaff);
 
+  if (staff === undefined) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-60" />
+        <Skeleton className="h-[400px] w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  return (
+    <Tabs defaultValue="schedule" className="space-y-5">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-heading font-bold text-2xl md:text-3xl">
+          Shift Schedule
+        </h1>
+        <TabsList>
+          <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="patterns">Patterns</TabsTrigger>
+        </TabsList>
+      </div>
+
+      <TabsContent value="schedule" className="mt-0">
+        <AdminScheduleView staff={staff} />
+      </TabsContent>
+      <TabsContent value="patterns" className="mt-0">
+        <PatternsTab staff={staff} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+type StaffMember = {
+  _id: Id<"users">;
+  name?: string;
+  role?: string;
+  department?: string;
+};
+
+/** Admin-only weekly schedule with unassigned pool and drag-and-drop */
+function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -210,10 +252,9 @@ function AdminScheduleView() {
   }
 
   // Loading
-  if (shifts === undefined || staff === undefined || unassigned === undefined || allAvailability === undefined) {
+  if (shifts === undefined || unassigned === undefined || allAvailability === undefined) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-60" />
         <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
@@ -224,17 +265,11 @@ function AdminScheduleView() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="font-heading font-bold text-2xl md:text-3xl">
-            Shift Schedule
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Drag shifts between cells or back to unassigned. Publish when ready.
-          </p>
-        </div>
-
+      {/* Sub-header with actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-muted-foreground text-sm">
+          Drag shifts between cells or back to unassigned. Publish when ready.
+        </p>
         <div className="flex items-center gap-2">
           {hasPublished && (
             <Button

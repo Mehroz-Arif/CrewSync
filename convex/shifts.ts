@@ -4,7 +4,7 @@ import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel.d.ts";
 
 /** Check if assigning a user to a shift would cause a time overlap with their existing shifts */
-async function checkUserShiftOverlap(
+export async function checkUserShiftOverlap(
   ctx: MutationCtx,
   userId: Id<"users">,
   startTime: string,

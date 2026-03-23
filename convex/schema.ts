@@ -104,6 +104,18 @@ export default defineSchema({
     .index("by_to_user", ["toUserId"])
     .index("by_from_user", ["fromUserId"]),
 
+  shiftPatterns: defineTable({
+    name: v.string(),
+    days: v.array(v.number()), // 1=Mon, 2=Tue, ..., 7=Sun (ISO weekday)
+    startTime: v.string(), // "HH:mm"
+    endTime: v.string(), // "HH:mm"
+    vehicle: v.string(),
+    notes: v.optional(v.string()),
+    memberIds: v.array(v.id("users")),
+    createdBy: v.id("users"),
+    active: v.boolean(),
+  }),
+
   folders: defineTable({
     name: v.string(),
     parentId: v.optional(v.id("folders")),
