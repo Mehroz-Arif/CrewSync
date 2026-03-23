@@ -9,6 +9,7 @@
  */
 
 import type * as availability from "../availability.js";
+import type * as calendarEvents from "../calendarEvents.js";
 import type * as documents from "../documents.js";
 import type * as feedback from "../feedback.js";
 import type * as messaging from "../messaging.js";
@@ -27,6 +28,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   availability: typeof availability;
+  calendarEvents: typeof calendarEvents;
   documents: typeof documents;
   feedback: typeof feedback;
   messaging: typeof messaging;

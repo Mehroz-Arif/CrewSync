@@ -150,6 +150,24 @@ export default defineSchema({
     description: v.optional(v.string()),
   }).index("by_parent", ["parentId"]),
 
+  calendarEvents: defineTable({
+    title: v.string(),
+    description: v.optional(v.string()),
+    eventType: v.union(
+      v.literal("training"),
+      v.literal("staff_meeting"),
+      v.literal("deadline"),
+      v.literal("social"),
+      v.literal("other")
+    ),
+    date: v.string(), // "YYYY-MM-DD"
+    startTime: v.optional(v.string()), // "HH:mm"
+    endTime: v.optional(v.string()), // "HH:mm"
+    allDay: v.boolean(),
+    location: v.optional(v.string()),
+    createdBy: v.id("users"),
+  }).index("by_date", ["date"]),
+
   documents: defineTable({
     name: v.string(),
     folderId: v.optional(v.id("folders")),

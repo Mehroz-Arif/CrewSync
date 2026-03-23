@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarClock,
+  CalendarDays,
   MessageCircle,
   Trophy,
   FolderOpen,
@@ -39,6 +40,12 @@ const NAV_ITEMS = [
     label: "Shifts",
     icon: CalendarClock,
     path: "/shifts",
+    enabled: true,
+  },
+  {
+    label: "Calendar",
+    icon: CalendarDays,
+    path: "/calendar",
     enabled: true,
   },
   {
