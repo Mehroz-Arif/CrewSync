@@ -52,4 +52,19 @@ export default defineSchema({
     authorId: v.id("users"),
     body: v.string(),
   }).index("by_conversation", ["conversationId"]),
+
+  shifts: defineTable({
+    startTime: v.string(),
+    endTime: v.string(),
+    vehicle: v.string(),
+    notes: v.optional(v.string()),
+    createdBy: v.id("users"),
+  }),
+
+  shiftMembers: defineTable({
+    shiftId: v.id("shifts"),
+    userId: v.id("users"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_shift", ["shiftId"]),
 });

@@ -10,6 +10,7 @@
 
 import type * as messaging from "../messaging.js";
 import type * as posts from "../posts.js";
+import type * as shifts from "../shifts.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   messaging: typeof messaging;
   posts: typeof posts;
+  shifts: typeof shifts;
   users: typeof users;
 }>;
 

@@ -2,6 +2,7 @@ import StatsCards from "./_components/stats-cards.tsx";
 import NewsFeed from "./_components/news-feed.tsx";
 import CreatePostForm from "./_components/create-post-form.tsx";
 import PinnedPosts from "./_components/pinned-posts.tsx";
+import NextShiftCard from "./_components/next-shift-card.tsx";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 
@@ -26,7 +27,7 @@ export default function DashboardPage() {
       {/* Stats overview */}
       <StatsCards />
 
-      {/* Main content grid */}
+      {/* Next shift + Newsfeed grid */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Newsfeed - takes 2 columns */}
         <div className="lg:col-span-2 space-y-4">
@@ -34,8 +35,9 @@ export default function DashboardPage() {
           <NewsFeed />
         </div>
 
-        {/* Sidebar - pinned and quick links */}
+        {/* Sidebar - next shift, pinned posts, quick links */}
         <div className="space-y-6">
+          <NextShiftCard />
           <PinnedPosts />
 
           {/* Quick links panel */}
