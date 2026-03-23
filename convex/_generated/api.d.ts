@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as availability from "../availability.js";
 import type * as messaging from "../messaging.js";
 import type * as posts from "../posts.js";
 import type * as shifts from "../shifts.js";
@@ -20,6 +21,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  availability: typeof availability;
   messaging: typeof messaging;
   posts: typeof posts;
   shifts: typeof shifts;

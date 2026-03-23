@@ -97,10 +97,7 @@ export default function ShiftDialog({
       toast.error("Please enter a vehicle name");
       return;
     }
-    if (selectedMembers.size === 0) {
-      toast.error("Assign at least one crew member");
-      return;
-    }
+    // Allow unassigned shifts for the pool
 
     setIsSubmitting(true);
     try {

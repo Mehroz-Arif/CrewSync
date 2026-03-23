@@ -130,10 +130,6 @@ export const create = mutation({
     if (currentUser.role !== "admin") {
       throw new ConvexError({ message: "Only admins can create shifts", code: "FORBIDDEN" });
     }
-    if (args.memberIds.length === 0) {
-      throw new ConvexError({ message: "Must assign at least one crew member", code: "BAD_REQUEST" });
-    }
-
     const shiftId = await ctx.db.insert("shifts", {
       startTime: args.startTime,
       endTime: args.endTime,
@@ -308,5 +304,125 @@ export const moveShiftAssignment = mutation({
     if (remaining.length === 0) {
       await ctx.db.delete(membership.shiftId);
     }
+  },
+});
+
+/** Get unassigned shifts (shifts with no members) for a date range */
+export const getUnassignedByDateRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+
+    const shifts = await ctx.db
+      .query("shifts")
+      .withIndex("by_start_time", (q) =>
+        q.gte("startTime", args.startDate).lt("startTime", args.endDate)
+      )
+      .collect();
+
+    const unassigned = [];
+    for (const shift of shifts) {
+      const members = await ctx.db
+        .query("shiftMembers")
+        .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
+        .collect();
+      if (members.length === 0) {
+        unassigned.push(shift);
+      }
+    }
+    return unassigned;
+  },
+});
+
+/** Assign a user to an existing shift (admin only) */
+export const assignToShift = mutation({
+  args: {
+    shiftId: v.id("shifts"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can assign shifts", code: "FORBIDDEN" });
+    }
+
+    const shift = await ctx.db.get(args.shiftId);
+    if (!shift) {
+      throw new ConvexError({ message: "Shift not found", code: "NOT_FOUND" });
+    }
+
+    // Check if already assigned
+    const existing = await ctx.db
+      .query("shiftMembers")
+      .withIndex("by_shift", (q) => q.eq("shiftId", args.shiftId))
+      .collect();
+
+    if (existing.some((m) => m.userId === args.userId)) {
+      throw new ConvexError({ message: "User already assigned to this shift", code: "CONFLICT" });
+    }
+
+    await ctx.db.insert("shiftMembers", {
+      shiftId: args.shiftId,
+      userId: args.userId,
+    });
+  },
+});
+
+/** Get shifts for a specific user within a date range */
+export const getMyShiftsByDateRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!user) {
+      throw new ConvexError({ message: "User not found", code: "NOT_FOUND" });
+    }
+
+    const memberships = await ctx.db
+      .query("shiftMembers")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+
+    const shifts = [];
+    for (const mem of memberships) {
+      const shift = await ctx.db.get(mem.shiftId);
+      if (!shift) continue;
+      if (shift.startTime >= args.startDate && shift.startTime < args.endDate) {
+        const allMembers = await ctx.db
+          .query("shiftMembers")
+          .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
+          .collect();
+
+        const memberDetails = await Promise.all(
+          allMembers.map(async (m) => {
+            const u = await ctx.db.get(m.userId);
+            return { userId: m.userId, name: u?.name ?? "Unknown" };
+          })
+        );
+
+        shifts.push({
+          ...shift,
+          membershipId: mem._id,
+          members: memberDetails,
+        });
+      }
+    }
+    return shifts;
   },
 });

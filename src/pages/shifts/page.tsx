@@ -22,21 +22,63 @@ import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import ScheduleGrid from "./_components/schedule-grid.tsx";
 import type { CellShift } from "./_components/schedule-grid.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
+import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 
 export default function ShiftsPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
+
+  // Quick check before rendering either view
+  if (currentUser === undefined) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <Skeleton className="h-10 w-60" />
+        <Skeleton className="h-[400px] w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  const isAdmin = currentUser?.role === "admin";
+
+  if (!isAdmin) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <MonthlyCalendar />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <AdminScheduleView />
+    </div>
+  );
+}
+
+/** Admin-only weekly schedule with unassigned pool and drag-and-drop */
+function AdminScheduleView() {
   const staff = useQuery(api.users.getAllStaff);
 
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
 
+  const weekEnd = addWeeks(weekStart, 1);
+
   const shifts = useQuery(api.shifts.getShiftsByDateRange, {
     startDate: weekStart.toISOString(),
-    endDate: addWeeks(weekStart, 1).toISOString(),
+    endDate: weekEnd.toISOString(),
   });
 
-  const isAdmin = currentUser?.role === "admin";
+  const unassigned = useQuery(api.shifts.getUnassignedByDateRange, {
+    startDate: weekStart.toISOString(),
+    endDate: weekEnd.toISOString(),
+  });
+
+  // Get all staff availability for the week
+  const allAvailability = useQuery(api.availability.getAllByDateRange, {
+    startDate: format(weekStart, "yyyy-MM-dd"),
+    endDate: format(addDays(weekStart, 7), "yyyy-MM-dd"),
+  });
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -83,6 +125,16 @@ export default function ShiftsPage() {
     return map;
   }, [shifts]);
 
+  // Build availability map: userId__date → status
+  const availabilityData = useMemo(() => {
+    const map = new Map<string, "available" | "unavailable">();
+    if (!allAvailability) return map;
+    for (const entry of allAvailability) {
+      map.set(`${entry.userId}__${entry.date}`, entry.status);
+    }
+    return map;
+  }, [allAvailability]);
+
   function handleCellClick(userId: Id<"users">, date: Date) {
     setDialogMode("create");
     setDialogDate(format(date, "yyyy-MM-dd"));
@@ -109,10 +161,11 @@ export default function ShiftsPage() {
   }
 
   // Loading
-  if (shifts === undefined || staff === undefined || currentUser === undefined) {
+  if (shifts === undefined || staff === undefined || unassigned === undefined || allAvailability === undefined) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="space-y-6">
         <Skeleton className="h-10 w-60" />
+        <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
     );
@@ -121,7 +174,7 @@ export default function ShiftsPage() {
   const isCurrentWeek = isThisWeek(weekStart, { weekStartsOn: 1 });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -129,27 +182,23 @@ export default function ShiftsPage() {
             Shift Schedule
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {isAdmin
-              ? "Drag shifts between cells to reassign or reschedule"
-              : "View your upcoming crew schedule"}
+            Drag shifts between cells to reassign, or from the pool above to allocate
           </p>
         </div>
 
-        {isAdmin && (
-          <Button
-            size="sm"
-            onClick={() => {
-              setDialogMode("create");
-              setDialogDate(format(new Date(), "yyyy-MM-dd"));
-              setDialogUserId(undefined);
-              setDialogShift(undefined);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="size-4 mr-1.5" />
-            Add Shift
-          </Button>
-        )}
+        <Button
+          size="sm"
+          onClick={() => {
+            setDialogMode("create");
+            setDialogDate(format(new Date(), "yyyy-MM-dd"));
+            setDialogUserId(undefined);
+            setDialogShift(undefined);
+            setDialogOpen(true);
+          }}
+        >
+          <Plus className="size-4 mr-1.5" />
+          Add Shift
+        </Button>
       </div>
 
       {/* Week navigator */}
@@ -187,35 +236,47 @@ export default function ShiftsPage() {
         )}
       </div>
 
-      {/* Grid */}
+      {/* Availability legend */}
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40" />
+          <span>Available</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-rose-500/20 border border-rose-500/40" />
+          <span>Unavailable</span>
+        </div>
+      </div>
+
+      {/* Grid with pool */}
       <ScheduleGrid
         weekStart={weekStart}
         staff={staff}
         gridData={gridData}
-        isAdmin={isAdmin}
+        isAdmin={true}
+        unassignedShifts={unassigned}
+        availabilityData={availabilityData}
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}
       />
 
       {/* Shift dialog */}
-      {isAdmin && (
-        <ShiftDialog
-          key={
-            dialogOpen
-              ? dialogMode === "edit"
-                ? dialogShift?._id
-                : `create-${dialogDate}-${dialogUserId ?? "all"}`
-              : "closed"
-          }
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          mode={dialogMode}
-          defaultDate={dialogDate}
-          defaultUserId={dialogUserId}
-          shift={dialogShift}
-          staff={staff}
-        />
-      )}
+      <ShiftDialog
+        key={
+          dialogOpen
+            ? dialogMode === "edit"
+              ? dialogShift?._id
+              : `create-${dialogDate}-${dialogUserId ?? "all"}`
+            : "closed"
+        }
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        defaultDate={dialogDate}
+        defaultUserId={dialogUserId}
+        shift={dialogShift}
+        staff={staff}
+      />
     </div>
   );
 }

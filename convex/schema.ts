@@ -67,4 +67,13 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_shift", ["shiftId"]),
+
+  availability: defineTable({
+    userId: v.id("users"),
+    date: v.string(),
+    status: v.union(v.literal("available"), v.literal("unavailable")),
+    notes: v.optional(v.string()),
+  })
+    .index("by_user_and_date", ["userId", "date"])
+    .index("by_date", ["date"]),
 });

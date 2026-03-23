@@ -23,6 +23,9 @@ import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import DayCell from "./day-cell.tsx";
 import ShiftBlock from "./shift-block.tsx";
 import { ShiftBlockOverlay } from "./shift-block.tsx";
+import UnassignedPool from "./unassigned-pool.tsx";
+import type { UnassignedShift } from "./unassigned-pool.tsx";
+import { UnassignedShiftOverlay } from "./unassigned-pool.tsx";
 
 type StaffMember = {
   _id: Id<"users">;
@@ -45,26 +48,28 @@ type ScheduleGridProps = {
   staff: StaffMember[];
   gridData: Map<string, CellShift[]>;
   isAdmin: boolean;
+  unassignedShifts: UnassignedShift[];
+  availabilityData: Map<string, "available" | "unavailable">;
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
 };
 
-type ActiveDrag = {
-  startTime: string;
-  endTime: string;
-  vehicle: string;
-  sourceDate: string;
-};
+type ActiveDrag =
+  | { type: "shift"; startTime: string; endTime: string; vehicle: string; sourceDate: string }
+  | { type: "unassigned"; shift: UnassignedShift };
 
 export default function ScheduleGrid({
   weekStart,
   staff,
   gridData,
   isAdmin,
+  unassignedShifts,
+  availabilityData,
   onCellClick,
   onShiftClick,
 }: ScheduleGridProps) {
   const moveAssignment = useMutation(api.shifts.moveShiftAssignment);
+  const assignToShift = useMutation(api.shifts.assignToShift);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
 
   const sensors = useSensors(
@@ -73,17 +78,28 @@ export default function ScheduleGrid({
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const d = event.active.data.current;
-    if (d?.type === "shift") {
-      setActiveDrag({
-        startTime: String(d.startTime),
-        endTime: String(d.endTime),
-        vehicle: String(d.vehicle),
-        sourceDate: String(d.sourceDate),
-      });
-    }
-  }, []);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const d = event.active.data.current;
+      if (d?.type === "shift") {
+        setActiveDrag({
+          type: "shift",
+          startTime: String(d.startTime),
+          endTime: String(d.endTime),
+          vehicle: String(d.vehicle),
+          sourceDate: String(d.sourceDate),
+        });
+      } else if (d?.type === "unassigned") {
+        const shift = unassignedShifts.find(
+          (s) => s._id === (d.shiftId as Id<"shifts">)
+        );
+        if (shift) {
+          setActiveDrag({ type: "unassigned", shift });
+        }
+      }
+    },
+    [unassignedShifts]
+  );
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -93,7 +109,28 @@ export default function ScheduleGrid({
 
       const src = active.data.current;
       const tgt = over.data.current;
-      if (src?.type !== "shift" || tgt?.type !== "cell") return;
+      if (tgt?.type !== "cell") return;
+
+      // Handle unassigned shift drop
+      if (src?.type === "unassigned") {
+        try {
+          await assignToShift({
+            shiftId: src.shiftId as Id<"shifts">,
+            userId: String(tgt.userId) as Id<"users">,
+          });
+          toast.success("Shift assigned");
+        } catch (error) {
+          if (error instanceof ConvexError) {
+            toast.error((error.data as { message: string }).message);
+          } else {
+            toast.error("Failed to assign shift");
+          }
+        }
+        return;
+      }
+
+      // Handle existing shift move
+      if (src?.type !== "shift") return;
 
       const dayOffset = differenceInCalendarDays(
         parseISO(String(tgt.date)),
@@ -114,7 +151,7 @@ export default function ScheduleGrid({
         }
       }
     },
-    [moveAssignment]
+    [moveAssignment, assignToShift]
   );
 
   return (
@@ -123,6 +160,9 @@ export default function ScheduleGrid({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      {/* Unassigned shifts pool (admin only) */}
+      {isAdmin && <UnassignedPool shifts={unassignedShifts} />}
+
       <div className="border rounded-xl overflow-hidden bg-card">
         <div className="overflow-x-auto">
           <div
@@ -186,6 +226,8 @@ export default function ScheduleGrid({
                   const dateStr = format(day, "yyyy-MM-dd");
                   const cellId = `${employee._id}__${dateStr}`;
                   const cellShifts = gridData.get(cellId) ?? [];
+                  const availKey = `${employee._id}__${dateStr}`;
+                  const avail = availabilityData.get(availKey);
                   return (
                     <DayCell
                       key={cellId}
@@ -195,6 +237,7 @@ export default function ScheduleGrid({
                       isAdmin={isAdmin}
                       isToday={isToday(day)}
                       hasShifts={cellShifts.length > 0}
+                      availability={avail}
                       onCellClick={() => onCellClick(employee._id, day)}
                     >
                       {cellShifts.map((shift) => (
@@ -221,12 +264,14 @@ export default function ScheduleGrid({
 
       {/* Drag overlay */}
       <DragOverlay dropAnimation={null}>
-        {activeDrag ? (
+        {activeDrag?.type === "shift" ? (
           <ShiftBlockOverlay
             startTime={activeDrag.startTime}
             endTime={activeDrag.endTime}
             vehicle={activeDrag.vehicle}
           />
+        ) : activeDrag?.type === "unassigned" ? (
+          <UnassignedShiftOverlay shift={activeDrag.shift} />
         ) : null}
       </DragOverlay>
     </DndContext>

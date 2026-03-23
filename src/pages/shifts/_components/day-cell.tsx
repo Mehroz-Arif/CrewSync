@@ -10,6 +10,7 @@ type DayCellProps = {
   isAdmin: boolean;
   isToday: boolean;
   hasShifts: boolean;
+  availability?: "available" | "unavailable";
   onCellClick: () => void;
   children: ReactNode;
 };
@@ -21,6 +22,7 @@ export default function DayCell({
   isAdmin,
   isToday,
   hasShifts,
+  availability,
   onCellClick,
   children,
 }: DayCellProps) {
@@ -37,9 +39,24 @@ export default function DayCell({
         "min-h-[72px] p-1 border-b border-r relative group/cell transition-colors",
         isOver && isAdmin && "bg-primary/10 ring-1 ring-inset ring-primary/25",
         isToday && !isOver && "bg-primary/[0.03]",
-        isAdmin && !hasShifts && "cursor-pointer hover:bg-muted/40"
+        isAdmin && !hasShifts && "cursor-pointer hover:bg-muted/40",
+        // Availability indicators (subtle background)
+        !isOver && availability === "available" && "bg-emerald-500/[0.06]",
+        !isOver && availability === "unavailable" && "bg-rose-500/[0.06]"
       )}
     >
+      {/* Availability dot */}
+      {availability && (
+        <div className="absolute top-1 right-1">
+          <div
+            className={cn(
+              "size-1.5 rounded-full",
+              availability === "available" ? "bg-emerald-500" : "bg-rose-500"
+            )}
+          />
+        </div>
+      )}
+
       <div className="space-y-1">{children}</div>
 
       {/* Add hint for empty cells */}
