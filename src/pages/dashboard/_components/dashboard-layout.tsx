@@ -50,7 +50,7 @@ const NAV_ITEMS = [
     label: "Documents",
     icon: FolderOpen,
     path: "/documents",
-    enabled: false,
+    enabled: true,
   },
   {
     label: "Settings",

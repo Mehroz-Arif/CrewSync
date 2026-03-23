@@ -103,4 +103,25 @@ export default defineSchema({
   })
     .index("by_to_user", ["toUserId"])
     .index("by_from_user", ["fromUserId"]),
+
+  folders: defineTable({
+    name: v.string(),
+    parentId: v.optional(v.id("folders")),
+    createdBy: v.id("users"),
+    description: v.optional(v.string()),
+  }).index("by_parent", ["parentId"]),
+
+  documents: defineTable({
+    name: v.string(),
+    folderId: v.optional(v.id("folders")),
+    storageId: v.id("_storage"),
+    fileType: v.string(),
+    fileSize: v.number(),
+    uploadedBy: v.id("users"),
+    description: v.optional(v.string()),
+  })
+    .index("by_folder", ["folderId"])
+    .searchIndex("search_name", {
+      searchField: "name",
+    }),
 });
