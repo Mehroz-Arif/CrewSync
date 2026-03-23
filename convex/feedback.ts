@@ -123,6 +123,87 @@ export const updateStatus = mutation({
   },
 });
 
+/** Respond to feedback and optionally publish as "You Said, We Did" (admin only) */
+export const respond = mutation({
+  args: {
+    feedbackId: v.id("feedback"),
+    adminResponse: v.string(),
+    publish: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!user || user.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can respond to feedback", code: "FORBIDDEN" });
+    }
+
+    const existing = await ctx.db.get(args.feedbackId);
+    if (!existing) {
+      throw new ConvexError({ message: "Feedback not found", code: "NOT_FOUND" });
+    }
+
+    if (args.adminResponse.trim().length < 3) {
+      throw new ConvexError({ message: "Response must be at least 3 characters", code: "BAD_REQUEST" });
+    }
+
+    await ctx.db.patch(args.feedbackId, {
+      adminResponse: args.adminResponse.trim(),
+      published: args.publish,
+      publishedAt: args.publish ? new Date().toISOString() : existing.publishedAt,
+      status: "reviewed" as const,
+    });
+  },
+});
+
+/** Unpublish a "You Said, We Did" item (admin only) */
+export const unpublish = mutation({
+  args: { feedbackId: v.id("feedback") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!user || user.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can unpublish feedback", code: "FORBIDDEN" });
+    }
+
+    await ctx.db.patch(args.feedbackId, { published: false });
+  },
+});
+
+/** List published "You Said, We Did" items (any authenticated user) */
+export const listPublished = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+
+    const all = await ctx.db.query("feedback").order("desc").collect();
+    return all
+      .filter((f) => f.published && f.adminResponse)
+      .map((f) => ({
+        _id: f._id,
+        _creationTime: f._creationTime,
+        message: f.message,
+        category: f.category,
+        adminResponse: f.adminResponse,
+        publishedAt: f.publishedAt,
+      }));
+  },
+});
+
 /** Delete feedback (admin only) */
 export const remove = mutation({
   args: { feedbackId: v.id("feedback") },

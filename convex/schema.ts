@@ -135,6 +135,10 @@ export default defineSchema({
       v.literal("concern")
     ),
     status: v.union(v.literal("new"), v.literal("reviewed"), v.literal("archived")),
+    // "You Said, We Did" fields
+    adminResponse: v.optional(v.string()),
+    published: v.optional(v.boolean()),
+    publishedAt: v.optional(v.string()),
   }),
 
   folders: defineTable({
