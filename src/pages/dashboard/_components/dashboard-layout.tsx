@@ -14,6 +14,7 @@ import {
   Settings,
   Eye,
   ShieldCheck,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -78,6 +79,13 @@ const NAV_ITEMS = [
     icon: UsersRound,
     path: "/team",
     enabled: true,
+  },
+  {
+    label: "Reports",
+    icon: BarChart3,
+    path: "/reports",
+    enabled: true,
+    adminOnly: true,
   },
   {
     label: "Settings",
@@ -164,7 +172,12 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => {
+          if ("adminOnly" in item && item.adminOnly) {
+            return isRealAdmin && !isPreviewingAsStaff;
+          }
+          return true;
+        }).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <button

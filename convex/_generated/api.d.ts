@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as analytics from "../analytics.js";
 import type * as availability from "../availability.js";
 import type * as calendarEvents from "../calendarEvents.js";
 import type * as documents from "../documents.js";
@@ -28,6 +29,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  analytics: typeof analytics;
   availability: typeof availability;
   calendarEvents: typeof calendarEvents;
   documents: typeof documents;
