@@ -44,7 +44,7 @@ const NAV_ITEMS = [
     label: "Rewards",
     icon: Trophy,
     path: "/rewards",
-    enabled: false,
+    enabled: true,
   },
   {
     label: "Documents",

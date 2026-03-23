@@ -93,4 +93,14 @@ export default defineSchema({
   })
     .index("by_user_and_date", ["userId", "date"])
     .index("by_date", ["date"]),
+
+  rewards: defineTable({
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    points: v.number(),
+    message: v.string(),
+    category: v.string(),
+  })
+    .index("by_to_user", ["toUserId"])
+    .index("by_from_user", ["fromUserId"]),
 });
