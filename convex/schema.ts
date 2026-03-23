@@ -59,6 +59,7 @@ export default defineSchema({
     vehicle: v.string(),
     notes: v.optional(v.string()),
     createdBy: v.id("users"),
+    published: v.optional(v.boolean()),
   }).index("by_start_time", ["startTime"]),
 
   shiftMembers: defineTable({

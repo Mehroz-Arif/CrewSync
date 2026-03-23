@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { GripVertical, Truck } from "lucide-react";
+import { GripVertical, Truck, Send } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 
 type ShiftBlockProps = {
@@ -12,6 +12,7 @@ type ShiftBlockProps = {
   vehicle: string;
   sourceDate: string;
   isAdmin: boolean;
+  published: boolean;
   onClick: () => void;
 };
 
@@ -37,6 +38,7 @@ export default function ShiftBlock({
   vehicle,
   sourceDate,
   isAdmin,
+  published,
   onClick,
 }: ShiftBlockProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -50,6 +52,7 @@ export default function ShiftBlock({
         startTime,
         endTime,
         vehicle,
+        published,
       },
       disabled: !isAdmin,
     });
@@ -68,7 +71,9 @@ export default function ShiftBlock({
         getShiftColor(vehicle),
         isDragging && "opacity-30 scale-95",
         isAdmin && "cursor-grab active:cursor-grabbing",
-        !isAdmin && "cursor-pointer"
+        !isAdmin && "cursor-pointer",
+        // Dashed border for unpublished (draft) shifts
+        !published && isAdmin && "border-dashed"
       )}
       onClick={(e) => {
         e.stopPropagation();
@@ -83,14 +88,24 @@ export default function ShiftBlock({
           <GripVertical className="size-3" />
         </div>
       )}
-      <div className="font-semibold truncate leading-tight">
-        {format(parseISO(startTime), "HH:mm")} –{" "}
-        {format(parseISO(endTime), "HH:mm")}
+      <div className="font-semibold truncate leading-tight flex items-center gap-1">
+        <span>
+          {format(parseISO(startTime), "HH:mm")} –{" "}
+          {format(parseISO(endTime), "HH:mm")}
+        </span>
+        {published && isAdmin && (
+          <Send className="size-2.5 shrink-0 opacity-60" />
+        )}
       </div>
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
         <span className="truncate">{vehicle}</span>
       </div>
+      {!published && isAdmin && (
+        <div className="text-[9px] uppercase tracking-wider opacity-50 mt-0.5 font-medium">
+          Draft
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import {
   startOfWeek,
@@ -15,9 +15,14 @@ import {
   ChevronRight,
   CalendarDays,
   Plus,
+  Send,
+  Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
+import { Spinner } from "@/components/ui/spinner.tsx";
+import { toast } from "sonner";
+import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import ScheduleGrid from "./_components/schedule-grid.tsx";
 import type { CellShift } from "./_components/schedule-grid.tsx";
@@ -27,10 +32,9 @@ import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 export default function ShiftsPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
 
-  // Quick check before rendering either view
   if (currentUser === undefined) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         <Skeleton className="h-10 w-60" />
         <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
@@ -74,11 +78,13 @@ function AdminScheduleView() {
     endDate: weekEnd.toISOString(),
   });
 
-  // Get all staff availability for the week
   const allAvailability = useQuery(api.availability.getAllByDateRange, {
     startDate: format(weekStart, "yyyy-MM-dd"),
     endDate: format(addDays(weekStart, 7), "yyyy-MM-dd"),
   });
+
+  const setPublished = useMutation(api.shifts.setPublished);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -118,6 +124,7 @@ function AdminScheduleView() {
           endTime: shift.endTime,
           vehicle: shift.vehicle,
           notes: shift.notes,
+          published: shift.published === true,
         });
         map.set(key, existing);
       }
@@ -125,7 +132,7 @@ function AdminScheduleView() {
     return map;
   }, [shifts]);
 
-  // Build availability map: userId__date → status
+  // Build availability map
   const availabilityData = useMemo(() => {
     const map = new Map<string, "available" | "unavailable">();
     if (!allAvailability) return map;
@@ -134,6 +141,20 @@ function AdminScheduleView() {
     }
     return map;
   }, [allAvailability]);
+
+  // Check if any assigned shifts in this week are unpublished or published
+  const { hasUnpublished, hasPublished } = useMemo(() => {
+    if (!shifts) return { hasUnpublished: false, hasPublished: false };
+    let unpub = false;
+    let pub = false;
+    for (const s of shifts) {
+      if (s.members.length > 0) {
+        if (s.published) pub = true;
+        else unpub = true;
+      }
+    }
+    return { hasUnpublished: unpub, hasPublished: pub };
+  }, [shifts]);
 
   function handleCellClick(userId: Id<"users">, date: Date) {
     setDialogMode("create");
@@ -160,6 +181,34 @@ function AdminScheduleView() {
     setDialogOpen(true);
   }
 
+  async function handlePublish(publish: boolean) {
+    setIsPublishing(true);
+    try {
+      const count = await setPublished({
+        startDate: weekStart.toISOString(),
+        endDate: weekEnd.toISOString(),
+        published: publish,
+      });
+      if (count > 0) {
+        toast.success(
+          publish
+            ? `${count} shift${count !== 1 ? "s" : ""} published to staff`
+            : `${count} shift${count !== 1 ? "s" : ""} unpublished`
+        );
+      } else {
+        toast.info("No shifts to update");
+      }
+    } catch (error) {
+      if (error instanceof ConvexError) {
+        toast.error((error.data as { message: string }).message);
+      } else {
+        toast.error("Failed to update publish status");
+      }
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
   // Loading
   if (shifts === undefined || staff === undefined || unassigned === undefined || allAvailability === undefined) {
     return (
@@ -182,23 +231,47 @@ function AdminScheduleView() {
             Shift Schedule
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Drag shifts between cells to reassign, or from the pool above to allocate
+            Drag shifts between cells or back to unassigned. Publish when ready.
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => {
-            setDialogMode("create");
-            setDialogDate(format(new Date(), "yyyy-MM-dd"));
-            setDialogUserId(undefined);
-            setDialogShift(undefined);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="size-4 mr-1.5" />
-          Add Shift
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasPublished && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handlePublish(false)}
+              disabled={isPublishing}
+            >
+              {isPublishing ? <Spinner /> : <Undo2 className="size-4 mr-1.5" />}
+              Unpublish Week
+            </Button>
+          )}
+          {hasUnpublished && (
+            <Button
+              size="sm"
+              onClick={() => handlePublish(true)}
+              disabled={isPublishing}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {isPublishing ? <Spinner /> : <Send className="size-4 mr-1.5" />}
+              Publish to Staff
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={() => {
+              setDialogMode("create");
+              setDialogDate(format(new Date(), "yyyy-MM-dd"));
+              setDialogUserId(undefined);
+              setDialogShift(undefined);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="size-4 mr-1.5" />
+            Add Shift
+          </Button>
+        </div>
       </div>
 
       {/* Week navigator */}
@@ -236,7 +309,7 @@ function AdminScheduleView() {
         )}
       </div>
 
-      {/* Availability legend */}
+      {/* Legend */}
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <div className="size-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40" />
@@ -246,9 +319,17 @@ function AdminScheduleView() {
           <div className="size-3 rounded-sm bg-rose-500/20 border border-rose-500/40" />
           <span>Unavailable</span>
         </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm border-2 border-dashed border-muted-foreground/30" />
+          <span>Draft (unpublished)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Send className="size-3 opacity-60" />
+          <span>Published</span>
+        </div>
       </div>
 
-      {/* Grid with pool */}
+      {/* Grid */}
       <ScheduleGrid
         weekStart={weekStart}
         staff={staff}

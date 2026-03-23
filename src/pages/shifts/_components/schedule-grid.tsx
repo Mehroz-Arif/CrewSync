@@ -5,6 +5,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from "@dnd-kit/core";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import { useMutation } from "convex/react";
@@ -41,6 +42,7 @@ export type CellShift = {
   endTime: string;
   vehicle: string;
   notes?: string;
+  published: boolean;
 };
 
 type ScheduleGridProps = {
@@ -58,6 +60,35 @@ type ActiveDrag =
   | { type: "shift"; startTime: string; endTime: string; vehicle: string; sourceDate: string }
   | { type: "unassigned"; shift: UnassignedShift };
 
+/** Droppable cell for the unassigned row */
+function UnassignedDropCell({
+  dateStr,
+  isCurrentDay,
+  children,
+}: {
+  dateStr: string;
+  isCurrentDay: boolean;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `unassigned-drop-${dateStr}`,
+    data: { type: "unassigned-cell", date: dateStr },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "min-h-[72px] p-1 border-b border-r bg-amber-500/[0.02] transition-colors",
+        isCurrentDay && "bg-amber-500/[0.05]",
+        isOver && "bg-amber-500/10 ring-1 ring-inset ring-amber-500/25"
+      )}
+    >
+      <div className="space-y-1">{children}</div>
+    </div>
+  );
+}
+
 export default function ScheduleGrid({
   weekStart,
   staff,
@@ -70,6 +101,7 @@ export default function ScheduleGrid({
 }: ScheduleGridProps) {
   const moveAssignment = useMutation(api.shifts.moveShiftAssignment);
   const assignToShift = useMutation(api.shifts.assignToShift);
+  const unassignFromShift = useMutation(api.shifts.unassignFromShift);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
 
   const sensors = useSensors(
@@ -121,9 +153,27 @@ export default function ScheduleGrid({
 
       const src = active.data.current;
       const tgt = over.data.current;
+
+      // Handle drop onto unassigned row (drag back to unassign)
+      if (tgt?.type === "unassigned-cell" && src?.type === "shift") {
+        try {
+          await unassignFromShift({
+            membershipId: String(src.membershipId) as Id<"shiftMembers">,
+          });
+          toast.success("Shift moved to unassigned");
+        } catch (error) {
+          if (error instanceof ConvexError) {
+            toast.error((error.data as { message: string }).message);
+          } else {
+            toast.error("Failed to unassign shift");
+          }
+        }
+        return;
+      }
+
       if (tgt?.type !== "cell") return;
 
-      // Handle unassigned shift drop
+      // Handle unassigned shift drop onto staff cell
       if (src?.type === "unassigned") {
         try {
           await assignToShift({
@@ -141,7 +191,7 @@ export default function ScheduleGrid({
         return;
       }
 
-      // Handle existing shift move
+      // Handle existing shift move between staff cells
       if (src?.type !== "shift") return;
 
       const dayOffset = differenceInCalendarDays(
@@ -163,7 +213,7 @@ export default function ScheduleGrid({
         }
       }
     },
-    [moveAssignment, assignToShift]
+    [moveAssignment, assignToShift, unassignFromShift]
   );
 
   const hasUnassigned = unassignedShifts.length > 0;
@@ -234,19 +284,15 @@ export default function ScheduleGrid({
                   const dateStr = format(day, "yyyy-MM-dd");
                   const dayUnassigned = unassignedByDate.get(dateStr) ?? [];
                   return (
-                    <div
+                    <UnassignedDropCell
                       key={`unassigned-${dateStr}`}
-                      className={cn(
-                        "min-h-[72px] p-1 border-b border-r bg-amber-500/[0.02]",
-                        isToday(day) && "bg-amber-500/[0.05]"
-                      )}
+                      dateStr={dateStr}
+                      isCurrentDay={isToday(day)}
                     >
-                      <div className="space-y-1">
-                        {dayUnassigned.map((shift) => (
-                          <DraggableUnassignedShift key={shift._id} shift={shift} />
-                        ))}
-                      </div>
-                    </div>
+                      {dayUnassigned.map((shift) => (
+                        <DraggableUnassignedShift key={shift._id} shift={shift} />
+                      ))}
+                    </UnassignedDropCell>
                   );
                 })}
               </>
@@ -301,6 +347,7 @@ export default function ScheduleGrid({
                           vehicle={shift.vehicle}
                           sourceDate={dateStr}
                           isAdmin={isAdmin}
+                          published={shift.published}
                           onClick={() => onShiftClick(shift)}
                         />
                       ))}
