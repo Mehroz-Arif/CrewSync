@@ -7,6 +7,7 @@ import DashboardLayout from "./pages/dashboard/_components/dashboard-layout.tsx"
 import DashboardPage from "./pages/dashboard/page.tsx";
 import MessagesPage from "./pages/messages/page.tsx";
 import ShiftsPage from "./pages/shifts/page.tsx";
+import SettingsPage from "./pages/settings/page.tsx";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/shifts" element={<ShiftsPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:conversationId" element={<MessagesPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

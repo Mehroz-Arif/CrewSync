@@ -9,7 +9,23 @@ export default defineSchema({
     role: v.optional(v.string()),
     department: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    organizationId: v.optional(v.id("organizations")),
   }).index("by_token", ["tokenIdentifier"]),
+
+  organizations: defineTable({
+    name: v.string(),
+    createdBy: v.id("users"),
+  }),
+
+  invites: defineTable({
+    organizationId: v.id("organizations"),
+    email: v.string(),
+    name: v.string(),
+    role: v.string(),
+    status: v.union(v.literal("pending"), v.literal("accepted")),
+  })
+    .index("by_email", ["email"])
+    .index("by_organization", ["organizationId"]),
 
   posts: defineTable({
     authorId: v.id("users"),

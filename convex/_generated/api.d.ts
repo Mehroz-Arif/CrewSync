@@ -10,6 +10,7 @@
 
 import type * as availability from "../availability.js";
 import type * as messaging from "../messaging.js";
+import type * as organizations from "../organizations.js";
 import type * as posts from "../posts.js";
 import type * as shifts from "../shifts.js";
 import type * as users from "../users.js";
@@ -23,6 +24,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   availability: typeof availability;
   messaging: typeof messaging;
+  organizations: typeof organizations;
   posts: typeof posts;
   shifts: typeof shifts;
   users: typeof users;

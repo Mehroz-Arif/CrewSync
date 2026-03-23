@@ -19,10 +19,50 @@ export const updateCurrentUser = mutation({
         q.eq("tokenIdentifier", identity.tokenIdentifier),
       )
       .unique();
+
     if (user !== null) {
+      // If user doesn't have an org yet, check for a pending invite
+      if (!user.organizationId) {
+        const email = identity.email;
+        if (email) {
+          const invites = await ctx.db
+            .query("invites")
+            .withIndex("by_email", (q) => q.eq("email", email.toLowerCase()))
+            .collect();
+          const pendingInvite = invites.find((i) => i.status === "pending");
+          if (pendingInvite) {
+            await ctx.db.patch(user._id, {
+              organizationId: pendingInvite.organizationId,
+              role: pendingInvite.role,
+            });
+            await ctx.db.patch(pendingInvite._id, { status: "accepted" });
+          }
+        }
+      }
       return user._id;
     }
-    // If it's a new identity, create a new User.
+
+    // New user – check for a pending invite before creating the record
+    const email = identity.email;
+    if (email) {
+      const invites = await ctx.db
+        .query("invites")
+        .withIndex("by_email", (q) => q.eq("email", email.toLowerCase()))
+        .collect();
+      const pendingInvite = invites.find((i) => i.status === "pending");
+      if (pendingInvite) {
+        await ctx.db.patch(pendingInvite._id, { status: "accepted" });
+        return await ctx.db.insert("users", {
+          name: identity.name,
+          email: identity.email,
+          tokenIdentifier: identity.tokenIdentifier,
+          organizationId: pendingInvite.organizationId,
+          role: pendingInvite.role,
+        });
+      }
+    }
+
+    // No invite found – create a plain user
     return await ctx.db.insert("users", {
       name: identity.name,
       email: identity.email,
