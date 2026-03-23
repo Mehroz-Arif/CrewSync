@@ -52,6 +52,12 @@ const NAV_ITEMS = [
     path: "/documents",
     enabled: false,
   },
+  {
+    label: "Settings",
+    icon: Settings,
+    path: "/settings",
+    enabled: true,
+  },
 ];
 
 function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
