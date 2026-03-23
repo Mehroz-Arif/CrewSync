@@ -30,9 +30,11 @@ import type { CellShift } from "./_components/schedule-grid.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
+import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 export default function ShiftsPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
+  const { isPreviewingAsStaff } = useStaffPreview();
 
   if (currentUser === undefined) {
     return (
@@ -43,7 +45,7 @@ export default function ShiftsPage() {
     );
   }
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" && !isPreviewingAsStaff;
 
   if (!isAdmin) {
     return (

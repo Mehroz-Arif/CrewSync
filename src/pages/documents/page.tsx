@@ -39,6 +39,7 @@ import CreateFolderDialog from "./_components/create-folder-dialog.tsx";
 import UploadDocumentDialog from "./_components/upload-document-dialog.tsx";
 import DocumentSearch from "./_components/document-search.tsx";
 import { formatFileSize } from "./_lib/file-utils.ts";
+import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 export default function DocumentsPage() {
   const [currentFolderId, setCurrentFolderId] = useState<Id<"folders"> | undefined>();
@@ -59,7 +60,8 @@ export default function DocumentsPage() {
   const deleteFolder = useMutation(api.documents.deleteFolder);
   const renameFolder = useMutation(api.documents.renameFolder);
 
-  const isAdmin = currentUser?.role === "admin";
+  const { isPreviewingAsStaff } = useStaffPreview();
+  const isAdmin = currentUser?.role === "admin" && !isPreviewingAsStaff;
   const isLoading = folders === undefined || documents === undefined;
 
   const handleDeleteDoc = async () => {

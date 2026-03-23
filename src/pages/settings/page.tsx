@@ -4,9 +4,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.t
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import OrganizationTab from "./_components/organization-tab.tsx";
 import TeamMembersTab from "./_components/team-members-tab.tsx";
+import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 export default function SettingsPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
+  const { isPreviewingAsStaff } = useStaffPreview();
 
   if (currentUser === undefined) {
     return (
@@ -17,7 +19,7 @@ export default function SettingsPage() {
     );
   }
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" && !isPreviewingAsStaff;
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">

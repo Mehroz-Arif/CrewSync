@@ -2,18 +2,18 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { Button } from "@/components/ui/button.tsx";
 import { cn } from "@/lib/utils.ts";
-import { Eye, ShieldCheck, MessageSquareQuote, Send } from "lucide-react";
+import { MessageSquareQuote, Send } from "lucide-react";
 import FeedbackForm from "./_components/feedback-form.tsx";
 import FeedbackAdmin from "./_components/feedback-admin.tsx";
 import YouSaidWeDid from "./_components/you-said-we-did.tsx";
+import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 type StaffTab = "submit" | "you-said-we-did";
 
 export default function FeedbackPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
-  const [previewStaffView, setPreviewStaffView] = useState(false);
+  const { isPreviewingAsStaff } = useStaffPreview();
   const [staffTab, setStaffTab] = useState<StaffTab>("submit");
 
   if (currentUser === undefined) {
@@ -25,8 +25,8 @@ export default function FeedbackPage() {
     );
   }
 
-  const isAdmin = currentUser?.role === "admin";
-  const showStaffView = !isAdmin || previewStaffView;
+  const isAdmin = currentUser?.role === "admin" && !isPreviewingAsStaff;
+  const showStaffView = !isAdmin;
 
   const staffTabs: Array<{ value: StaffTab; label: string; icon: typeof Send }> = [
     { value: "submit", label: "Submit Feedback", icon: Send },
@@ -46,27 +46,6 @@ export default function FeedbackPage() {
               : "Review feedback from your team and respond publicly"}
           </p>
         </div>
-
-        {isAdmin && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPreviewStaffView(!previewStaffView)}
-            className="shrink-0 gap-2"
-          >
-            {previewStaffView ? (
-              <>
-                <ShieldCheck className="size-4" />
-                Admin View
-              </>
-            ) : (
-              <>
-                <Eye className="size-4" />
-                Staff View
-              </>
-            )}
-          </Button>
-        )}
       </div>
 
       {showStaffView ? (

@@ -10,6 +10,8 @@ import {
   Menu,
   X,
   Settings,
+  Eye,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -20,6 +22,10 @@ import { SignInButton } from "@/components/ui/signin.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { useAuth } from "@/hooks/use-auth.ts";
 import { useState } from "react";
+import {
+  StaffPreviewProvider,
+  useStaffPreview,
+} from "@/hooks/use-staff-preview.tsx";
 import { toast } from "sonner";
 
 const NAV_ITEMS = [
@@ -72,9 +78,21 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const location = useLocation();
   const { removeUser } = useAuth();
   const user = useQuery(api.users.getCurrentUser);
+  const { isPreviewingAsStaff, togglePreview } = useStaffPreview();
+  const isRealAdmin = user?.role === "admin";
 
   return (
     <div className="flex flex-col h-full">
+      {/* Staff preview banner */}
+      {isRealAdmin && isPreviewingAsStaff && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 flex items-center gap-2">
+          <Eye className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+            Viewing as Team Member
+          </span>
+        </div>
+      )}
+
       {/* Logo */}
       <div className="p-5 border-b">
         <a href="/" className="flex items-center gap-2.5">
@@ -95,15 +113,39 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-sm">
             {user?.name?.charAt(0)?.toUpperCase() ?? "?"}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">
               {user?.name ?? "Loading..."}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {user?.role === "admin" ? "Admin" : "Team Member"}
+              {isPreviewingAsStaff ? "Team Member (preview)" : user?.role === "admin" ? "Admin" : "Team Member"}
             </p>
           </div>
         </div>
+        {/* View toggle for admins */}
+        {isRealAdmin && (
+          <button
+            onClick={togglePreview}
+            className={cn(
+              "mt-3 flex items-center gap-2 w-full rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+              isPreviewingAsStaff
+                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            {isPreviewingAsStaff ? (
+              <>
+                <ShieldCheck className="size-3.5" />
+                Switch to Admin View
+              </>
+            ) : (
+              <>
+                <Eye className="size-3.5" />
+                Preview as Team Member
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -242,7 +284,9 @@ export default function DashboardLayout() {
         </div>
       </Unauthenticated>
       <Authenticated>
-        <DashboardShell />
+        <StaffPreviewProvider>
+          <DashboardShell />
+        </StaffPreviewProvider>
       </Authenticated>
     </>
   );
