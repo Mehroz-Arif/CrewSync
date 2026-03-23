@@ -17,7 +17,8 @@ import {
   Clock,
   Users,
   Zap,
-  Pause,
+  CalendarRange,
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -57,7 +58,12 @@ type StaffMember = {
 type PatternWithMembers = {
   _id: Id<"shiftPatterns">;
   name: string;
-  days: number[];
+  patternType: "weekly" | "rotation";
+  days?: number[];
+  daysOn?: number;
+  daysOff?: number;
+  rotationStartDate?: string;
+  rotationEndDate?: string;
   startTime: string;
   endTime: string;
   vehicle: string;
@@ -165,7 +171,7 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
             Recurring Patterns
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
-            Define shift templates that repeat weekly. Apply them to fill your schedule.
+            Define weekly or rotation shift templates. Apply them to fill your schedule.
           </p>
         </div>
         <Button size="sm" onClick={handleCreate}>
@@ -290,9 +296,14 @@ function PatternCard({
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm font-heading font-bold truncate">
-            {pattern.name}
-          </CardTitle>
+          <div className="flex items-center gap-2 min-w-0">
+            <CardTitle className="text-sm font-heading font-bold truncate">
+              {pattern.name}
+            </CardTitle>
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+              {pattern.patternType === "weekly" ? "Weekly" : "Rotation"}
+            </Badge>
+          </div>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -310,23 +321,46 @@ function PatternCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Days */}
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-            <Badge
-              key={day}
-              variant={pattern.days.includes(day) ? "default" : "secondary"}
-              className={cn(
-                "text-[10px] px-1.5 py-0",
-                !pattern.days.includes(day) && "opacity-30"
-              )}
-            >
-              {DAY_LABELS[day]}
-            </Badge>
-          ))}
-        </div>
+        {/* Schedule info */}
+        {pattern.patternType === "weekly" ? (
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+              <Badge
+                key={day}
+                variant={(pattern.days ?? []).includes(day) ? "default" : "secondary"}
+                className={cn(
+                  "text-[10px] px-1.5 py-0",
+                  !(pattern.days ?? []).includes(day) && "opacity-30"
+                )}
+              >
+                {DAY_LABELS[day]}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <RotateCw className="size-3 shrink-0" />
+              <span className="font-semibold text-foreground">
+                {pattern.daysOn} on / {pattern.daysOff} off
+              </span>
+              <span className="text-muted-foreground">
+                ({(pattern.daysOn ?? 0) + (pattern.daysOff ?? 0)}-day cycle)
+              </span>
+            </div>
+            {pattern.rotationStartDate && pattern.rotationEndDate && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CalendarRange className="size-3 shrink-0" />
+                <span>
+                  {format(new Date(pattern.rotationStartDate + "T00:00:00"), "MMM d, yyyy")} –{" "}
+                  {format(new Date(pattern.rotationEndDate + "T00:00:00"), "MMM d, yyyy")}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Time & Vehicle */}
+        {/* Time & Vehicle & Crew */}
         <div className="space-y-1.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <Clock className="size-3 shrink-0" />

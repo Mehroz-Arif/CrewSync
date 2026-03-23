@@ -38,7 +38,12 @@ type StaffMember = {
 type PatternData = {
   _id: Id<"shiftPatterns">;
   name: string;
-  days: number[];
+  patternType: "weekly" | "rotation";
+  days?: number[];
+  daysOn?: number;
+  daysOff?: number;
+  rotationStartDate?: string;
+  rotationEndDate?: string;
   startTime: string;
   endTime: string;
   vehicle: string;
@@ -67,9 +72,26 @@ export default function PatternDialog({
   const deletePattern = useMutation(api.shiftPatterns.remove);
 
   const [name, setName] = useState(() => pattern?.name ?? "");
+  const [patternType, setPatternType] = useState<"weekly" | "rotation">(
+    () => pattern?.patternType ?? "weekly"
+  );
+
+  // Weekly fields
   const [selectedDays, setSelectedDays] = useState<Set<number>>(
     () => new Set(pattern?.days ?? [])
   );
+
+  // Rotation fields
+  const [daysOn, setDaysOn] = useState(() => pattern?.daysOn ?? 4);
+  const [daysOff, setDaysOff] = useState(() => pattern?.daysOff ?? 4);
+  const [rotationStartDate, setRotationStartDate] = useState(
+    () => pattern?.rotationStartDate ?? ""
+  );
+  const [rotationEndDate, setRotationEndDate] = useState(
+    () => pattern?.rotationEndDate ?? ""
+  );
+
+  // Shared fields
   const [startTime, setStartTime] = useState(() => pattern?.startTime ?? "08:00");
   const [endTime, setEndTime] = useState(() => pattern?.endTime ?? "16:00");
   const [vehicle, setVehicle] = useState(() => pattern?.vehicle ?? "");
@@ -103,24 +125,48 @@ export default function PatternDialog({
       toast.error("Please enter a pattern name");
       return;
     }
-    if (selectedDays.size === 0) {
-      toast.error("Select at least one day");
-      return;
-    }
     if (!vehicle.trim()) {
       toast.error("Please enter a vehicle name");
       return;
     }
 
+    if (patternType === "weekly" && selectedDays.size === 0) {
+      toast.error("Select at least one day");
+      return;
+    }
+
+    if (patternType === "rotation") {
+      if (daysOn < 1 || daysOff < 1) {
+        toast.error("Days on and off must be at least 1");
+        return;
+      }
+      if (!rotationStartDate) {
+        toast.error("Please set a rotation start date");
+        return;
+      }
+      if (!rotationEndDate) {
+        toast.error("Please set a rotation end date");
+        return;
+      }
+      if (rotationEndDate <= rotationStartDate) {
+        toast.error("End date must be after start date");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
-      const days = [...selectedDays].sort((a, b) => a - b);
       const memberIds = [...selectedMembers] as Id<"users">[];
 
       if (mode === "create") {
         await createPattern({
           name: name.trim(),
-          days,
+          patternType,
+          days: patternType === "weekly" ? [...selectedDays].sort((a, b) => a - b) : undefined,
+          daysOn: patternType === "rotation" ? daysOn : undefined,
+          daysOff: patternType === "rotation" ? daysOff : undefined,
+          rotationStartDate: patternType === "rotation" ? rotationStartDate : undefined,
+          rotationEndDate: patternType === "rotation" ? rotationEndDate : undefined,
           startTime,
           endTime,
           vehicle: vehicle.trim(),
@@ -132,7 +178,12 @@ export default function PatternDialog({
         await updatePattern({
           patternId: pattern._id,
           name: name.trim(),
-          days,
+          patternType,
+          days: patternType === "weekly" ? [...selectedDays].sort((a, b) => a - b) : undefined,
+          daysOn: patternType === "rotation" ? daysOn : undefined,
+          daysOff: patternType === "rotation" ? daysOff : undefined,
+          rotationStartDate: patternType === "rotation" ? rotationStartDate : undefined,
+          rotationEndDate: patternType === "rotation" ? rotationEndDate : undefined,
           startTime,
           endTime,
           vehicle: vehicle.trim(),
@@ -173,7 +224,7 @@ export default function PatternDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">
             {mode === "create" ? "Create Pattern" : "Edit Pattern"}
@@ -187,31 +238,114 @@ export default function PatternDialog({
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="A-Shift Weekdays"
+              placeholder={patternType === "weekly" ? "A-Shift Weekdays" : "4 on 4 off — Engine 7"}
             />
           </div>
 
-          {/* Day Selection */}
+          {/* Pattern Type Toggle */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Repeat On</Label>
-            <div className="flex gap-1.5">
-              {DAYS.map((day) => (
-                <button
-                  key={day.value}
-                  type="button"
-                  onClick={() => toggleDay(day.value)}
-                  className={cn(
-                    "flex-1 py-1.5 rounded-md text-xs font-semibold transition-all border",
-                    selectedDays.has(day.value)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
-                  )}
-                >
-                  {day.label}
-                </button>
-              ))}
+            <Label className="text-xs font-medium">Pattern Type</Label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPatternType("weekly")}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-sm font-semibold transition-all border",
+                  patternType === "weekly"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                )}
+              >
+                Weekly
+              </button>
+              <button
+                type="button"
+                onClick={() => setPatternType("rotation")}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-sm font-semibold transition-all border",
+                  patternType === "rotation"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                )}
+              >
+                Rotation
+              </button>
             </div>
           </div>
+
+          {/* Weekly: Day Selection */}
+          {patternType === "weekly" && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Repeat On</Label>
+              <div className="flex gap-1.5">
+                {DAYS.map((day) => (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => toggleDay(day.value)}
+                    className={cn(
+                      "flex-1 py-1.5 rounded-md text-xs font-semibold transition-all border",
+                      selectedDays.has(day.value)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                    )}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Rotation: Days on/off + date range */}
+          {patternType === "rotation" && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Days On</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={daysOn}
+                    onChange={(e) => setDaysOn(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Days Off</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={daysOff}
+                    onChange={(e) => setDaysOff(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Cycle: {daysOn} day{daysOn !== 1 ? "s" : ""} on, {daysOff} day{daysOff !== 1 ? "s" : ""} off ({daysOn + daysOff}-day cycle)
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Start Date</Label>
+                  <Input
+                    type="date"
+                    value={rotationStartDate}
+                    onChange={(e) => setRotationStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">End Date</Label>
+                  <Input
+                    type="date"
+                    value={rotationEndDate}
+                    onChange={(e) => setRotationEndDate(e.target.value)}
+                    min={rotationStartDate || undefined}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Times */}
           <div className="grid grid-cols-2 gap-3">

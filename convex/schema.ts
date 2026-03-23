@@ -106,7 +106,15 @@ export default defineSchema({
 
   shiftPatterns: defineTable({
     name: v.string(),
-    days: v.array(v.number()), // 1=Mon, 2=Tue, ..., 7=Sun (ISO weekday)
+    patternType: v.union(v.literal("weekly"), v.literal("rotation")),
+    // Weekly pattern fields
+    days: v.optional(v.array(v.number())), // 1=Mon...7=Sun (ISO weekday)
+    // Rotation pattern fields (e.g. 4 on / 4 off)
+    daysOn: v.optional(v.number()),
+    daysOff: v.optional(v.number()),
+    rotationStartDate: v.optional(v.string()), // "YYYY-MM-DD" — cycle anchor
+    rotationEndDate: v.optional(v.string()), // "YYYY-MM-DD" — when to stop
+    // Shared fields
     startTime: v.string(), // "HH:mm"
     endTime: v.string(), // "HH:mm"
     vehicle: v.string(),
