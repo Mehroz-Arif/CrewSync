@@ -18,14 +18,11 @@ export const getNextShift = query({
     }
 
     const now = new Date().toISOString();
-
-    // Get all shift memberships for this user
     const memberships = await ctx.db
       .query("shiftMembers")
       .withIndex("by_user", (q) => q.eq("userId", currentUser._id))
       .collect();
 
-    // Fetch shifts and find the next upcoming one
     let nextShift: {
       _id: typeof memberships[0]["shiftId"];
       startTime: string;
@@ -37,7 +34,6 @@ export const getNextShift = query({
     for (const mem of memberships) {
       const shift = await ctx.db.get(mem.shiftId);
       if (!shift) continue;
-      // Include shifts that haven't ended yet
       if (shift.endTime >= now) {
         if (!nextShift || shift.startTime < nextShift.startTime) {
           nextShift = shift;
@@ -47,7 +43,6 @@ export const getNextShift = query({
 
     if (!nextShift) return null;
 
-    // Get all crew members for this shift
     const shiftMembers = await ctx.db
       .query("shiftMembers")
       .withIndex("by_shift", (q) => q.eq("shiftId", nextShift._id))
@@ -68,6 +63,46 @@ export const getNextShift = query({
       notes: nextShift.notes,
       crew: crewMembers.filter((c): c is NonNullable<typeof c> => c !== null),
     };
+  },
+});
+
+/** Get shifts within a date range, enriched with member details */
+export const getShiftsByDateRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+
+    const shifts = await ctx.db
+      .query("shifts")
+      .withIndex("by_start_time", (q) =>
+        q.gte("startTime", args.startDate).lt("startTime", args.endDate)
+      )
+      .collect();
+
+    return await Promise.all(
+      shifts.map(async (shift) => {
+        const members = await ctx.db
+          .query("shiftMembers")
+          .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
+          .collect();
+
+        const memberDetails = await Promise.all(
+          members.map(async (m) => {
+            const user = await ctx.db.get(m.userId);
+            return {
+              membershipId: m._id,
+              userId: m.userId,
+              name: user?.name ?? "Unknown",
+            };
+          })
+        );
+
+        return { ...shift, members: memberDetails };
+      })
+    );
   },
 });
 
@@ -95,7 +130,6 @@ export const create = mutation({
     if (currentUser.role !== "admin") {
       throw new ConvexError({ message: "Only admins can create shifts", code: "FORBIDDEN" });
     }
-
     if (args.memberIds.length === 0) {
       throw new ConvexError({ message: "Must assign at least one crew member", code: "BAD_REQUEST" });
     }
@@ -109,12 +143,170 @@ export const create = mutation({
     });
 
     for (const memberId of args.memberIds) {
-      await ctx.db.insert("shiftMembers", {
-        shiftId,
-        userId: memberId,
-      });
+      await ctx.db.insert("shiftMembers", { shiftId, userId: memberId });
+    }
+    return shiftId;
+  },
+});
+
+/** Update shift details and optionally its member list (admin only) */
+export const update = mutation({
+  args: {
+    shiftId: v.id("shifts"),
+    startTime: v.optional(v.string()),
+    endTime: v.optional(v.string()),
+    vehicle: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    memberIds: v.optional(v.array(v.id("users"))),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can update shifts", code: "FORBIDDEN" });
     }
 
-    return shiftId;
+    const { shiftId, memberIds, ...fields } = args;
+    const patch: { startTime?: string; endTime?: string; vehicle?: string; notes?: string } = {};
+    if (fields.startTime !== undefined) patch.startTime = fields.startTime;
+    if (fields.endTime !== undefined) patch.endTime = fields.endTime;
+    if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
+    if (fields.notes !== undefined) patch.notes = fields.notes;
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(shiftId, patch);
+    }
+
+    // Sync member list if provided
+    if (memberIds !== undefined) {
+      const currentMembers = await ctx.db
+        .query("shiftMembers")
+        .withIndex("by_shift", (q) => q.eq("shiftId", shiftId))
+        .collect();
+
+      const currentIds = new Set(currentMembers.map((m) => m.userId));
+      const newIds = new Set(memberIds);
+
+      for (const m of currentMembers) {
+        if (!newIds.has(m.userId)) await ctx.db.delete(m._id);
+      }
+      for (const uid of memberIds) {
+        if (!currentIds.has(uid)) {
+          await ctx.db.insert("shiftMembers", { shiftId, userId: uid });
+        }
+      }
+    }
+  },
+});
+
+/** Delete a shift and all its member assignments (admin only) */
+export const remove = mutation({
+  args: { shiftId: v.id("shifts") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can delete shifts", code: "FORBIDDEN" });
+    }
+
+    const members = await ctx.db
+      .query("shiftMembers")
+      .withIndex("by_shift", (q) => q.eq("shiftId", args.shiftId))
+      .collect();
+    for (const m of members) {
+      await ctx.db.delete(m._id);
+    }
+    await ctx.db.delete(args.shiftId);
+  },
+});
+
+/** Move a shift assignment via drag-and-drop (admin only) */
+export const moveShiftAssignment = mutation({
+  args: {
+    membershipId: v.id("shiftMembers"),
+    targetUserId: v.id("users"),
+    dayOffset: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can move shifts", code: "FORBIDDEN" });
+    }
+
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) {
+      throw new ConvexError({ message: "Shift assignment not found", code: "NOT_FOUND" });
+    }
+    const shift = await ctx.db.get(membership.shiftId);
+    if (!shift) {
+      throw new ConvexError({ message: "Shift not found", code: "NOT_FOUND" });
+    }
+
+    const sameUser = membership.userId === args.targetUserId;
+    const sameDay = args.dayOffset === 0;
+    if (sameUser && sameDay) return;
+
+    if (sameDay) {
+      // Same day, different employee — reassign
+      const existing = await ctx.db
+        .query("shiftMembers")
+        .withIndex("by_shift", (q) => q.eq("shiftId", membership.shiftId))
+        .collect();
+      if (existing.some((m) => m.userId === args.targetUserId)) {
+        throw new ConvexError({ message: "Already assigned to this shift", code: "CONFLICT" });
+      }
+      await ctx.db.delete(args.membershipId);
+      await ctx.db.insert("shiftMembers", {
+        shiftId: membership.shiftId,
+        userId: args.targetUserId,
+      });
+      return;
+    }
+
+    // Different day — create new shift with adjusted times
+    const offsetMs = args.dayOffset * 86400000;
+    const newStart = new Date(new Date(shift.startTime).getTime() + offsetMs).toISOString();
+    const newEnd = new Date(new Date(shift.endTime).getTime() + offsetMs).toISOString();
+
+    await ctx.db.delete(args.membershipId);
+
+    const newShiftId = await ctx.db.insert("shifts", {
+      startTime: newStart,
+      endTime: newEnd,
+      vehicle: shift.vehicle,
+      notes: shift.notes,
+      createdBy: shift.createdBy,
+    });
+    await ctx.db.insert("shiftMembers", {
+      shiftId: newShiftId,
+      userId: args.targetUserId,
+    });
+
+    // Clean up orphan shift if no members remain
+    const remaining = await ctx.db
+      .query("shiftMembers")
+      .withIndex("by_shift", (q) => q.eq("shiftId", membership.shiftId))
+      .collect();
+    if (remaining.length === 0) {
+      await ctx.db.delete(membership.shiftId);
+    }
   },
 });

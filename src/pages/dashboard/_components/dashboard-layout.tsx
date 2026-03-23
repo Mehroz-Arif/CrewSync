@@ -31,7 +31,7 @@ const NAV_ITEMS = [
     label: "Shifts",
     icon: CalendarClock,
     path: "/shifts",
-    enabled: false,
+    enabled: true,
   },
   {
     label: "Messages",

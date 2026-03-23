@@ -6,6 +6,7 @@ import NotFound from "./pages/NotFound.tsx";
 import DashboardLayout from "./pages/dashboard/_components/dashboard-layout.tsx";
 import DashboardPage from "./pages/dashboard/page.tsx";
 import MessagesPage from "./pages/messages/page.tsx";
+import ShiftsPage from "./pages/shifts/page.tsx";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/shifts" element={<ShiftsPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:conversationId" element={<MessagesPage />} />
           </Route>

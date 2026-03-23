@@ -31,6 +31,18 @@ export const updateCurrentUser = mutation({
   },
 });
 
+/** Get all staff members for the scheduling grid */
+export const getAllStaff = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "User not logged in" });
+    }
+    return await ctx.db.query("users").collect();
+  },
+});
+
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
