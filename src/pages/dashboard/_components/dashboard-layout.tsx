@@ -7,6 +7,7 @@ import {
   Trophy,
   FolderOpen,
   MessageSquareText,
+  UsersRound,
   LogOut,
   Menu,
   X,
@@ -70,6 +71,12 @@ const NAV_ITEMS = [
     label: "Feedback",
     icon: MessageSquareText,
     path: "/feedback",
+    enabled: true,
+  },
+  {
+    label: "Team",
+    icon: UsersRound,
+    path: "/team",
     enabled: true,
   },
   {

@@ -10,6 +10,19 @@ export default defineSchema({
     department: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     organizationId: v.optional(v.id("organizations")),
+    // Profile fields
+    phone: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    employmentType: v.optional(v.union(v.literal("employee"), v.literal("subcontractor"))),
+    jobTitle: v.optional(v.string()),
+    startDate: v.optional(v.string()), // ISO date
+    address: v.optional(v.string()),
+    emergencyContactName: v.optional(v.string()),
+    emergencyContactPhone: v.optional(v.string()),
+    skills: v.optional(v.array(v.string())),
+    certifications: v.optional(v.array(v.string())),
+    hourlyRate: v.optional(v.number()),
+    notes: v.optional(v.string()), // admin-only notes
   }).index("by_token", ["tokenIdentifier"]),
 
   organizations: defineTable({

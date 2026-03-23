@@ -12,6 +12,8 @@ import RewardsPage from "./pages/rewards/page.tsx";
 import DocumentsPage from "./pages/documents/page.tsx";
 import FeedbackPage from "./pages/feedback/page.tsx";
 import CalendarPage from "./pages/calendar/page.tsx";
+import TeamPage from "./pages/team/page.tsx";
+import ProfilePage from "./pages/team/profile.tsx";
 
 export default function App() {
   return (
@@ -30,6 +32,8 @@ export default function App() {
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/team" element={<TeamPage />} />
+            <Route path="/team/:userId" element={<ProfilePage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
