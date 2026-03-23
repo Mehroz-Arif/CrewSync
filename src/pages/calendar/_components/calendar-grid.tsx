@@ -26,6 +26,10 @@ export type CalendarEvent = {
   allDay: boolean;
   location?: string;
   creatorName: string;
+  attendanceEnabled?: boolean;
+  maxAttendees?: number;
+  attendanceCount: number;
+  approvedCount: number;
 };
 
 const EVENT_COLORS: Record<EventType, { bg: string; text: string; dot: string }> = {

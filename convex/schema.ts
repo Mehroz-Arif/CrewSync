@@ -166,7 +166,23 @@ export default defineSchema({
     allDay: v.boolean(),
     location: v.optional(v.string()),
     createdBy: v.id("users"),
+    // Attendance fields
+    attendanceEnabled: v.optional(v.boolean()),
+    maxAttendees: v.optional(v.number()), // null/undefined = unlimited
   }).index("by_date", ["date"]),
+
+  eventAttendance: defineTable({
+    eventId: v.id("calendarEvents"),
+    userId: v.id("users"),
+    status: v.union(
+      v.literal("requested"),
+      v.literal("approved"),
+      v.literal("denied")
+    ),
+  })
+    .index("by_event", ["eventId"])
+    .index("by_event_and_user", ["eventId", "userId"])
+    .index("by_user", ["userId"]),
 
   documents: defineTable({
     name: v.string(),

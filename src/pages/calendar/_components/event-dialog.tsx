@@ -49,6 +49,8 @@ type EventDialogProps = {
     endTime?: string;
     allDay: boolean;
     location?: string;
+    attendanceEnabled?: boolean;
+    maxAttendees?: number;
   };
 };
 
@@ -70,6 +72,8 @@ export default function EventDialog({
   const [endTime, setEndTime] = useState("10:00");
   const [allDay, setAllDay] = useState(false);
   const [location, setLocation] = useState("");
+  const [attendanceEnabled, setAttendanceEnabled] = useState(false);
+  const [maxAttendees, setMaxAttendees] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -82,6 +86,8 @@ export default function EventDialog({
       setEndTime(event.endTime ?? "10:00");
       setAllDay(event.allDay);
       setLocation(event.location ?? "");
+      setAttendanceEnabled(event.attendanceEnabled ?? false);
+      setMaxAttendees(event.maxAttendees ? String(event.maxAttendees) : "");
     } else {
       setTitle("");
       setDescription("");
@@ -91,6 +97,8 @@ export default function EventDialog({
       setEndTime("10:00");
       setAllDay(false);
       setLocation("");
+      setAttendanceEnabled(false);
+      setMaxAttendees("");
     }
   }, [mode, event, defaultDate, open]);
 
@@ -103,6 +111,7 @@ export default function EventDialog({
 
     setIsSubmitting(true);
     try {
+      const parsedMax = maxAttendees.trim() ? parseInt(maxAttendees, 10) : undefined;
       const payload = {
         title: title.trim(),
         description: description.trim() || undefined,
@@ -112,6 +121,8 @@ export default function EventDialog({
         endTime: allDay ? undefined : endTime,
         allDay,
         location: location.trim() || undefined,
+        attendanceEnabled,
+        maxAttendees: attendanceEnabled ? parsedMax : undefined,
       };
 
       if (mode === "edit" && event) {
@@ -225,6 +236,35 @@ export default function EventDialog({
               onChange={(e) => setLocation(e.target.value)}
               maxLength={100}
             />
+          </div>
+
+          {/* Attendance toggle */}
+          <div className="space-y-3 rounded-lg border p-3">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={attendanceEnabled}
+                onCheckedChange={setAttendanceEnabled}
+                id="attendance-enabled"
+              />
+              <Label htmlFor="attendance-enabled" className="cursor-pointer">
+                Enable attendance requests
+              </Label>
+            </div>
+            {attendanceEnabled && (
+              <div className="space-y-1.5">
+                <Label htmlFor="max-attendees">
+                  Max attendees (leave blank for unlimited)
+                </Label>
+                <Input
+                  id="max-attendees"
+                  type="number"
+                  min={1}
+                  placeholder="e.g. 20"
+                  value={maxAttendees}
+                  onChange={(e) => setMaxAttendees(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Description */}
