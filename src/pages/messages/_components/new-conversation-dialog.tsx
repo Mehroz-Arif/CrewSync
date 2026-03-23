@@ -11,10 +11,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog.tsx";
-import { Plus, Search, User, Users } from "lucide-react";
+import { Plus, Search, Users, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
+import { Switch } from "@/components/ui/switch.tsx";
 
 type Mode = "select" | "group";
 
@@ -24,6 +25,7 @@ export default function NewConversationDialog({
   onCreated: (id: Id<"conversations">) => void;
 }) {
   const users = useQuery(api.messaging.listUsers);
+  const currentUser = useQuery(api.users.getCurrentUser);
   const startDirect = useMutation(api.messaging.startDirect);
   const createGroup = useMutation(api.messaging.createGroup);
 
@@ -31,8 +33,11 @@ export default function NewConversationDialog({
   const [mode, setMode] = useState<Mode>("select");
   const [search, setSearch] = useState("");
   const [groupName, setGroupName] = useState("");
+  const [broadcastOnly, setBroadcastOnly] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<Id<"users">>>(new Set());
   const [isCreating, setIsCreating] = useState(false);
+
+  const isAdmin = currentUser?.role === "admin";
 
   const filteredUsers = (users ?? []).filter((u) =>
     u.name.toLowerCase().includes(search.toLowerCase())
@@ -42,6 +47,7 @@ export default function NewConversationDialog({
     setMode("select");
     setSearch("");
     setGroupName("");
+    setBroadcastOnly(false);
     setSelectedIds(new Set());
     setIsCreating(false);
   };
@@ -79,6 +85,7 @@ export default function NewConversationDialog({
       const convoId = await createGroup({
         name: groupName.trim(),
         memberIds: Array.from(selectedIds),
+        broadcastOnly,
       });
       onCreated(convoId);
       setOpen(false);
@@ -195,6 +202,25 @@ export default function NewConversationDialog({
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
             />
+
+            {/* Broadcast toggle - only shown to admins */}
+            {isAdmin && (
+              <label className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 cursor-pointer">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Megaphone className="size-4 text-chart-5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">Broadcast only</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Only admins can send messages
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={broadcastOnly}
+                  onCheckedChange={setBroadcastOnly}
+                />
+              </label>
+            )}
 
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />

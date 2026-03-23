@@ -12,7 +12,7 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "@/components/ui/empty.tsx";
-import { Send, ArrowLeft, Users, MessageCircle } from "lucide-react";
+import { Send, ArrowLeft, Users, MessageCircle, Megaphone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
@@ -28,10 +28,15 @@ export default function ChatThread({
   const convo = useQuery(api.messaging.getConversation, { conversationId });
   const messages = useQuery(api.messaging.getMessages, { conversationId });
   const sendMessage = useMutation(api.messaging.send);
+  const toggleBroadcast = useMutation(api.messaging.toggleBroadcastOnly);
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isBroadcast = convo?.broadcastOnly ?? false;
+  const isAdmin = convo?.isCurrentUserAdmin ?? false;
+  const canSend = !isBroadcast || isAdmin;
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -112,12 +117,49 @@ export default function ChatThread({
             convo.name.charAt(0).toUpperCase()
           )}
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{convo.name}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium truncate">{convo.name}</p>
+            {isBroadcast && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-chart-5/10 px-2 py-0.5 text-[10px] font-medium text-chart-5 shrink-0">
+                <Megaphone className="size-3" />
+                Broadcast
+              </span>
+            )}
+          </div>
           <p className="text-[11px] text-muted-foreground">
             {convo.members.length} member{convo.members.length !== 1 ? "s" : ""}
           </p>
         </div>
+        {/* Admin toggle for broadcast mode */}
+        {isAdmin && convo.type === "group" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "gap-1.5 text-xs shrink-0",
+              isBroadcast && "text-chart-5"
+            )}
+            onClick={async () => {
+              try {
+                const newVal = await toggleBroadcast({ conversationId });
+                toast.success(
+                  newVal
+                    ? "Broadcast mode enabled -- only admins can send messages"
+                    : "Broadcast mode disabled -- everyone can send messages"
+                );
+              } catch (error) {
+                if (error instanceof ConvexError) {
+                  const { message } = error.data as { code: string; message: string };
+                  toast.error(message);
+                }
+              }
+            }}
+          >
+            <Megaphone className="size-3.5" />
+            {isBroadcast ? "Broadcast On" : "Broadcast Off"}
+          </Button>
+        )}
       </div>
 
       {/* Messages */}
@@ -190,26 +232,33 @@ export default function ChatThread({
       </div>
 
       {/* Compose */}
-      <form
-        onSubmit={handleSend}
-        className="border-t px-4 py-3 flex items-center gap-2 shrink-0 bg-card"
-      >
-        <Input
-          ref={inputRef}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1"
-          disabled={isSending}
-        />
-        <Button
-          type="submit"
-          size="icon-sm"
-          disabled={!draft.trim() || isSending}
+      {canSend ? (
+        <form
+          onSubmit={handleSend}
+          className="border-t px-4 py-3 flex items-center gap-2 shrink-0 bg-card"
         >
-          <Send className="size-4" />
-        </Button>
-      </form>
+          <Input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1"
+            disabled={isSending}
+          />
+          <Button
+            type="submit"
+            size="icon-sm"
+            disabled={!draft.trim() || isSending}
+          >
+            <Send className="size-4" />
+          </Button>
+        </form>
+      ) : (
+        <div className="border-t px-4 py-3.5 shrink-0 bg-muted/50 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Megaphone className="size-4" />
+          <span>Broadcast channel -- only admins can send messages</span>
+        </div>
+      )}
     </div>
   );
 }

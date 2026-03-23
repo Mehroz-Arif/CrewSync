@@ -195,6 +195,17 @@ export const send = mutation({
       throw new ConvexError({ message: "Not a member of this conversation", code: "FORBIDDEN" });
     }
 
+    // Enforce broadcast-only permission
+    const convo = await ctx.db.get(args.conversationId);
+    if (convo && convo.broadcastOnly && convo.type === "group") {
+      if (currentUser.role !== "admin") {
+        throw new ConvexError({
+          message: "This is a broadcast channel. Only admins can send messages.",
+          code: "FORBIDDEN",
+        });
+      }
+    }
+
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       authorId: currentUser._id,
@@ -274,6 +285,7 @@ export const createGroup = mutation({
   args: {
     name: v.string(),
     memberIds: v.array(v.id("users")),
+    broadcastOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -292,9 +304,18 @@ export const createGroup = mutation({
       throw new ConvexError({ message: "Must include at least one other member", code: "BAD_REQUEST" });
     }
 
+    // Only admins can create broadcast-only channels
+    if (args.broadcastOnly && currentUser.role !== "admin") {
+      throw new ConvexError({
+        message: "Only admins can create broadcast channels",
+        code: "FORBIDDEN",
+      });
+    }
+
     const conversationId = await ctx.db.insert("conversations", {
       type: "group",
       name: args.name.trim(),
+      broadcastOnly: args.broadcastOnly ?? false,
     });
 
     // Add creator
@@ -360,7 +381,42 @@ export const getConversation = query({
       _id: convo._id,
       type: convo.type,
       name: displayName,
+      broadcastOnly: convo.broadcastOnly ?? false,
+      isCurrentUserAdmin: currentUser.role === "admin",
       members: memberUsers.filter((u): u is NonNullable<typeof u> => u !== null),
     };
+  },
+});
+
+/** Toggle broadcast-only mode on a group conversation (admin only) */
+export const toggleBroadcastOnly = mutation({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser) {
+      throw new ConvexError({ message: "User not found", code: "NOT_FOUND" });
+    }
+    if (currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can change broadcast settings", code: "FORBIDDEN" });
+    }
+
+    const convo = await ctx.db.get(args.conversationId);
+    if (!convo) {
+      throw new ConvexError({ message: "Conversation not found", code: "NOT_FOUND" });
+    }
+    if (convo.type !== "group") {
+      throw new ConvexError({ message: "Broadcast mode is only available for group chats", code: "BAD_REQUEST" });
+    }
+
+    const newValue = !convo.broadcastOnly;
+    await ctx.db.patch(args.conversationId, { broadcastOnly: newValue });
+    return newValue;
   },
 });

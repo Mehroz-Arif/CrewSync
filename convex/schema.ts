@@ -36,6 +36,7 @@ export default defineSchema({
     name: v.optional(v.string()),
     type: v.union(v.literal("direct"), v.literal("group")),
     lastMessageAt: v.optional(v.string()),
+    broadcastOnly: v.optional(v.boolean()),
   }),
 
   conversationMembers: defineTable({
