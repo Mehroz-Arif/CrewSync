@@ -67,6 +67,7 @@ function PostCard({
     authorAvatarUrl?: string;
     authorDepartment?: string;
     authorId: Id<"users">;
+    imageUrl?: string | null;
   };
   isLiked: boolean;
   currentUserId: Id<"users"> | undefined;
@@ -143,6 +144,18 @@ function PostCard({
           {post.body}
         </p>
       </div>
+
+      {/* Image */}
+      {post.imageUrl && (
+        <div className="rounded-lg overflow-hidden border -mx-1">
+          <img
+            src={post.imageUrl}
+            alt={`Photo for ${post.title}`}
+            className="w-full max-h-80 object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-1">

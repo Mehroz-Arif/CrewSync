@@ -39,6 +39,7 @@ export default defineSchema({
     ),
     pinned: v.boolean(),
     likesCount: v.number(),
+    imageStorageId: v.optional(v.id("_storage")),
   }).index("by_author", ["authorId"]),
 
   postLikes: defineTable({

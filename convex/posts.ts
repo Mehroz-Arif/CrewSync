@@ -2,6 +2,18 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
+/** Generate a short-lived upload URL for post images */
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
 export const create = mutation({
   args: {
     title: v.string(),
@@ -13,6 +25,7 @@ export const create = mutation({
       v.literal("general")
     ),
     pinned: v.optional(v.boolean()),
+    imageStorageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -41,6 +54,7 @@ export const create = mutation({
       category: args.category,
       pinned: args.pinned ?? false,
       likesCount: 0,
+      imageStorageId: args.imageStorageId,
     });
   },
 });
@@ -66,11 +80,15 @@ export const list = query({
     const postsWithAuthors = await Promise.all(
       results.page.map(async (post) => {
         const author = await ctx.db.get(post.authorId);
+        const imageUrl = post.imageStorageId
+          ? await ctx.storage.getUrl(post.imageStorageId)
+          : null;
         return {
           ...post,
           authorName: author?.name ?? "Unknown",
           authorAvatarUrl: author?.avatarUrl,
           authorDepartment: author?.department,
+          imageUrl,
         };
       })
     );
@@ -99,9 +117,13 @@ export const getPinned = query({
     const pinnedWithAuthors = await Promise.all(
       pinned.map(async (post) => {
         const author = await ctx.db.get(post.authorId);
+        const imageUrl = post.imageStorageId
+          ? await ctx.storage.getUrl(post.imageStorageId)
+          : null;
         return {
           ...post,
           authorName: author?.name ?? "Unknown",
+          imageUrl,
         };
       })
     );
@@ -241,6 +263,11 @@ export const deletePost = mutation({
       .collect();
     for (const like of likes) {
       await ctx.db.delete(like._id);
+    }
+
+    // Delete stored image if present
+    if (post.imageStorageId) {
+      await ctx.storage.delete(post.imageStorageId);
     }
 
     await ctx.db.delete(args.postId);
