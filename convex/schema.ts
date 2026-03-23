@@ -31,4 +31,24 @@ export default defineSchema({
   })
     .index("by_post", ["postId"])
     .index("by_user_and_post", ["userId", "postId"]),
+
+  conversations: defineTable({
+    name: v.optional(v.string()),
+    type: v.union(v.literal("direct"), v.literal("group")),
+    lastMessageAt: v.optional(v.string()),
+  }),
+
+  conversationMembers: defineTable({
+    conversationId: v.id("conversations"),
+    userId: v.id("users"),
+  })
+    .index("by_user", ["userId"])
+    .index("by_conversation", ["conversationId"])
+    .index("by_user_and_conversation", ["userId", "conversationId"]),
+
+  messages: defineTable({
+    conversationId: v.id("conversations"),
+    authorId: v.id("users"),
+    body: v.string(),
+  }).index("by_conversation", ["conversationId"]),
 });

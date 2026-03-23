@@ -37,7 +37,7 @@ const NAV_ITEMS = [
     label: "Messages",
     icon: MessageCircle,
     path: "/messages",
-    enabled: false,
+    enabled: true,
   },
   {
     label: "Rewards",
