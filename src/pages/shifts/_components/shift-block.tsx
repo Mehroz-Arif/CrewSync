@@ -1,8 +1,14 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { GripVertical, Truck, Send } from "lucide-react";
+import { GripVertical, Truck, Send, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+  ContextMenuItem,
+} from "@/components/ui/context-menu.tsx";
 
 type ShiftBlockProps = {
   membershipId: string;
@@ -14,6 +20,7 @@ type ShiftBlockProps = {
   isAdmin: boolean;
   published: boolean;
   onClick: () => void;
+  onUnassign?: () => void;
 };
 
 /** Color-code based on vehicle type keywords */
@@ -40,6 +47,7 @@ export default function ShiftBlock({
   isAdmin,
   published,
   onClick,
+  onUnassign,
 }: ShiftBlockProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -61,25 +69,22 @@ export default function ShiftBlock({
     ? { transform: CSS.Translate.toString(transform) }
     : undefined;
 
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      className={cn(
-        "group/block relative rounded-md border-l-3 px-2 py-1.5 text-[11px] select-none transition-all",
-        getShiftColor(vehicle),
-        isDragging && "opacity-30 scale-95",
-        isAdmin && "cursor-grab active:cursor-grabbing",
-        !isAdmin && "cursor-pointer",
-        // Dashed border for unpublished (draft) shifts
-        !published && isAdmin && "border-dashed"
-      )}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!isDragging) onClick();
-      }}
-    >
+  const blockClassName = cn(
+    "group/block relative rounded-md border-l-3 px-2 py-1.5 text-[11px] select-none transition-all",
+    getShiftColor(vehicle),
+    isDragging && "opacity-30 scale-95",
+    isAdmin && "cursor-grab active:cursor-grabbing",
+    !isAdmin && "cursor-pointer",
+    !published && isAdmin && "border-dashed"
+  );
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isDragging) onClick();
+  };
+
+  const blockContent = (
+    <>
       {isAdmin && (
         <div
           {...listeners}
@@ -106,6 +111,49 @@ export default function ShiftBlock({
           Draft
         </div>
       )}
+    </>
+  );
+
+  // Wrap in context menu for admin with unassign option
+  if (isAdmin && onUnassign) {
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            className={blockClassName}
+            onClick={handleClick}
+          >
+            {blockContent}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onUnassign();
+            }}
+            disabled={published}
+          >
+            <UserMinus className="size-3.5" />
+            {published ? "Unpublish to unassign" : "Unassign from shift"}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className={blockClassName}
+      onClick={handleClick}
+    >
+      {blockContent}
     </div>
   );
 }

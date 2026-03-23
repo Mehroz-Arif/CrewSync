@@ -1,5 +1,35 @@
 import { ConvexError, v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel.d.ts";
+
+/** Check if assigning a user to a shift would cause a time overlap with their existing shifts */
+async function checkUserShiftOverlap(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  startTime: string,
+  endTime: string,
+  excludeShiftId?: Id<"shifts">
+) {
+  const memberships = await ctx.db
+    .query("shiftMembers")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  for (const mem of memberships) {
+    if (excludeShiftId && mem.shiftId === excludeShiftId) continue;
+    const shift = await ctx.db.get(mem.shiftId);
+    if (!shift) continue;
+    // Two time ranges overlap if: start1 < end2 AND start2 < end1
+    if (startTime < shift.endTime && shift.startTime < endTime) {
+      const user = await ctx.db.get(userId);
+      throw new ConvexError({
+        message: `Shift overlaps with an existing shift for ${user?.name ?? "this staff member"}`,
+        code: "CONFLICT",
+      });
+    }
+  }
+}
 
 /** Get the current user's next upcoming shift */
 export const getNextShift = query({
@@ -130,6 +160,11 @@ export const create = mutation({
     if (currentUser.role !== "admin") {
       throw new ConvexError({ message: "Only admins can create shifts", code: "FORBIDDEN" });
     }
+    // Check for overlapping shifts for each assigned member
+    for (const memberId of args.memberIds) {
+      await checkUserShiftOverlap(ctx, memberId, args.startTime, args.endTime);
+    }
+
     const shiftId = await ctx.db.insert("shifts", {
       startTime: args.startTime,
       endTime: args.endTime,
@@ -169,6 +204,32 @@ export const update = mutation({
     }
 
     const { shiftId, memberIds, ...fields } = args;
+
+    // Get current shift to determine final times for overlap check
+    const currentShift = await ctx.db.get(shiftId);
+    if (!currentShift) {
+      throw new ConvexError({ message: "Shift not found", code: "NOT_FOUND" });
+    }
+    const finalStartTime = fields.startTime ?? currentShift.startTime;
+    const finalEndTime = fields.endTime ?? currentShift.endTime;
+
+    // Determine final member list for overlap check
+    let finalMemberIds: Id<"users">[];
+    if (memberIds !== undefined) {
+      finalMemberIds = memberIds;
+    } else {
+      const existingMembers = await ctx.db
+        .query("shiftMembers")
+        .withIndex("by_shift", (q) => q.eq("shiftId", shiftId))
+        .collect();
+      finalMemberIds = existingMembers.map((m) => m.userId);
+    }
+
+    // Check for overlapping shifts for all final members (exclude current shift)
+    for (const uid of finalMemberIds) {
+      await checkUserShiftOverlap(ctx, uid, finalStartTime, finalEndTime, shiftId);
+    }
+
     const patch: { startTime?: string; endTime?: string; vehicle?: string; notes?: string } = {};
     if (fields.startTime !== undefined) patch.startTime = fields.startTime;
     if (fields.endTime !== undefined) patch.endTime = fields.endTime;
@@ -269,6 +330,8 @@ export const moveShiftAssignment = mutation({
       if (existing.some((m) => m.userId === args.targetUserId)) {
         throw new ConvexError({ message: "Already assigned to this shift", code: "CONFLICT" });
       }
+      // Prevent time overlap for target user
+      await checkUserShiftOverlap(ctx, args.targetUserId, shift.startTime, shift.endTime);
       await ctx.db.delete(args.membershipId);
       await ctx.db.insert("shiftMembers", {
         shiftId: membership.shiftId,
@@ -281,6 +344,9 @@ export const moveShiftAssignment = mutation({
     const offsetMs = args.dayOffset * 86400000;
     const newStart = new Date(new Date(shift.startTime).getTime() + offsetMs).toISOString();
     const newEnd = new Date(new Date(shift.endTime).getTime() + offsetMs).toISOString();
+
+    // Prevent time overlap for target user on the new day
+    await checkUserShiftOverlap(ctx, args.targetUserId, newStart, newEnd);
 
     await ctx.db.delete(args.membershipId);
 
@@ -370,6 +436,9 @@ export const assignToShift = mutation({
     if (existing.some((m) => m.userId === args.userId)) {
       throw new ConvexError({ message: "User already assigned to this shift", code: "CONFLICT" });
     }
+
+    // Prevent time overlap for this user
+    await checkUserShiftOverlap(ctx, args.userId, shift.startTime, shift.endTime);
 
     await ctx.db.insert("shiftMembers", {
       shiftId: args.shiftId,

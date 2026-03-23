@@ -104,6 +104,22 @@ export default function ScheduleGrid({
   const unassignFromShift = useMutation(api.shifts.unassignFromShift);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
 
+  const handleUnassign = useCallback(
+    async (membershipId: Id<"shiftMembers">) => {
+      try {
+        await unassignFromShift({ membershipId });
+        toast.success("Shift moved to unassigned");
+      } catch (error) {
+        if (error instanceof ConvexError) {
+          toast.error((error.data as { message: string }).message);
+        } else {
+          toast.error("Failed to unassign shift");
+        }
+      }
+    },
+    [unassignFromShift]
+  );
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -349,6 +365,7 @@ export default function ScheduleGrid({
                           isAdmin={isAdmin}
                           published={shift.published}
                           onClick={() => onShiftClick(shift)}
+                          onUnassign={() => handleUnassign(shift.membershipId)}
                         />
                       ))}
                     </DayCell>
