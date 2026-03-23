@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { SignInButton } from "@/components/ui/signin.tsx";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
+import { Authenticated, Unauthenticated } from "convex/react";
+import { Link } from "react-router-dom";
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
@@ -58,7 +60,17 @@ export default function LandingNavbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <SignInButton variant="ghost" size="sm" />
+            <Authenticated>
+              <Button size="sm" asChild>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="size-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            </Authenticated>
+            <Unauthenticated>
+              <SignInButton variant="ghost" size="sm" />
+            </Unauthenticated>
           </div>
 
           {/* Mobile hamburger */}
@@ -87,7 +99,17 @@ export default function LandingNavbar() {
                 {link.label}
               </a>
             ))}
-            <SignInButton size="sm" className="w-full" />
+            <Authenticated>
+              <Button size="sm" className="w-full" asChild>
+                <Link to="/dashboard">
+                  <LayoutDashboard className="size-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            </Authenticated>
+            <Unauthenticated>
+              <SignInButton size="sm" className="w-full" />
+            </Unauthenticated>
           </div>
         </div>
       )}
