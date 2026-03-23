@@ -124,6 +124,18 @@ export default defineSchema({
     active: v.boolean(),
   }),
 
+  feedback: defineTable({
+    message: v.string(),
+    category: v.union(
+      v.literal("general"),
+      v.literal("scheduling"),
+      v.literal("workplace"),
+      v.literal("suggestion"),
+      v.literal("concern")
+    ),
+    status: v.union(v.literal("new"), v.literal("reviewed"), v.literal("archived")),
+  }),
+
   folders: defineTable({
     name: v.string(),
     parentId: v.optional(v.id("folders")),

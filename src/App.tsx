@@ -10,6 +10,7 @@ import ShiftsPage from "./pages/shifts/page.tsx";
 import SettingsPage from "./pages/settings/page.tsx";
 import RewardsPage from "./pages/rewards/page.tsx";
 import DocumentsPage from "./pages/documents/page.tsx";
+import FeedbackPage from "./pages/feedback/page.tsx";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/rewards" element={<RewardsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

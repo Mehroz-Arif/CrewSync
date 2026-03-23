@@ -10,6 +10,7 @@
 
 import type * as availability from "../availability.js";
 import type * as documents from "../documents.js";
+import type * as feedback from "../feedback.js";
 import type * as messaging from "../messaging.js";
 import type * as organizations from "../organizations.js";
 import type * as posts from "../posts.js";
@@ -27,6 +28,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   availability: typeof availability;
   documents: typeof documents;
+  feedback: typeof feedback;
   messaging: typeof messaging;
   organizations: typeof organizations;
   posts: typeof posts;

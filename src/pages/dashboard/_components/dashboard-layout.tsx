@@ -5,6 +5,7 @@ import {
   MessageCircle,
   Trophy,
   FolderOpen,
+  MessageSquareText,
   LogOut,
   Menu,
   X,
@@ -50,6 +51,12 @@ const NAV_ITEMS = [
     label: "Documents",
     icon: FolderOpen,
     path: "/documents",
+    enabled: true,
+  },
+  {
+    label: "Feedback",
+    icon: MessageSquareText,
+    path: "/feedback",
     enabled: true,
   },
   {
