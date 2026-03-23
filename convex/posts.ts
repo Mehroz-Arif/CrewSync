@@ -22,7 +22,8 @@ export const create = mutation({
       v.literal("announcement"),
       v.literal("update"),
       v.literal("shoutout"),
-      v.literal("general")
+      v.literal("general"),
+      v.literal("feedback")
     ),
     pinned: v.optional(v.boolean()),
     imageStorageId: v.optional(v.id("_storage")),

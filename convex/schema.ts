@@ -35,7 +35,8 @@ export default defineSchema({
       v.literal("announcement"),
       v.literal("update"),
       v.literal("shoutout"),
-      v.literal("general")
+      v.literal("general"),
+      v.literal("feedback")
     ),
     pinned: v.boolean(),
     likesCount: v.number(),

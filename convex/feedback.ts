@@ -152,12 +152,29 @@ export const respond = mutation({
       throw new ConvexError({ message: "Response must be at least 3 characters", code: "BAD_REQUEST" });
     }
 
+    const wasPublished = existing.published === true;
+
     await ctx.db.patch(args.feedbackId, {
       adminResponse: args.adminResponse.trim(),
       published: args.publish,
       publishedAt: args.publish ? new Date().toISOString() : existing.publishedAt,
       status: "reviewed" as const,
     });
+
+    // Auto-create a news feed post when first published
+    if (args.publish && !wasPublished) {
+      // Body format: original feedback + separator + admin response
+      const body = `💬 Staff feedback:\n"${existing.message}"\n\n✅ Our response:\n${args.adminResponse.trim()}`;
+
+      await ctx.db.insert("posts", {
+        authorId: user._id,
+        title: "You Said, We Did",
+        body,
+        category: "feedback" as const,
+        pinned: false,
+        likesCount: 0,
+      });
+    }
   },
 });
 

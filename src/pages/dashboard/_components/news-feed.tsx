@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Sparkles,
   MessageSquare,
+  MessageSquareQuote,
   Trash2,
   Pin,
 } from "lucide-react";
@@ -47,6 +48,11 @@ const CATEGORY_CONFIG: Record<
     label: "General",
     icon: MessageSquare,
     color: "text-muted-foreground bg-muted",
+  },
+  feedback: {
+    label: "You Said, We Did",
+    icon: MessageSquareQuote,
+    color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
   },
 };
 
