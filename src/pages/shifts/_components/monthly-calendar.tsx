@@ -15,7 +15,7 @@ import {
   isToday,
   isSameDay,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, Truck, Users, Check, X as XIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, Truck, Radio, Users, Check, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { cn } from "@/lib/utils.ts";
@@ -262,6 +262,12 @@ export default function MonthlyCalendar() {
                         <Truck className="size-2.5 shrink-0" />
                         <span className="truncate">{shift.vehicle}</span>
                       </div>
+                      {shift.callSign && (
+                        <div className="flex items-center gap-1 text-muted-foreground truncate">
+                          <Radio className="size-2.5 shrink-0" />
+                          <span className="truncate">{shift.callSign}</span>
+                        </div>
+                      )}
                       {shift.members.length > 1 && (
                         <div className="flex items-center gap-1 text-muted-foreground truncate">
                           <Users className="size-2.5 shrink-0" />

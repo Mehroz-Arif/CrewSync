@@ -1,7 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { CalendarClock, Clock, Users, Truck, StickyNote } from "lucide-react";
+import { CalendarClock, Clock, Users, Truck, Radio, StickyNote } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 export default function NextShiftCard() {
@@ -115,6 +115,21 @@ export default function NextShiftCard() {
             <p className="text-sm font-semibold mt-0.5">{nextShift.vehicle}</p>
           </div>
         </div>
+
+        {/* Call Sign */}
+        {nextShift.callSign && (
+          <div className="flex items-start gap-3">
+            <div className="size-9 rounded-lg bg-chart-3/10 flex items-center justify-center shrink-0 mt-0.5">
+              <Radio className="size-4 text-chart-3" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                Call Sign
+              </p>
+              <p className="text-sm font-semibold mt-0.5">{nextShift.callSign}</p>
+            </div>
+          </div>
+        )}
 
         {/* Notes */}
         {nextShift.notes && (

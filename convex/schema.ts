@@ -75,6 +75,7 @@ export default defineSchema({
     startTime: v.string(),
     endTime: v.string(),
     vehicle: v.string(),
+    callSign: v.optional(v.string()),
     notes: v.optional(v.string()),
     createdBy: v.id("users"),
     published: v.optional(v.boolean()),

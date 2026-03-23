@@ -30,6 +30,7 @@ type ShiftData = {
   startTime: string;
   endTime: string;
   vehicle: string;
+  callSign?: string;
   notes?: string;
   members: Array<{
     membershipId: Id<"shiftMembers">;
@@ -74,6 +75,7 @@ export default function ShiftDialog({
     return "16:00";
   });
   const [vehicle, setVehicle] = useState(() => shift?.vehicle ?? "");
+  const [callSign, setCallSign] = useState(() => shift?.callSign ?? "");
   const [notes, setNotes] = useState(() => shift?.notes ?? "");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(() => {
     if (shift) return new Set(shift.members.map((m) => m.userId));
@@ -115,6 +117,7 @@ export default function ShiftDialog({
           startTime: startDate.toISOString(),
           endTime: endDate.toISOString(),
           vehicle: vehicle.trim(),
+          callSign: callSign.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
         });
@@ -125,6 +128,7 @@ export default function ShiftDialog({
           startTime: startDate.toISOString(),
           endTime: endDate.toISOString(),
           vehicle: vehicle.trim(),
+          callSign: callSign.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
         });
@@ -209,6 +213,16 @@ export default function ShiftDialog({
               value={vehicle}
               onChange={(e) => setVehicle(e.target.value)}
               placeholder="Engine 7 — Pumper Truck"
+            />
+          </div>
+
+          {/* Call Sign */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Call Sign</Label>
+            <Input
+              value={callSign}
+              onChange={(e) => setCallSign(e.target.value)}
+              placeholder="Alpha 1, Bravo 2..."
             />
           </div>
 

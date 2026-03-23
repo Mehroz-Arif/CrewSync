@@ -139,6 +139,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         startTime: string;
         endTime: string;
         vehicle: string;
+        callSign?: string;
         notes?: string;
         members: Array<{
           membershipId: Id<"shiftMembers">;
@@ -165,6 +166,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           startTime: shift.startTime,
           endTime: shift.endTime,
           vehicle: shift.vehicle,
+          callSign: shift.callSign,
           notes: shift.notes,
           published: shift.published === true,
         });
@@ -215,6 +217,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       startTime: full.startTime,
       endTime: full.endTime,
       vehicle: full.vehicle,
+      callSign: full.callSign,
       notes: full.notes,
       members: full.members,
     });
