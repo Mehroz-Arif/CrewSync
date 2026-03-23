@@ -1,4 +1,4 @@
-import { Fragment, useState, useCallback } from "react";
+import { Fragment, useState, useCallback, useMemo } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -23,9 +23,9 @@ import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import DayCell from "./day-cell.tsx";
 import ShiftBlock from "./shift-block.tsx";
 import { ShiftBlockOverlay } from "./shift-block.tsx";
-import UnassignedPool from "./unassigned-pool.tsx";
 import type { UnassignedShift } from "./unassigned-pool.tsx";
-import { UnassignedShiftOverlay } from "./unassigned-pool.tsx";
+import { UnassignedShiftOverlay, DraggableUnassignedShift } from "./unassigned-pool.tsx";
+import { Package } from "lucide-react";
 
 type StaffMember = {
   _id: Id<"users">;
@@ -77,6 +77,18 @@ export default function ScheduleGrid({
   );
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  // Group unassigned shifts by date
+  const unassignedByDate = useMemo(() => {
+    const map = new Map<string, UnassignedShift[]>();
+    for (const shift of unassignedShifts) {
+      const dateStr = format(parseISO(shift.startTime), "yyyy-MM-dd");
+      const existing = map.get(dateStr) ?? [];
+      existing.push(shift);
+      map.set(dateStr, existing);
+    }
+    return map;
+  }, [unassignedShifts]);
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -154,21 +166,20 @@ export default function ScheduleGrid({
     [moveAssignment, assignToShift]
   );
 
+  const hasUnassigned = unassignedShifts.length > 0;
+
   return (
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      {/* Unassigned shifts pool (admin only) */}
-      {isAdmin && <UnassignedPool shifts={unassignedShifts} />}
-
       <div className="border rounded-xl overflow-hidden bg-card">
         <div className="overflow-x-auto">
           <div
-            className="grid min-w-[860px]"
+            className="grid min-w-[960px]"
             style={{
-              gridTemplateColumns: "170px repeat(7, minmax(96px, 1fr))",
+              gridTemplateColumns: "180px repeat(7, minmax(110px, 1fr))",
             }}
           >
             {/* Header row */}
@@ -200,6 +211,46 @@ export default function ScheduleGrid({
                 </div>
               </div>
             ))}
+
+            {/* Unassigned shifts row (admin only, always shown) */}
+            {isAdmin && (
+              <>
+                <div className="px-3 py-2 border-b border-r flex items-center gap-2.5 bg-amber-500/5">
+                  <div className="size-7 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+                    <Package className="size-3.5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
+                      Unassigned
+                    </div>
+                    {hasUnassigned && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {days.map((day) => {
+                  const dateStr = format(day, "yyyy-MM-dd");
+                  const dayUnassigned = unassignedByDate.get(dateStr) ?? [];
+                  return (
+                    <div
+                      key={`unassigned-${dateStr}`}
+                      className={cn(
+                        "min-h-[72px] p-1 border-b border-r bg-amber-500/[0.02]",
+                        isToday(day) && "bg-amber-500/[0.05]"
+                      )}
+                    >
+                      <div className="space-y-1">
+                        {dayUnassigned.map((shift) => (
+                          <DraggableUnassignedShift key={shift._id} shift={shift} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
 
             {/* Employee rows */}
             {staff.map((employee) => (

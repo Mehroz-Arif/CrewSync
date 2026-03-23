@@ -48,7 +48,7 @@ export default function ShiftsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       <AdminScheduleView />
     </div>
   );
