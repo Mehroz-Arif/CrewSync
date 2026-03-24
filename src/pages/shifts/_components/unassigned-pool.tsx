@@ -13,7 +13,13 @@ export type UnassignedShift = {
   notes?: string;
 };
 
-export function DraggableUnassignedShift({ shift }: { shift: UnassignedShift }) {
+export function DraggableUnassignedShift({
+  shift,
+  onClick,
+}: {
+  shift: UnassignedShift;
+  onClick?: () => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `unassigned-${shift._id}`,
@@ -32,12 +38,18 @@ export function DraggableUnassignedShift({ shift }: { shift: UnassignedShift }) 
       }
     : undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isDragging && onClick) onClick();
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
+      onClick={handleClick}
       className={cn(
         "group relative rounded-md border-l-3 px-2 py-1.5 text-[11px] select-none cursor-grab active:cursor-grabbing transition-all bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 dark:bg-amber-500/15",
         isDragging && "opacity-30 scale-95"

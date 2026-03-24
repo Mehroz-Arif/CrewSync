@@ -27,6 +27,7 @@ import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import ScheduleGrid from "./_components/schedule-grid.tsx";
 import type { CellShift } from "./_components/schedule-grid.tsx";
+import type { UnassignedShift } from "./_components/unassigned-pool.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
@@ -228,6 +229,22 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     setDialogOpen(true);
   }
 
+  function handleUnassignedShiftClick(uShift: UnassignedShift) {
+    setDialogMode("edit");
+    setDialogShift({
+      _id: uShift._id,
+      startTime: uShift.startTime,
+      endTime: uShift.endTime,
+      vehicle: uShift.vehicle,
+      callSign: uShift.callSign,
+      notes: uShift.notes,
+      members: [],
+    });
+    setDialogDate("");
+    setDialogUserId(undefined);
+    setDialogOpen(true);
+  }
+
   async function handlePublish(publish: boolean) {
     setIsPublishing(true);
     try {
@@ -379,6 +396,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         availabilityData={availabilityData}
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}
+        onUnassignedShiftClick={handleUnassignedShiftClick}
       />
 
       {/* Shift dialog */}

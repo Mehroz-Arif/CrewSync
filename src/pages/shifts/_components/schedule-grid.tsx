@@ -55,6 +55,7 @@ type ScheduleGridProps = {
   availabilityData: Map<string, "available" | "unavailable">;
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
+  onUnassignedShiftClick?: (shift: UnassignedShift) => void;
 };
 
 type ActiveDrag =
@@ -99,6 +100,7 @@ export default function ScheduleGrid({
   availabilityData,
   onCellClick,
   onShiftClick,
+  onUnassignedShiftClick,
 }: ScheduleGridProps) {
   const moveAssignment = useMutation(api.shifts.moveShiftAssignment);
   const assignToShift = useMutation(api.shifts.assignToShift);
@@ -307,7 +309,11 @@ export default function ScheduleGrid({
                       isCurrentDay={isToday(day)}
                     >
                       {dayUnassigned.map((shift) => (
-                        <DraggableUnassignedShift key={shift._id} shift={shift} />
+                        <DraggableUnassignedShift
+                          key={shift._id}
+                          shift={shift}
+                          onClick={() => onUnassignedShiftClick?.(shift)}
+                        />
                       ))}
                     </UnassignedDropCell>
                   );
