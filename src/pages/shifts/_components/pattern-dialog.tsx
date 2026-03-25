@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import {
   Dialog,
@@ -13,6 +13,13 @@ import { Input } from "@/components/ui/input.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { Spinner } from "@/components/ui/spinner.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
@@ -76,6 +83,7 @@ export default function PatternDialog({
   const createPattern = useMutation(api.shiftPatterns.create);
   const updatePattern = useMutation(api.shiftPatterns.update);
   const deletePattern = useMutation(api.shiftPatterns.remove);
+  const jobTitleOptions = useQuery(api.jobTitles.list);
 
   const [name, setName] = useState(() => pattern?.name ?? "");
   const [patternType, setPatternType] = useState<"weekly" | "rotation">(
@@ -275,13 +283,17 @@ export default function PatternDialog({
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Staff Role</Label>
             <p className="text-xs text-muted-foreground -mt-0.5">
-              The role required for this shift pattern, e.g. Ambulance Care Assistant.
+              The role required for this shift pattern.
             </p>
-            <Input
-              value={staffRole}
-              onChange={(e) => setStaffRole(e.target.value)}
-              placeholder="Ambulance Care Assistant, Emergency Care Assistant..."
-            />
+            <Select value={staffRole || "none"} onValueChange={(v) => setStaffRole(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Select staff role" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No role</SelectItem>
+                {jobTitleOptions?.map((jt) => (
+                  <SelectItem key={jt._id} value={jt.label}>{jt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Pattern Type Toggle */}
