@@ -17,6 +17,8 @@ import {
   Plus,
   Send,
   Undo2,
+  Calendar,
+  CalendarRange,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -30,6 +32,7 @@ import type { CellShift } from "./_components/schedule-grid.tsx";
 import type { UnassignedShift } from "./_components/unassigned-pool.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
+import WeeklyCalendar from "./_components/weekly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
 import VehicleAllocationsTab from "./_components/vehicle-allocations-tab.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
@@ -51,16 +54,72 @@ export default function ShiftsPage() {
   const isAdmin = currentUser?.role === "admin" && !isPreviewingAsStaff;
 
   if (!isAdmin) {
-    return (
-      <div className="max-w-7xl mx-auto">
-        <MonthlyCalendar />
-      </div>
-    );
+    return <StaffScheduleView />;
   }
 
   return (
     <div className="w-full">
       <AdminView />
+    </div>
+  );
+}
+
+/** Staff view with Week/Month toggle */
+function StaffScheduleView() {
+  const [view, setView] = useState<"week" | "month">("week");
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-5">
+      {/* Header with view toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="font-heading font-bold text-2xl md:text-3xl">
+            My Schedule
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            View your shifts and right-click any day to set your availability
+          </p>
+        </div>
+        <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
+          <Button
+            variant={view === "week" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("week")}
+            className="gap-1.5"
+          >
+            <CalendarRange className="size-4" />
+            Week
+          </Button>
+          <Button
+            variant={view === "month" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("month")}
+            className="gap-1.5"
+          >
+            <Calendar className="size-4" />
+            Month
+          </Button>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40" />
+          <span>Available</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-rose-500/20 border border-rose-500/40" />
+          <span>Unavailable</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-primary/15 border border-primary/30" />
+          <span>Shift assigned</span>
+        </div>
+      </div>
+
+      {/* View content */}
+      {view === "week" ? <WeeklyCalendar /> : <MonthlyCalendar />}
     </div>
   );
 }

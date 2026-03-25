@@ -151,14 +151,6 @@ export default function MonthlyCalendar() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <h1 className="font-heading font-bold text-2xl md:text-3xl">My Schedule</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          View your shifts and right-click any day to set your availability
-        </p>
-      </div>
-
       {/* Month navigator */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth((m) => subMonths(m, 1))}>
@@ -176,22 +168,6 @@ export default function MonthlyCalendar() {
             Today
           </Button>
         )}
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40" />
-          <span>Available</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-rose-500/20 border border-rose-500/40" />
-          <span>Unavailable</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-primary/15 border border-primary/30" />
-          <span>Shift assigned</span>
-        </div>
       </div>
 
       {/* Calendar grid */}
