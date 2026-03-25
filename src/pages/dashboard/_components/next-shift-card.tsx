@@ -1,8 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
-import { CalendarClock, Clock, Users, Truck, Radio, StickyNote } from "lucide-react";
+import { CalendarClock, Clock, Truck, Radio, StickyNote } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 export default function NextShiftCard() {
@@ -79,55 +78,6 @@ export default function NextShiftCard() {
             <p className="text-sm text-foreground">
               {format(startDate, "h:mm a")} &ndash; {format(endDate, "h:mm a")}
             </p>
-          </div>
-        </div>
-
-        {/* Crew Mates */}
-        <div className="flex items-start gap-3">
-          <div className="size-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
-            <Users className="size-4 text-accent" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              Crew Mates
-            </p>
-            {nextShift.crew.length === 0 ? (
-              <p className="text-xs text-muted-foreground mt-1">
-                No other crew members assigned
-              </p>
-            ) : (
-              <div className="space-y-1.5 mt-1.5">
-                {nextShift.crew.map((member) => {
-                  const initials = (member.name ?? "?")
-                    .split(" ")
-                    .map((n: string) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase();
-                  return (
-                    <div
-                      key={member._id}
-                      className="flex items-center gap-2.5 rounded-lg bg-muted/50 px-2.5 py-2"
-                    >
-                      <Avatar className="size-7">
-                        <AvatarImage src={member.avatarUrl} />
-                        <AvatarFallback className="text-[10px] font-semibold bg-primary/10 text-primary">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold truncate">{member.name}</p>
-                        {member.positions.length > 0 && (
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            {member.positions.join(", ")}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
 
