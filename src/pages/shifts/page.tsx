@@ -31,6 +31,7 @@ import type { UnassignedShift } from "./_components/unassigned-pool.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
+import VehicleAllocationsTab from "./_components/vehicle-allocations-tab.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 import { buildRoleColorMap } from "./_lib/role-colors.ts";
 
@@ -85,12 +86,16 @@ function AdminView() {
         </h1>
         <TabsList>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
           <TabsTrigger value="patterns">Patterns</TabsTrigger>
         </TabsList>
       </div>
 
       <TabsContent value="schedule" className="mt-0">
         <AdminScheduleView staff={staff} />
+      </TabsContent>
+      <TabsContent value="vehicles" className="mt-0">
+        <VehicleAllocationsTab />
       </TabsContent>
       <TabsContent value="patterns" className="mt-0">
         <PatternsTab staff={staff} />

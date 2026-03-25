@@ -255,4 +255,14 @@ export default defineSchema({
       v.literal("gem")
     ),
   }).index("by_recipient", ["recipientId"]),
+
+  vehicleAllocations: defineTable({
+    date: v.string(), // "YYYY-MM-DD"
+    callSign: v.string(),
+    vehicle: v.string(),
+    notes: v.optional(v.string()),
+    createdBy: v.id("users"),
+  })
+    .index("by_date", ["date"])
+    .index("by_date_and_callSign", ["date", "callSign"]),
 });
