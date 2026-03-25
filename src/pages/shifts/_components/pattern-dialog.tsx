@@ -51,6 +51,7 @@ type PatternData = {
   vehicle: string;
   notes?: string;
   memberIds: Id<"users">[];
+  crewNumber?: number;
   active: boolean;
 };
 
@@ -109,6 +110,7 @@ export default function PatternDialog({
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
     () => new Set(pattern?.memberIds ?? [])
   );
+  const [crewNumber, setCrewNumber] = useState(() => pattern?.crewNumber ?? 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
 
@@ -190,6 +192,7 @@ export default function PatternDialog({
           vehicle: vehicle.trim(),
           notes: notes.trim() || undefined,
           memberIds,
+          crewNumber,
         });
         toast.success("Pattern created");
       } else if (pattern) {
@@ -209,6 +212,7 @@ export default function PatternDialog({
           vehicle: vehicle.trim(),
           notes: notes.trim() || undefined,
           memberIds,
+          crewNumber,
         });
         toast.success("Pattern updated");
       }
@@ -420,6 +424,21 @@ export default function PatternDialog({
               value={vehicle}
               onChange={(e) => setVehicle(e.target.value)}
               placeholder="Engine 7 — Pumper Truck"
+            />
+          </div>
+
+          {/* Crew Number */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Crew Number</Label>
+            <p className="text-xs text-muted-foreground -mt-0.5">
+              How many separate shifts to create per day. E.g. 2 = two shift slots on the schedule.
+            </p>
+            <Input
+              type="number"
+              min={1}
+              max={10}
+              value={crewNumber}
+              onChange={(e) => setCrewNumber(Math.max(1, parseInt(e.target.value) || 1))}
             />
           </div>
 

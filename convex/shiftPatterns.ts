@@ -53,6 +53,7 @@ export const create = mutation({
     vehicle: v.string(),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
+    crewNumber: v.optional(v.number()),
     // Effective date range (optional for all pattern types)
     effectiveStartDate: v.optional(v.string()),
     effectiveEndDate: v.optional(v.string()),
@@ -113,6 +114,7 @@ export const create = mutation({
       vehicle: args.vehicle,
       notes: args.notes,
       memberIds: args.memberIds,
+      crewNumber: args.crewNumber ?? 1,
       createdBy: user._id,
       active: true,
     });
@@ -137,6 +139,7 @@ export const update = mutation({
     vehicle: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.optional(v.array(v.id("users"))),
+    crewNumber: v.optional(v.number()),
     active: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -173,6 +176,7 @@ export const update = mutation({
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
     if (fields.notes !== undefined) patch.notes = fields.notes;
     if (fields.memberIds !== undefined) patch.memberIds = fields.memberIds;
+    if (fields.crewNumber !== undefined) patch.crewNumber = fields.crewNumber;
     if (fields.active !== undefined) patch.active = fields.active;
 
     if (Object.keys(patch).length > 0) {
@@ -340,41 +344,57 @@ export const applyToWeek = mutation({
         }
         const endISO = endDate.toISOString();
 
-        // Duplicate check: same vehicle + same start/end on this day
+        // Check how many matching shifts already exist for this vehicle+time
         const existingShifts = await ctx.db
           .query("shifts")
           .withIndex("by_start_time", (q) => q.eq("startTime", startISO))
           .collect();
 
-        const isDuplicate = existingShifts.some(
+        const matchingExisting = existingShifts.filter(
           (s) => s.endTime === endISO && s.vehicle === pattern.vehicle
         );
 
-        if (isDuplicate) {
+        const crewCount = pattern.crewNumber ?? 1;
+        const shiftsToCreate = crewCount - matchingExisting.length;
+
+        if (shiftsToCreate <= 0) {
           skippedDuplicates++;
           continue;
         }
 
-        // Create the shift
-        const shiftId = await ctx.db.insert("shifts", {
-          startTime: startISO,
-          endTime: endISO,
-          vehicle: pattern.vehicle,
-          notes: pattern.notes,
-          createdBy: user._id,
+        // Distribute members across all shifts (existing + new)
+        const memberChunks: Id<"users">[][] = Array.from(
+          { length: crewCount },
+          () => []
+        );
+        pattern.memberIds.forEach((memberId, idx) => {
+          memberChunks[idx % crewCount].push(memberId);
         });
 
-        // Assign members, skipping those with overlaps
-        for (const memberId of pattern.memberIds) {
-          try {
-            await checkUserShiftOverlap(ctx, memberId, startISO, endISO);
-            await ctx.db.insert("shiftMembers", { shiftId, userId: memberId });
-          } catch {
-            skippedOverlaps++;
-          }
-        }
+        // Create the needed shifts
+        for (let si = 0; si < shiftsToCreate; si++) {
+          const slotIndex = matchingExisting.length + si;
+          const shiftId = await ctx.db.insert("shifts", {
+            startTime: startISO,
+            endTime: endISO,
+            vehicle: pattern.vehicle,
+            notes: pattern.notes,
+            createdBy: user._id,
+          });
 
-        created++;
+          // Assign the members allocated to this slot
+          const slotMembers = memberChunks[slotIndex] ?? [];
+          for (const memberId of slotMembers) {
+            try {
+              await checkUserShiftOverlap(ctx, memberId, startISO, endISO);
+              await ctx.db.insert("shiftMembers", { shiftId, userId: memberId });
+            } catch {
+              skippedOverlaps++;
+            }
+          }
+
+          created++;
+        }
       }
     }
 

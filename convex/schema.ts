@@ -144,6 +144,7 @@ export default defineSchema({
     vehicle: v.string(),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
+    crewNumber: v.optional(v.number()), // How many shifts to create per day (e.g. 2 = two separate shifts)
     createdBy: v.id("users"),
     active: v.boolean(),
   }),
