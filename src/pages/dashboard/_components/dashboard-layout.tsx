@@ -126,16 +126,16 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       )}
 
       {/* Logo */}
-      <div className="p-5 border-b">
-        <a href="/" className="flex items-center gap-3">
+      <div className="p-4 border-b flex items-center justify-center">
+        <a href="/" className="flex items-center justify-center">
           {organization?.logoUrl ? (
             <img
               src={organization.logoUrl}
               alt={`${organization.name} logo`}
-              className="h-10 max-w-[200px] object-contain"
+              className="h-14 max-w-[220px] object-contain"
             />
           ) : (
-            <>
+            <div className="flex items-center gap-3">
               <div className="size-11 rounded-xl bg-primary flex items-center justify-center shrink-0">
                 <span className="text-primary-foreground font-heading font-black text-sm">
                   CS
@@ -144,7 +144,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               <span className="font-heading font-bold text-lg tracking-tight text-foreground truncate">
                 {organization?.name ?? "CrewSync"}
               </span>
-            </>
+            </div>
           )}
         </a>
       </div>
