@@ -59,7 +59,7 @@ type ScheduleGridProps = {
 };
 
 type ActiveDrag =
-  | { type: "shift"; startTime: string; endTime: string; vehicle: string; sourceDate: string; published: boolean }
+  | { type: "shift"; startTime: string; endTime: string; vehicle: string; callSign?: string; sourceDate: string; published: boolean }
   | { type: "unassigned"; shift: UnassignedShift };
 
 /** Droppable cell for the unassigned row */
@@ -160,6 +160,7 @@ export default function ScheduleGrid({
           startTime: String(d.startTime),
           endTime: String(d.endTime),
           vehicle: String(d.vehicle),
+          callSign: d.callSign ? String(d.callSign) : undefined,
           sourceDate: String(d.sourceDate),
           published: Boolean(d.published),
         });
@@ -415,6 +416,7 @@ export default function ScheduleGrid({
             startTime={activeDrag.startTime}
             endTime={activeDrag.endTime}
             vehicle={activeDrag.vehicle}
+            callSign={activeDrag.callSign}
           />
         ) : activeDrag?.type === "unassigned" ? (
           <UnassignedShiftOverlay shift={activeDrag.shift} />

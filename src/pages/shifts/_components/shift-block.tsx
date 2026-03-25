@@ -62,6 +62,7 @@ export default function ShiftBlock({
         startTime,
         endTime,
         vehicle,
+        callSign,
         published,
       },
       disabled: !isAdmin,
@@ -159,10 +160,12 @@ export function ShiftBlockOverlay({
   startTime,
   endTime,
   vehicle,
+  callSign,
 }: {
   startTime: string;
   endTime: string;
   vehicle: string;
+  callSign?: string;
 }) {
   return (
     <div
@@ -177,7 +180,7 @@ export function ShiftBlockOverlay({
       </div>
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
-        <span className="truncate">{vehicle}</span>
+        <span className="truncate">{callSign || vehicle}</span>
       </div>
     </div>
   );

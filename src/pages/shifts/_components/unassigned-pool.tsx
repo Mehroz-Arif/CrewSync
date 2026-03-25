@@ -63,7 +63,7 @@ export function DraggableUnassignedShift({
       </div>
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
-        <span className="truncate">{shift.vehicle}</span>
+        <span className="truncate">{shift.callSign || shift.vehicle}</span>
       </div>
     </div>
   );
@@ -78,7 +78,7 @@ export function UnassignedShiftOverlay({ shift }: { shift: UnassignedShift }) {
       </div>
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
-        <span className="truncate">{shift.vehicle}</span>
+        <span className="truncate">{shift.callSign || shift.vehicle}</span>
       </div>
     </div>
   );
