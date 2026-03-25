@@ -54,13 +54,14 @@ type ScheduleGridProps = {
   isAdmin: boolean;
   unassignedShifts: UnassignedShift[];
   availabilityData: Map<string, "available" | "unavailable">;
+  roleColorMap: Record<string, string>; // staffRole label → hex colour
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
   onUnassignedShiftClick?: (shift: UnassignedShift) => void;
 };
 
 type ActiveDrag =
-  | { type: "shift"; startTime: string; endTime: string; vehicle: string; callSign?: string; sourceDate: string; published: boolean }
+  | { type: "shift"; startTime: string; endTime: string; vehicle: string; callSign?: string; staffRole?: string; sourceDate: string; published: boolean }
   | { type: "unassigned"; shift: UnassignedShift };
 
 /** Droppable cell for the unassigned row */
@@ -109,6 +110,7 @@ export default function ScheduleGrid({
   isAdmin,
   unassignedShifts,
   availabilityData,
+  roleColorMap,
   onCellClick,
   onShiftClick,
   onUnassignedShiftClick,
@@ -156,6 +158,7 @@ export default function ScheduleGrid({
           endTime: String(d.endTime),
           vehicle: String(d.vehicle),
           callSign: d.callSign ? String(d.callSign) : undefined,
+          staffRole: d.staffRole ? String(d.staffRole) : undefined,
           sourceDate: String(d.sourceDate),
           published: Boolean(d.published),
         });
@@ -331,6 +334,7 @@ export default function ScheduleGrid({
                         <DraggableUnassignedGroup
                           key={group.key}
                           group={group}
+                          roleColor={group.staffRole ? roleColorMap[group.staffRole] : undefined}
                           onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
                         />
                       ))}
@@ -389,6 +393,7 @@ export default function ScheduleGrid({
                           vehicle={shift.vehicle}
                           callSign={shift.callSign}
                           staffRole={shift.staffRole}
+                          roleColor={shift.staffRole ? roleColorMap[shift.staffRole] : undefined}
                           sourceDate={dateStr}
                           isAdmin={isAdmin}
                           published={shift.published}
@@ -413,9 +418,13 @@ export default function ScheduleGrid({
             endTime={activeDrag.endTime}
             vehicle={activeDrag.vehicle}
             callSign={activeDrag.callSign}
+            roleColor={activeDrag.staffRole ? roleColorMap[activeDrag.staffRole] : undefined}
           />
         ) : activeDrag?.type === "unassigned" ? (
-          <UnassignedShiftOverlay shift={activeDrag.shift} />
+          <UnassignedShiftOverlay
+            shift={activeDrag.shift}
+            roleColor={activeDrag.shift.staffRole ? roleColorMap[activeDrag.shift.staffRole] : undefined}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>

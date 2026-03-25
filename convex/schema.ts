@@ -226,6 +226,7 @@ export default defineSchema({
 
   jobTitles: defineTable({
     label: v.string(), // Display label e.g. "Paramedic"
+    color: v.optional(v.string()), // Hex colour e.g. "#3b82f6"
     sortOrder: v.number(), // For custom ordering
     active: v.boolean(),
   }),

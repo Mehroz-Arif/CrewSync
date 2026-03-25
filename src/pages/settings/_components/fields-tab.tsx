@@ -11,6 +11,11 @@ import { Badge } from "@/components/ui/badge.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Spinner } from "@/components/ui/spinner.tsx";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover.tsx";
+import {
   Plus,
   Pencil,
   Trash2,
@@ -21,8 +26,25 @@ import {
   EyeOff,
   Eye,
   Briefcase,
+  Palette,
 } from "lucide-react";
 import { ConvexError } from "convex/values";
+import { cn } from "@/lib/utils.ts";
+
+const COLOR_PRESETS = [
+  { id: "blue", hex: "#3b82f6" },
+  { id: "red", hex: "#ef4444" },
+  { id: "green", hex: "#22c55e" },
+  { id: "purple", hex: "#a855f7" },
+  { id: "orange", hex: "#f97316" },
+  { id: "teal", hex: "#14b8a6" },
+  { id: "pink", hex: "#ec4899" },
+  { id: "indigo", hex: "#6366f1" },
+  { id: "amber", hex: "#f59e0b" },
+  { id: "cyan", hex: "#06b6d4" },
+  { id: "slate", hex: "#64748b" },
+  { id: "rose", hex: "#f43f5e" },
+] as const;
 
 export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
   const jobTitles = useQuery(api.jobTitles.listAll);
@@ -32,6 +54,7 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
   const reorderTitles = useMutation(api.jobTitles.reorder);
 
   const [newLabel, setNewLabel] = useState("");
+  const [newColor, setNewColor] = useState<string>(COLOR_PRESETS[0].hex);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<Id<"jobTitles"> | null>(null);
   const [editLabel, setEditLabel] = useState("");
@@ -49,7 +72,7 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
     if (!newLabel.trim()) return;
     setAdding(true);
     try {
-      await createTitle({ label: newLabel.trim() });
+      await createTitle({ label: newLabel.trim(), color: newColor });
       setNewLabel("");
       toast.success("Job title added");
     } catch (error) {
@@ -77,6 +100,15 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
       } else {
         toast.error("Failed to update");
       }
+    }
+  };
+
+  const handleColorChange = async (id: Id<"jobTitles">, color: string) => {
+    try {
+      await updateTitle({ id, color });
+      toast.success("Colour updated");
+    } catch {
+      toast.error("Failed to update colour");
     }
   };
 
@@ -128,7 +160,6 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
-      {/* Job Titles */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -136,14 +167,14 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
             Job Titles
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Manage the dropdown options available when setting a team member's job title.
+            Manage the dropdown options and colours for job titles. Colours are used on shift blocks and pattern cards.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add new */}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <Label className="sr-only">New job title</Label>
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-xs">New job title</Label>
               <Input
                 placeholder="e.g. Paramedic, Driver, Care Assistant"
                 value={newLabel}
@@ -156,6 +187,10 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                 }}
               />
             </div>
+            <ColorPicker
+              value={newColor}
+              onChange={setNewColor}
+            />
             <Button onClick={handleCreate} disabled={adding || !newLabel.trim()} size="sm" className="gap-1.5">
               {adding ? <Spinner className="size-4" /> : <Plus className="size-4" />}
               Add
@@ -194,6 +229,12 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                     </button>
                   </div>
 
+                  {/* Colour dot */}
+                  <ColorPicker
+                    value={title.color ?? "#64748b"}
+                    onChange={(c) => handleColorChange(title._id, c)}
+                  />
+
                   {/* Label (editable or display) */}
                   {editingId === title._id ? (
                     <div className="flex-1 flex gap-2 items-center">
@@ -218,7 +259,7 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                       </Button>
                     </div>
                   ) : (
-                    <span className={`flex-1 text-sm ${!title.active ? "text-muted-foreground line-through" : ""}`}>
+                    <span className={cn("flex-1 text-sm", !title.active && "text-muted-foreground line-through")}>
                       {title.label}
                     </span>
                   )}
@@ -271,5 +312,46 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/** Compact colour picker using a popover with preset swatches */
+function ColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="size-8 rounded-md border-2 border-border shrink-0 transition-all hover:scale-110 hover:shadow-md flex items-center justify-center"
+          style={{ backgroundColor: value }}
+          title="Pick colour"
+        >
+          <Palette className="size-3.5 text-white drop-shadow-sm" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3" align="start">
+        <p className="text-xs font-medium text-muted-foreground mb-2">Pick a colour</p>
+        <div className="grid grid-cols-6 gap-1.5">
+          {COLOR_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onChange(preset.hex)}
+              className={cn(
+                "size-7 rounded-md border-2 transition-all hover:scale-110",
+                value === preset.hex ? "border-foreground ring-1 ring-foreground" : "border-transparent",
+              )}
+              style={{ backgroundColor: preset.hex }}
+            />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

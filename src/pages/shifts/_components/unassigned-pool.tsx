@@ -2,6 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { format, parseISO } from "date-fns";
 import { Truck, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
+import { roleColorStyles } from "../_lib/role-colors.ts";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
 export type UnassignedShift = {
@@ -22,6 +23,7 @@ export type UnassignedGroup = {
   endTime: string;
   vehicle: string;
   callSign?: string;
+  staffRole?: string;
 };
 
 /** Group unassigned shifts by date → pattern signature */
@@ -53,6 +55,7 @@ export function groupUnassignedShifts(shifts: UnassignedShift[]): Map<string, Un
         endTime: first.endTime,
         vehicle: first.vehicle,
         callSign: first.callSign,
+        staffRole: first.staffRole,
       });
     }
     result.set(dateStr, groups);
@@ -62,9 +65,11 @@ export function groupUnassignedShifts(shifts: UnassignedShift[]): Map<string, Un
 
 export function DraggableUnassignedGroup({
   group,
+  roleColor,
   onClick,
 }: {
   group: UnassignedGroup;
+  roleColor?: string;
   onClick?: () => void;
 }) {
   // Use the first shift in the group as the draggable item
@@ -94,15 +99,18 @@ export function DraggableUnassignedGroup({
     if (!isDragging && onClick) onClick();
   };
 
+  const colorHex = roleColor ?? "#f59e0b"; // amber fallback for unassigned
+  const colorStyle = roleColorStyles(colorHex);
+
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, ...colorStyle }}
       {...attributes}
       {...listeners}
       onClick={handleClick}
       className={cn(
-        "group relative rounded-md border-l-3 px-2 py-1.5 text-[11px] select-none cursor-grab active:cursor-grabbing transition-all bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 dark:bg-amber-500/15",
+        "group relative rounded-md border-l-3 px-2 py-1.5 text-[11px] select-none cursor-grab active:cursor-grabbing transition-all",
         isDragging && "opacity-30 scale-95"
       )}
     >
@@ -114,7 +122,10 @@ export function DraggableUnassignedGroup({
           {format(parseISO(first.startTime), "HH:mm")} – {format(parseISO(first.endTime), "HH:mm")}
         </span>
         {count > 1 && (
-          <span className="shrink-0 inline-flex items-center justify-center size-4 rounded-full bg-amber-500/20 text-[9px] font-bold text-amber-700 dark:text-amber-300">
+          <span
+            className="shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[9px] font-bold"
+            style={{ backgroundColor: `${colorHex}30`, color: colorHex }}
+          >
             {count}
           </span>
         )}
@@ -130,9 +141,21 @@ export function DraggableUnassignedGroup({
 }
 
 /** Overlay shown while dragging an unassigned shift */
-export function UnassignedShiftOverlay({ shift }: { shift: UnassignedShift }) {
+export function UnassignedShiftOverlay({
+  shift,
+  roleColor,
+}: {
+  shift: UnassignedShift;
+  roleColor?: string;
+}) {
+  const colorHex = roleColor ?? "#f59e0b";
+  const colorStyle = roleColorStyles(colorHex);
+
   return (
-    <div className="rounded-md border-l-3 px-2 py-1.5 text-[11px] shadow-xl ring-2 ring-amber-500/30 bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300">
+    <div
+      className="rounded-md border-l-3 px-2 py-1.5 text-[11px] shadow-xl ring-2 ring-primary/30"
+      style={colorStyle}
+    >
       <div className="font-semibold truncate leading-tight">
         {format(parseISO(shift.startTime), "HH:mm")} – {format(parseISO(shift.endTime), "HH:mm")}
       </div>

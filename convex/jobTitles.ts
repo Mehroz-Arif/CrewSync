@@ -25,6 +25,7 @@ export const listAll = query({
 export const create = mutation({
   args: {
     label: v.string(),
+    color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -45,6 +46,7 @@ export const create = mutation({
 
     return await ctx.db.insert("jobTitles", {
       label: args.label.trim(),
+      color: args.color,
       sortOrder: maxOrder + 1,
       active: true,
     });
@@ -56,6 +58,7 @@ export const update = mutation({
   args: {
     id: v.id("jobTitles"),
     label: v.optional(v.string()),
+    color: v.optional(v.string()),
     active: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -73,6 +76,7 @@ export const update = mutation({
 
     const patch: Record<string, string | boolean> = {};
     if (args.label !== undefined) patch.label = args.label.trim();
+    if (args.color !== undefined) patch.color = args.color;
     if (args.active !== undefined) patch.active = args.active;
 
     await ctx.db.patch(args.id, patch);

@@ -32,6 +32,7 @@ import ShiftDialog from "./_components/shift-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
+import { buildRoleColorMap } from "./_lib/role-colors.ts";
 
 export default function ShiftsPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
@@ -112,6 +113,10 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   );
 
   const weekEnd = addWeeks(weekStart, 1);
+
+  // Query job titles for role colour map
+  const jobTitles = useQuery(api.jobTitles.list);
+  const roleColorMap = useMemo(() => buildRoleColorMap(jobTitles), [jobTitles]);
 
   // Auto-apply active patterns when the viewed week changes
   const applyToWeek = useMutation(api.shiftPatterns.applyToWeek);
@@ -420,6 +425,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         isAdmin={true}
         unassignedShifts={unassigned}
         availabilityData={availabilityData}
+        roleColorMap={roleColorMap}
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}
         onUnassignedShiftClick={handleUnassignedShiftClick}

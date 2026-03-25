@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
 import { Truck, Send, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
+import { roleColorStyles } from "../_lib/role-colors.ts";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -18,26 +19,13 @@ type ShiftBlockProps = {
   vehicle: string;
   callSign?: string;
   staffRole?: string;
+  roleColor?: string; // hex colour from job title
   sourceDate: string;
   isAdmin: boolean;
   published: boolean;
   onClick: () => void;
   onUnassign?: () => void;
 };
-
-/** Color-code based on vehicle type keywords */
-function getShiftColor(vehicle: string) {
-  const v = vehicle.toLowerCase();
-  if (v.includes("engine") || v.includes("pumper"))
-    return "bg-primary/15 border-primary/30 text-primary dark:bg-primary/20";
-  if (v.includes("ambulance") || v.includes("ems") || v.includes("medic"))
-    return "bg-chart-5/15 border-chart-5/30 text-chart-5 dark:bg-chart-5/20";
-  if (v.includes("ladder") || v.includes("aerial"))
-    return "bg-accent/15 border-accent/30 text-accent dark:bg-accent/20";
-  if (v.includes("rescue") || v.includes("hazmat"))
-    return "bg-chart-3/15 border-chart-3/30 text-chart-3 dark:bg-chart-3/20";
-  return "bg-chart-4/15 border-chart-4/30 text-chart-4 dark:bg-chart-4/20";
-}
 
 export default function ShiftBlock({
   membershipId,
@@ -47,6 +35,7 @@ export default function ShiftBlock({
   vehicle,
   callSign,
   staffRole,
+  roleColor,
   sourceDate,
   isAdmin,
   published,
@@ -65,6 +54,7 @@ export default function ShiftBlock({
         endTime,
         vehicle,
         callSign,
+        staffRole,
         published,
       },
       disabled: !isAdmin,
@@ -74,9 +64,12 @@ export default function ShiftBlock({
     ? { transform: CSS.Translate.toString(transform) }
     : undefined;
 
+  // Use role colour if available, otherwise fall back to default
+  const colorHex = roleColor ?? "#64748b";
+  const colorStyle = roleColorStyles(colorHex);
+
   const blockClassName = cn(
     "group/block relative rounded-md border-l-3 px-2 py-1.5 text-[11px] select-none transition-all",
-    getShiftColor(vehicle),
     isDragging && "opacity-30 scale-95",
     isAdmin && "cursor-grab active:cursor-grabbing",
     !isAdmin && "cursor-pointer",
@@ -123,7 +116,7 @@ export default function ShiftBlock({
         <ContextMenuTrigger asChild>
           <div
             ref={setNodeRef}
-            style={style}
+            style={{ ...style, ...colorStyle }}
             {...attributes}
             {...listeners}
             className={blockClassName}
@@ -151,7 +144,7 @@ export default function ShiftBlock({
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, ...colorStyle }}
       {...attributes}
       {...listeners}
       className={blockClassName}
@@ -168,18 +161,21 @@ export function ShiftBlockOverlay({
   endTime,
   vehicle,
   callSign,
+  roleColor,
 }: {
   startTime: string;
   endTime: string;
   vehicle: string;
   callSign?: string;
+  roleColor?: string;
 }) {
+  const colorHex = roleColor ?? "#64748b";
+  const colorStyle = roleColorStyles(colorHex);
+
   return (
     <div
-      className={cn(
-        "rounded-md border-l-3 px-2 py-1.5 text-[11px] shadow-xl ring-2 ring-primary/30",
-        getShiftColor(vehicle)
-      )}
+      className="rounded-md border-l-3 px-2 py-1.5 text-[11px] shadow-xl ring-2 ring-primary/30"
+      style={colorStyle}
     >
       <div className="font-semibold truncate leading-tight">
         {format(parseISO(startTime), "HH:mm")} –{" "}

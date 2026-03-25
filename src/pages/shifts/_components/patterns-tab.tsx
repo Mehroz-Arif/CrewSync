@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import {
@@ -41,6 +41,7 @@ import { ConvexError } from "convex/values";
 import { cn } from "@/lib/utils.ts";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import PatternDialog from "./pattern-dialog.tsx";
+import { buildRoleColorMap } from "../_lib/role-colors.ts";
 
 const DAY_LABELS: Record<number, string> = {
   1: "Mon",
@@ -85,6 +86,8 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
   const patterns = useQuery(api.shiftPatterns.list);
   const applyToWeek = useMutation(api.shiftPatterns.applyToWeek);
   const toggleActive = useMutation(api.shiftPatterns.toggleActive);
+  const jobTitles = useQuery(api.jobTitles.list);
+  const roleColorMap = useMemo(() => buildRoleColorMap(jobTitles), [jobTitles]);
 
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -265,6 +268,7 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
             <PatternCard
               key={pattern._id}
               pattern={pattern}
+              roleColor={pattern.staffRole ? roleColorMap[pattern.staffRole] : undefined}
               onEdit={() => handleEdit(pattern)}
               onToggle={() => handleToggle(pattern._id)}
             />
@@ -287,19 +291,22 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
 
 function PatternCard({
   pattern,
+  roleColor,
   onEdit,
   onToggle,
 }: {
   pattern: PatternWithMembers;
+  roleColor?: string;
   onEdit: () => void;
   onToggle: () => void;
 }) {
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md",
+        "cursor-pointer transition-all hover:shadow-md border-l-4",
         !pattern.active && "opacity-60"
       )}
+      style={roleColor ? { borderLeftColor: roleColor } : { borderLeftColor: "transparent" }}
       onClick={onEdit}
     >
       <CardHeader className="pb-3">
@@ -407,7 +414,12 @@ function PatternCard({
           {pattern.staffRole && (
             <div className="flex items-center gap-2">
               <ShieldCheck className="size-3 shrink-0" />
-              <span className="truncate font-semibold text-foreground">{pattern.staffRole}</span>
+              <span
+                className="truncate font-semibold"
+                style={roleColor ? { color: roleColor } : undefined}
+              >
+                {pattern.staffRole}
+              </span>
             </div>
           )}
           {(pattern.crewNumber ?? 1) > 1 && (
