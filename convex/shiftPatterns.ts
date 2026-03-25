@@ -205,9 +205,23 @@ export const update = mutation({
       )
       .collect();
 
-    const linkedShifts = futureShifts.filter(
-      (s) => s.patternId === patternId
-    );
+    // Match shifts by patternId OR by old pattern signature (for pre-existing shifts)
+    const linkedShifts = futureShifts.filter((s) => {
+      if (s.patternId === patternId) return true;
+
+      // For shifts without a patternId, match via the OLD pattern signature
+      if (!s.patternId && existing) {
+        const startHHmm = new Date(s.startTime).toISOString().slice(11, 16);
+        const endHHmm = new Date(s.endTime).toISOString().slice(11, 16);
+        return (
+          startHHmm === existing.startTime &&
+          endHHmm === existing.endTime &&
+          (s.vehicle ?? "") === (existing.vehicle ?? "") &&
+          (s.callSign ?? "") === (existing.callSign ?? "")
+        );
+      }
+      return false;
+    });
 
     // Update shift properties to match the updated pattern
     for (const shift of linkedShifts) {
@@ -226,6 +240,7 @@ export const update = mutation({
         callSign: updatedPattern.callSign,
         position: updatedPattern.position,
         notes: updatedPattern.notes,
+        patternId: patternId, // Backfill link for future syncs
       });
     }
 
