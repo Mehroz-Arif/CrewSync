@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import {
@@ -112,6 +112,28 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   );
 
   const weekEnd = addWeeks(weekStart, 1);
+
+  // Auto-apply active patterns when the viewed week changes
+  const applyToWeek = useMutation(api.shiftPatterns.applyToWeek);
+  const appliedWeeksRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const weekKey = weekStart.toISOString();
+    if (appliedWeeksRef.current.has(weekKey)) return;
+    appliedWeeksRef.current.add(weekKey);
+
+    applyToWeek({ weekStartISO: weekKey })
+      .then((result) => {
+        if (result.created > 0) {
+          toast.success(
+            `Auto-applied patterns: ${result.created} shift${result.created !== 1 ? "s" : ""} created`
+          );
+        }
+      })
+      .catch(() => {
+        // Silently ignore — no active patterns or other expected errors
+      });
+  }, [weekStart, applyToWeek]);
 
   const shifts = useQuery(api.shifts.getShiftsByDateRange, {
     startDate: weekStart.toISOString(),
