@@ -145,6 +145,7 @@ export const create = mutation({
     endTime: v.string(),
     vehicle: v.string(),
     callSign: v.optional(v.string()),
+    staffRole: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
   },
@@ -173,6 +174,7 @@ export const create = mutation({
       endTime: args.endTime,
       vehicle: args.vehicle,
       callSign: args.callSign,
+      staffRole: args.staffRole,
       notes: args.notes,
       createdBy: currentUser._id,
     });
@@ -192,6 +194,7 @@ export const update = mutation({
     endTime: v.optional(v.string()),
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
+    staffRole: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.optional(v.array(v.id("users"))),
   },
@@ -235,11 +238,12 @@ export const update = mutation({
       await checkUserShiftOverlap(ctx, uid, finalStartTime, finalEndTime, shiftId);
     }
 
-    const patch: { startTime?: string; endTime?: string; vehicle?: string; callSign?: string; notes?: string } = {};
+    const patch: { startTime?: string; endTime?: string; vehicle?: string; callSign?: string; staffRole?: string; notes?: string } = {};
     if (fields.startTime !== undefined) patch.startTime = fields.startTime;
     if (fields.endTime !== undefined) patch.endTime = fields.endTime;
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
     if (fields.callSign !== undefined) patch.callSign = fields.callSign;
+    if (fields.staffRole !== undefined) patch.staffRole = fields.staffRole;
     if (fields.notes !== undefined) patch.notes = fields.notes;
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(shiftId, patch);
@@ -361,6 +365,7 @@ export const moveShiftAssignment = mutation({
       endTime: newEnd,
       vehicle: shift.vehicle,
       callSign: shift.callSign,
+      staffRole: shift.staffRole,
       notes: shift.notes,
       createdBy: shift.createdBy,
     });

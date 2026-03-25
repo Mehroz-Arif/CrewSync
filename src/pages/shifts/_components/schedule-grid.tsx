@@ -42,6 +42,7 @@ export type CellShift = {
   endTime: string;
   vehicle: string;
   callSign?: string;
+  staffRole?: string;
   notes?: string;
   published: boolean;
 };
@@ -387,6 +388,7 @@ export default function ScheduleGrid({
                           endTime={shift.endTime}
                           vehicle={shift.vehicle}
                           callSign={shift.callSign}
+                          staffRole={shift.staffRole}
                           sourceDate={dateStr}
                           isAdmin={isAdmin}
                           published={shift.published}

@@ -17,6 +17,7 @@ type ShiftBlockProps = {
   endTime: string;
   vehicle: string;
   callSign?: string;
+  staffRole?: string;
   sourceDate: string;
   isAdmin: boolean;
   published: boolean;
@@ -45,6 +46,7 @@ export default function ShiftBlock({
   endTime,
   vehicle,
   callSign,
+  staffRole,
   sourceDate,
   isAdmin,
   published,
@@ -101,6 +103,11 @@ export default function ShiftBlock({
         <Truck className="size-2.5 shrink-0" />
         <span className="truncate">{callSign || vehicle}</span>
       </div>
+      {staffRole && (
+        <div className="text-[10px] opacity-75 truncate mt-0.5 font-medium">
+          {staffRole}
+        </div>
+      )}
       {!published && isAdmin && (
         <div className="text-[9px] uppercase tracking-wider opacity-50 mt-0.5 font-medium">
           Draft

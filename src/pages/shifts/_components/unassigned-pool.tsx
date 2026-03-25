@@ -10,6 +10,7 @@ export type UnassignedShift = {
   endTime: string;
   vehicle: string;
   callSign?: string;
+  staffRole?: string;
   notes?: string;
 };
 

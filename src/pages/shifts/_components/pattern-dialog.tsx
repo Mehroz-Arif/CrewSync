@@ -33,6 +33,7 @@ type StaffMember = {
   _id: Id<"users">;
   name?: string;
   role?: string;
+  jobTitle?: string;
 };
 
 type PatternData = {
@@ -50,6 +51,7 @@ type PatternData = {
   endTime: string;
   vehicle?: string;
   callSign?: string;
+  staffRole?: string;
   notes?: string;
   memberIds: Id<"users">[];
   crewNumber?: number;
@@ -108,6 +110,7 @@ export default function PatternDialog({
   const [endTime, setEndTime] = useState(() => pattern?.endTime ?? "16:00");
   const [vehicle, setVehicle] = useState(() => pattern?.vehicle ?? "");
   const [callSign, setCallSign] = useState(() => pattern?.callSign ?? "");
+  const [staffRole, setStaffRole] = useState(() => pattern?.staffRole ?? "");
   const [notes, setNotes] = useState(() => pattern?.notes ?? "");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
     () => new Set(pattern?.memberIds ?? [])
@@ -189,6 +192,7 @@ export default function PatternDialog({
           endTime,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
+          staffRole: staffRole.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
           crewNumber,
@@ -210,6 +214,7 @@ export default function PatternDialog({
           endTime,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
+          staffRole: staffRole.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
           crewNumber,
@@ -263,6 +268,19 @@ export default function PatternDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={patternType === "weekly" ? "A-Shift Weekdays" : "4 on 4 off — Engine 7"}
+            />
+          </div>
+
+          {/* Staff Role */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Staff Role</Label>
+            <p className="text-xs text-muted-foreground -mt-0.5">
+              The role required for this shift pattern, e.g. Ambulance Care Assistant.
+            </p>
+            <Input
+              value={staffRole}
+              onChange={(e) => setStaffRole(e.target.value)}
+              placeholder="Ambulance Care Assistant, Emergency Care Assistant..."
             />
           </div>
 
