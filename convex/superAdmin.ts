@@ -34,16 +34,24 @@ export const listOrganizations = query({
     const organizations = await ctx.db.query("organizations").collect();
     const allUsers = await ctx.db.query("users").collect();
 
-    return organizations.map((org) => {
-      const members = allUsers.filter((u) => u.organizationId === org._id);
-      const admins = members.filter((u) => u.role === "admin");
-      return {
-        ...org,
-        memberCount: members.length,
-        adminCount: admins.length,
-        adminNames: admins.map((a) => a.name ?? "Unnamed").join(", "),
-      };
-    });
+    const orgsWithLogos = await Promise.all(
+      organizations.map(async (org) => {
+        const members = allUsers.filter((u) => u.organizationId === org._id);
+        const admins = members.filter((u) => u.role === "admin");
+        const logoUrl = org.logoStorageId
+          ? await ctx.storage.getUrl(org.logoStorageId)
+          : null;
+        return {
+          ...org,
+          logoUrl,
+          memberCount: members.length,
+          adminCount: admins.length,
+          adminNames: admins.map((a) => a.name ?? "Unnamed").join(", "),
+        };
+      }),
+    );
+
+    return orgsWithLogos;
   },
 });
 
@@ -68,6 +76,10 @@ export const getOrganizationDetails = query({
       throw new ConvexError({ code: "NOT_FOUND", message: "Organization not found" });
     }
 
+    const logoUrl = org.logoStorageId
+      ? await ctx.storage.getUrl(org.logoStorageId)
+      : null;
+
     const allUsers = await ctx.db.query("users").collect();
     const members = allUsers.filter((u) => u.organizationId === args.organizationId);
 
@@ -79,6 +91,7 @@ export const getOrganizationDetails = query({
 
     return {
       ...org,
+      logoUrl,
       members,
       pendingInvites,
     };

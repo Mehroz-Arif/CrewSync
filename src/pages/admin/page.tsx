@@ -242,8 +242,16 @@ export default function SuperAdminPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Building2 className="size-5 text-primary" />
+                        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                          {org.logoUrl ? (
+                            <img
+                              src={org.logoUrl}
+                              alt={`${org.name} logo`}
+                              className="size-full object-cover"
+                            />
+                          ) : (
+                            <Building2 className="size-5 text-primary" />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <CardTitle className="text-base truncate">

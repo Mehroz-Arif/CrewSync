@@ -148,8 +148,16 @@ export default function SuperAdminOrgDetailPage() {
 
       {/* Org header */}
       <div className="flex items-center gap-4">
-        <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Building2 className="size-7 text-primary" />
+        <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
+          {orgDetails.logoUrl ? (
+            <img
+              src={orgDetails.logoUrl}
+              alt={`${orgDetails.name} logo`}
+              className="size-full object-cover"
+            />
+          ) : (
+            <Building2 className="size-7 text-primary" />
+          )}
         </div>
         <div>
           <h1 className="font-heading text-2xl font-bold">{orgDetails.name}</h1>

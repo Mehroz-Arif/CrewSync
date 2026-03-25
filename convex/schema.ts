@@ -32,6 +32,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     createdBy: v.id("users"),
     status: v.optional(v.union(v.literal("active"), v.literal("suspended"))),
+    logoStorageId: v.optional(v.id("_storage")),
   }),
 
   invites: defineTable({

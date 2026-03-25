@@ -1,7 +1,7 @@
 import { v, ConvexError } from "convex/values";
 import { query, mutation } from "./_generated/server";
 
-/** Get the current user's organization */
+/** Get the current user's organization (with logo URL) */
 export const getMyOrganization = query({
   args: {},
   handler: async (ctx) => {
@@ -14,7 +14,12 @@ export const getMyOrganization = query({
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
     if (!user || !user.organizationId) return null;
-    return await ctx.db.get(user.organizationId);
+    const org = await ctx.db.get(user.organizationId);
+    if (!org) return null;
+    const logoUrl = org.logoStorageId
+      ? await ctx.storage.getUrl(org.logoStorageId)
+      : null;
+    return { ...org, logoUrl };
   },
 });
 
@@ -227,6 +232,78 @@ export const updateMemberRole = mutation({
       throw new ConvexError({ code: "BAD_REQUEST", message: "Cannot change your own role" });
     }
     await ctx.db.patch(args.userId, { role: args.role });
+  },
+});
+
+/** Generate an upload URL for organization logo (admin only) */
+export const generateLogoUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not logged in" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
+      throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
+    }
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Update the organization's logo (admin only) */
+export const updateLogo = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not logged in" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
+      throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
+    }
+    if (!user.organizationId) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "No organization found" });
+    }
+    // Delete old logo if exists
+    const org = await ctx.db.get(user.organizationId);
+    if (org?.logoStorageId) {
+      await ctx.storage.delete(org.logoStorageId);
+    }
+    await ctx.db.patch(user.organizationId, { logoStorageId: args.storageId });
+  },
+});
+
+/** Remove the organization's logo (admin only) */
+export const removeLogo = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not logged in" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
+      throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
+    }
+    if (!user.organizationId) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "No organization found" });
+    }
+    const org = await ctx.db.get(user.organizationId);
+    if (org?.logoStorageId) {
+      await ctx.storage.delete(org.logoStorageId);
+      await ctx.db.patch(user.organizationId, { logoStorageId: undefined });
+    }
   },
 });
 

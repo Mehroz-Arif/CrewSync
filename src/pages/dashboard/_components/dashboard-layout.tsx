@@ -108,6 +108,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const location = useLocation();
   const { removeUser } = useAuth();
   const user = useQuery(api.users.getCurrentUser);
+  const organization = useQuery(api.organizations.getMyOrganization);
   const { isPreviewingAsStaff, togglePreview } = useStaffPreview();
   const isRealAdmin = user?.role === "admin";
   const isSuperAdmin = user?.isSuperAdmin === true;
@@ -127,13 +128,21 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       {/* Logo */}
       <div className="p-5 border-b">
         <a href="/" className="flex items-center gap-2.5">
-          <div className="size-9 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-heading font-black text-sm">
-              CS
-            </span>
+          <div className="size-9 rounded-lg bg-primary flex items-center justify-center overflow-hidden shrink-0">
+            {organization?.logoUrl ? (
+              <img
+                src={organization.logoUrl}
+                alt={`${organization.name} logo`}
+                className="size-full object-cover"
+              />
+            ) : (
+              <span className="text-primary-foreground font-heading font-black text-sm">
+                CS
+              </span>
+            )}
           </div>
           <span className="font-heading font-bold text-lg tracking-tight text-foreground">
-            CrewSync
+            {organization?.name ?? "CrewSync"}
           </span>
         </a>
       </div>
