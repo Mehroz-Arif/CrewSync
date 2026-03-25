@@ -140,7 +140,9 @@ export default function NextShiftCard() {
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
               Allocated Vehicle
             </p>
-            <p className="text-sm font-semibold mt-0.5">{nextShift.vehicle}</p>
+            <p className="text-sm font-semibold mt-0.5">
+              {nextShift.allocatedVehicle ?? nextShift.vehicle}
+            </p>
           </div>
         </div>
 

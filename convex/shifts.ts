@@ -116,11 +116,27 @@ export const getNextShift = query({
         })
     );
 
+    // Look up allocated vehicle for this shift's callSign + date
+    let allocatedVehicle: string | undefined;
+    if (nextShift.callSign) {
+      const shiftDate = nextShift.startTime.slice(0, 10); // "YYYY-MM-DD"
+      const allocation = await ctx.db
+        .query("vehicleAllocations")
+        .withIndex("by_date_and_callSign", (q) =>
+          q.eq("date", shiftDate).eq("callSign", nextShift.callSign!)
+        )
+        .first();
+      if (allocation) {
+        allocatedVehicle = allocation.vehicle;
+      }
+    }
+
     return {
       _id: nextShift._id,
       startTime: nextShift.startTime,
       endTime: nextShift.endTime,
       vehicle: nextShift.vehicle,
+      allocatedVehicle,
       callSign: nextShift.callSign,
       notes: nextShift.notes,
       crew: crewMembers.filter((c): c is NonNullable<typeof c> => c !== null),
