@@ -101,10 +101,19 @@ export const getNextShift = query({
       .collect();
 
     const crewMembers = await Promise.all(
-      shiftMembers.map(async (sm) => {
-        const user = await ctx.db.get(sm.userId);
-        return user ? { _id: user._id, name: user.name ?? "Unknown" } : null;
-      })
+      shiftMembers
+        .filter((sm) => sm.userId !== currentUser._id) // exclude self
+        .map(async (sm) => {
+          const user = await ctx.db.get(sm.userId);
+          return user
+            ? {
+                _id: user._id,
+                name: user.name ?? "Unknown",
+                positions: user.positions ?? [],
+                avatarUrl: user.avatarUrl,
+              }
+            : null;
+        })
     );
 
     return {
