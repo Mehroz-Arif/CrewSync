@@ -33,7 +33,7 @@ export const create = mutation({
     if (!user) {
       throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
     }
-    if (user.organizationId) {
+    if (user.organizationId && !user.isSuperAdmin) {
       throw new ConvexError({ code: "CONFLICT", message: "You already belong to an organization" });
     }
 
@@ -60,7 +60,7 @@ export const update = mutation({
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
-    if (!user || user.role !== "admin") {
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
       throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
     }
     if (!user.organizationId) {
@@ -109,7 +109,7 @@ export const addMember = mutation({
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
-    if (!user || user.role !== "admin") {
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
       throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
     }
     if (!user.organizationId) {
@@ -198,7 +198,7 @@ export const cancelInvite = mutation({
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
-    if (!user || user.role !== "admin") {
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
       throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
     }
     await ctx.db.delete(args.inviteId);
@@ -220,7 +220,7 @@ export const updateMemberRole = mutation({
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
-    if (!user || user.role !== "admin") {
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
       throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
     }
     if (args.userId === user._id) {
@@ -242,7 +242,7 @@ export const removeMember = mutation({
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
-    if (!user || user.role !== "admin") {
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
       throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
     }
     if (args.userId === user._id) {

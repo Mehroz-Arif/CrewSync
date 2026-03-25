@@ -15,6 +15,8 @@ import CalendarPage from "./pages/calendar/page.tsx";
 import ReportsPage from "./pages/reports/page.tsx";
 import TeamPage from "./pages/team/page.tsx";
 import ProfilePage from "./pages/team/profile.tsx";
+import SuperAdminPage from "./pages/admin/page.tsx";
+import SuperAdminOrgDetailPage from "./pages/admin/org-detail.tsx";
 
 export default function App() {
   return (
@@ -36,6 +38,8 @@ export default function App() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/team" element={<TeamPage />} />
             <Route path="/team/:userId" element={<ProfilePage />} />
+            <Route path="/admin" element={<SuperAdminPage />} />
+            <Route path="/admin/org/:orgId" element={<SuperAdminOrgDetailPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

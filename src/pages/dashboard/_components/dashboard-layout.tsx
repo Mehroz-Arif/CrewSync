@@ -88,6 +88,13 @@ const NAV_ITEMS = [
     adminOnly: true,
   },
   {
+    label: "Super Admin",
+    icon: ShieldCheck,
+    path: "/admin",
+    enabled: true,
+    superAdminOnly: true,
+  },
+  {
     label: "Settings",
     icon: Settings,
     path: "/settings",
@@ -102,6 +109,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   const user = useQuery(api.users.getCurrentUser);
   const { isPreviewingAsStaff, togglePreview } = useStaffPreview();
   const isRealAdmin = user?.role === "admin";
+  const isSuperAdmin = user?.isSuperAdmin === true;
 
   return (
     <div className="flex flex-col h-full">
@@ -140,7 +148,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               {user?.name ?? "Loading..."}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {isPreviewingAsStaff ? "Team Member (preview)" : user?.role === "admin" ? "Admin" : "Team Member"}
+              {isPreviewingAsStaff ? "Team Member (preview)" : isSuperAdmin ? "Super Admin" : user?.role === "admin" ? "Admin" : "Team Member"}
             </p>
           </div>
         </div>
@@ -173,6 +181,9 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
         {NAV_ITEMS.filter((item) => {
+          if ("superAdminOnly" in item && item.superAdminOnly) {
+            return isSuperAdmin;
+          }
           if ("adminOnly" in item && item.adminOnly) {
             return isRealAdmin && !isPreviewingAsStaff;
           }

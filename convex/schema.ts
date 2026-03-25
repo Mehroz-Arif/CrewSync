@@ -10,6 +10,7 @@ export default defineSchema({
     department: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     organizationId: v.optional(v.id("organizations")),
+    isSuperAdmin: v.optional(v.boolean()),
     // Profile fields
     phone: v.optional(v.string()),
     bio: v.optional(v.string()),
@@ -27,7 +28,9 @@ export default defineSchema({
 
   organizations: defineTable({
     name: v.string(),
+    description: v.optional(v.string()),
     createdBy: v.id("users"),
+    status: v.optional(v.union(v.literal("active"), v.literal("suspended"))),
   }),
 
   invites: defineTable({
