@@ -265,4 +265,11 @@ export default defineSchema({
   })
     .index("by_date", ["date"])
     .index("by_date_and_callSign", ["date", "callSign"]),
+
+  vehicles: defineTable({
+    registration: v.string(), // e.g. "A211", "A224"
+    label: v.optional(v.string()), // friendly name e.g. "Sprinter 1"
+    active: v.boolean(),
+    sortOrder: v.number(),
+  }).index("by_registration", ["registration"]),
 });

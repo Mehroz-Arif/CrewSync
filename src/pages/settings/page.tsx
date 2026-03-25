@@ -35,7 +35,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="team">Team Members</TabsTrigger>
-          {isAdmin && <TabsTrigger value="fields">Fields</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="fields">Positions</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="organization" className="mt-6">

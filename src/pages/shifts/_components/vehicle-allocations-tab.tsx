@@ -71,7 +71,11 @@ export default function VehicleAllocationsTab() {
     endDate,
   });
   const callSigns = useQuery(api.vehicleAllocations.getCallSigns);
-  const vehicles = useQuery(api.vehicleAllocations.getVehicles);
+  const vehiclesList = useQuery(api.vehicles.list);
+  const vehicles = useMemo(
+    () => vehiclesList?.map((v) => v.registration) ?? [],
+    [vehiclesList]
+  );
   const setAllocation = useMutation(api.vehicleAllocations.setAllocation);
   const removeAllocation = useMutation(api.vehicleAllocations.removeAllocation);
   const copyAllocations = useMutation(api.vehicleAllocations.copyAllocations);
@@ -147,7 +151,7 @@ export default function VehicleAllocationsTab() {
   if (
     allocations === undefined ||
     callSigns === undefined ||
-    vehicles === undefined
+    vehiclesList === undefined
   ) {
     return (
       <div className="space-y-4">

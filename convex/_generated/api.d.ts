@@ -25,6 +25,7 @@ import type * as shifts from "../shifts.js";
 import type * as superAdmin from "../superAdmin.js";
 import type * as users from "../users.js";
 import type * as vehicleAllocations from "../vehicleAllocations.js";
+import type * as vehicles from "../vehicles.js";
 
 import type {
   ApiFromModules,
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   superAdmin: typeof superAdmin;
   users: typeof users;
   vehicleAllocations: typeof vehicleAllocations;
+  vehicles: typeof vehicles;
 }>;
 
 /**
