@@ -99,15 +99,9 @@ export default function ShiftBlock({
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
         <span className="truncate">
-          {callSign || displayVehicle}{position ? ` · ${position}` : ""}
+          {callSign ? `${callSign} · ${allocatedVehicle ?? vehicle}` : displayVehicle}{position ? ` · ${position}` : ""}
         </span>
       </div>
-      {allocatedVehicle && callSign && (
-        <div className="flex items-center gap-1 text-[10px] opacity-60 truncate">
-          <Truck className="size-2.5 shrink-0" />
-          <span className="truncate">{allocatedVehicle}</span>
-        </div>
-      )}
       {!published && isAdmin && (
         <div className="text-[9px] uppercase tracking-wider opacity-50 mt-0.5 font-medium">
           Draft
