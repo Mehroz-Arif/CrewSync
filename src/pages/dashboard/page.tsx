@@ -1,5 +1,4 @@
 import { useState } from "react";
-import StatsCards from "./_components/stats-cards.tsx";
 import NewsFeed from "./_components/news-feed.tsx";
 import CreatePostForm from "./_components/create-post-form.tsx";
 import PinnedPosts from "./_components/pinned-posts.tsx";
@@ -44,9 +43,6 @@ export default function DashboardPage() {
 
       {/* Your Next Shift — always visible at the top */}
       <NextShiftCard />
-
-      {/* Stats overview — admin only */}
-      {isAdmin && <StatsCards />}
 
       {/* Newsfeed + sidebar grid */}
       <div className="grid lg:grid-cols-3 gap-6">
