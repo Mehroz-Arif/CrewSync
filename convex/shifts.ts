@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel.d.ts";
 
 /** Check if assigning a user to a shift would cause a time overlap with their existing shifts */
@@ -98,6 +98,18 @@ export const getNextShift = query({
   },
 });
 
+/** Build a lookup from callSign → staffRole using active patterns */
+async function buildCallSignRoleMap(ctx: { db: QueryCtx["db"] }): Promise<Record<string, string>> {
+  const patterns = await ctx.db.query("shiftPatterns").collect();
+  const map: Record<string, string> = {};
+  for (const p of patterns) {
+    if (p.callSign && p.staffRole) {
+      map[p.callSign] = p.staffRole;
+    }
+  }
+  return map;
+}
+
 /** Get shifts within a date range, enriched with member details */
 export const getShiftsByDateRange = query({
   args: { startDate: v.string(), endDate: v.string() },
@@ -113,6 +125,9 @@ export const getShiftsByDateRange = query({
         q.gte("startTime", args.startDate).lt("startTime", args.endDate)
       )
       .collect();
+
+    // Build callSign→staffRole fallback for older shifts missing staffRole
+    const callSignRoleMap = await buildCallSignRoleMap(ctx);
 
     return await Promise.all(
       shifts.map(async (shift) => {
@@ -132,7 +147,10 @@ export const getShiftsByDateRange = query({
           })
         );
 
-        return { ...shift, members: memberDetails };
+        // Derive staffRole from pattern callSign when not set on the shift
+        const staffRole = shift.staffRole ?? (shift.callSign ? callSignRoleMap[shift.callSign] : undefined);
+
+        return { ...shift, staffRole, members: memberDetails };
       })
     );
   },
@@ -401,6 +419,9 @@ export const getUnassignedByDateRange = query({
       )
       .collect();
 
+    // Build callSign→staffRole fallback for older shifts missing staffRole
+    const callSignRoleMap = await buildCallSignRoleMap(ctx);
+
     const unassigned = [];
     for (const shift of shifts) {
       const members = await ctx.db
@@ -408,7 +429,9 @@ export const getUnassignedByDateRange = query({
         .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
         .collect();
       if (members.length === 0) {
-        unassigned.push(shift);
+        // Derive staffRole from pattern callSign when not set on the shift
+        const staffRole = shift.staffRole ?? (shift.callSign ? callSignRoleMap[shift.callSign] : undefined);
+        unassigned.push({ ...shift, staffRole });
       }
     }
     return unassigned;
@@ -480,6 +503,9 @@ export const getMyShiftsByDateRange = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
+    // Build callSign→staffRole fallback for older shifts missing staffRole
+    const callSignRoleMap = await buildCallSignRoleMap(ctx);
+
     const shifts = [];
     for (const mem of memberships) {
       const shift = await ctx.db.get(mem.shiftId);
@@ -499,8 +525,12 @@ export const getMyShiftsByDateRange = query({
           })
         );
 
+        // Derive staffRole from pattern callSign when not set on the shift
+        const staffRole = shift.staffRole ?? (shift.callSign ? callSignRoleMap[shift.callSign] : undefined);
+
         shifts.push({
           ...shift,
+          staffRole,
           membershipId: mem._id,
           members: memberDetails,
         });
