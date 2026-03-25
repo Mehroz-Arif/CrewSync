@@ -17,6 +17,7 @@ import {
   Plus,
   Send,
   Undo2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -151,6 +152,8 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   });
 
   const setPublished = useMutation(api.shifts.setPublished);
+  const clearNonPattern = useMutation(api.shifts.clearNonPatternUnassigned);
+  const [isClearing, setIsClearing] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
   // Dialog state
@@ -315,6 +318,36 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           Drag shifts between cells or back to unassigned. Publish when ready.
         </p>
         <div className="flex items-center gap-2">
+          {unassigned.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                setIsClearing(true);
+                try {
+                  const count = await clearNonPattern();
+                  if (count > 0) {
+                    toast.success(`Cleared ${count} non-pattern shift${count !== 1 ? "s" : ""}`);
+                  } else {
+                    toast.info("No non-pattern shifts to clear");
+                  }
+                } catch (error) {
+                  if (error instanceof ConvexError) {
+                    toast.error((error.data as { message: string }).message);
+                  } else {
+                    toast.error("Failed to clear shifts");
+                  }
+                } finally {
+                  setIsClearing(false);
+                }
+              }}
+              disabled={isClearing}
+              className="text-destructive hover:text-destructive"
+            >
+              {isClearing ? <Spinner /> : <Trash2 className="size-4 mr-1.5" />}
+              Clear Non-Pattern
+            </Button>
+          )}
           {hasPublished && (
             <Button
               variant="secondary"

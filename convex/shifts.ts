@@ -587,3 +587,52 @@ export const setPublished = mutation({
     return count;
   },
 });
+
+/** Delete all unassigned shifts that don't match any active pattern (admin only) */
+export const clearNonPatternUnassigned = mutation({
+  args: {},
+  handler: async (ctx): Promise<number> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can clear shifts", code: "FORBIDDEN" });
+    }
+
+    // Build set of pattern signatures: "HH:mm|HH:mm|vehicle|callSign"
+    const patterns = await ctx.db.query("shiftPatterns").collect();
+    const activeSignatures = new Set<string>();
+    for (const p of patterns.filter((p) => p.active)) {
+      activeSignatures.add(`${p.startTime}|${p.endTime}|${p.vehicle ?? ""}|${p.callSign ?? ""}`);
+    }
+
+    // Find all unassigned shifts
+    const allShifts = await ctx.db.query("shifts").collect();
+    let deleted = 0;
+
+    for (const shift of allShifts) {
+      const members = await ctx.db
+        .query("shiftMembers")
+        .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
+        .collect();
+      if (members.length > 0) continue; // skip assigned shifts
+
+      // Extract HH:mm from ISO timestamps
+      const startHHmm = new Date(shift.startTime).toISOString().slice(11, 16);
+      const endHHmm = new Date(shift.endTime).toISOString().slice(11, 16);
+      const sig = `${startHHmm}|${endHHmm}|${shift.vehicle}|${shift.callSign ?? ""}`;
+
+      if (!activeSignatures.has(sig)) {
+        await ctx.db.delete(shift._id);
+        deleted++;
+      }
+    }
+
+    return deleted;
+  },
+});
