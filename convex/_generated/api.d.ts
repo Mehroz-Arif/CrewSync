@@ -13,6 +13,7 @@ import type * as availability from "../availability.js";
 import type * as calendarEvents from "../calendarEvents.js";
 import type * as documents from "../documents.js";
 import type * as feedback from "../feedback.js";
+import type * as jobTitles from "../jobTitles.js";
 import type * as messaging from "../messaging.js";
 import type * as organizations from "../organizations.js";
 import type * as posts from "../posts.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   calendarEvents: typeof calendarEvents;
   documents: typeof documents;
   feedback: typeof feedback;
+  jobTitles: typeof jobTitles;
   messaging: typeof messaging;
   organizations: typeof organizations;
   posts: typeof posts;

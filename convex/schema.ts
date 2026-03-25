@@ -224,6 +224,12 @@ export default defineSchema({
       searchField: "name",
     }),
 
+  jobTitles: defineTable({
+    label: v.string(), // Display label e.g. "Paramedic"
+    sortOrder: v.number(), // For custom ordering
+    active: v.boolean(),
+  }),
+
   recognitions: defineTable({
     recipientId: v.id("users"),
     givenById: v.id("users"),

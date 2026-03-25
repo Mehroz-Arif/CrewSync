@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import { toast } from "sonner";
@@ -74,6 +74,7 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
   const [loading, setLoading] = useState(false);
 
   const updateProfile = useMutation(api.profiles.updateProfileAsAdmin);
+  const jobTitleOptions = useQuery(api.jobTitles.list);
 
   const set = (key: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -140,7 +141,15 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
               </div>
               <div className="space-y-2">
                 <Label>Job Title</Label>
-                <Input placeholder="e.g. Paramedic, Driver" value={form.jobTitle} onChange={(e) => set("jobTitle", e.target.value)} />
+                <Select value={form.jobTitle || "none"} onValueChange={(v) => set("jobTitle", v === "none" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Select job title" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No title</SelectItem>
+                    {jobTitleOptions?.map((jt) => (
+                      <SelectItem key={jt._id} value={jt.label}>{jt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Department</Label>
