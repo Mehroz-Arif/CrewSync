@@ -219,4 +219,18 @@ export default defineSchema({
     .searchIndex("search_name", {
       searchField: "name",
     }),
+
+  recognitions: defineTable({
+    recipientId: v.id("users"),
+    givenById: v.id("users"),
+    title: v.string(),
+    message: v.string(),
+    badge: v.union(
+      v.literal("star"),
+      v.literal("heart"),
+      v.literal("trophy"),
+      v.literal("rocket"),
+      v.literal("gem")
+    ),
+  }).index("by_recipient", ["recipientId"]),
 });

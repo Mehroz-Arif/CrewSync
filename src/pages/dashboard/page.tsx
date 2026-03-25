@@ -1,13 +1,23 @@
+import { useState } from "react";
 import StatsCards from "./_components/stats-cards.tsx";
 import NewsFeed from "./_components/news-feed.tsx";
 import CreatePostForm from "./_components/create-post-form.tsx";
 import PinnedPosts from "./_components/pinned-posts.tsx";
 import NextShiftCard from "./_components/next-shift-card.tsx";
+import RecognitionWall from "./_components/recognition-wall.tsx";
+import GiveRecognitionDialog from "./_components/give-recognition-dialog.tsx";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
+import { Button } from "@/components/ui/button.tsx";
+import { Award } from "lucide-react";
+import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 export default function DashboardPage() {
   const user = useQuery(api.users.getCurrentUser);
+  const { isPreviewingAsStaff } = useStaffPreview();
+  const [recognitionOpen, setRecognitionOpen] = useState(false);
+
+  const isAdmin = (user?.role === "admin" || user?.isSuperAdmin) && !isPreviewingAsStaff;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -21,7 +31,15 @@ export default function DashboardPage() {
             Here{"'"}s what{"'"}s happening with your team
           </p>
         </div>
-        <CreatePostForm />
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button variant="secondary" onClick={() => setRecognitionOpen(true)}>
+              <Award className="size-4 mr-1.5" />
+              Recognize Staff
+            </Button>
+          )}
+          <CreatePostForm />
+        </div>
       </div>
 
       {/* Stats overview */}
@@ -35,8 +53,9 @@ export default function DashboardPage() {
           <NewsFeed />
         </div>
 
-        {/* Sidebar - next shift, pinned posts, quick links */}
+        {/* Sidebar - recognition wall, next shift, pinned posts, quick links */}
         <div className="space-y-6">
+          <RecognitionWall />
           <NextShiftCard />
           <PinnedPosts />
 
@@ -62,6 +81,12 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Recognition dialog */}
+      <GiveRecognitionDialog
+        open={recognitionOpen}
+        onOpenChange={setRecognitionOpen}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import type * as messaging from "../messaging.js";
 import type * as organizations from "../organizations.js";
 import type * as posts from "../posts.js";
 import type * as profiles from "../profiles.js";
+import type * as recognitions from "../recognitions.js";
 import type * as rewards from "../rewards.js";
 import type * as shiftPatterns from "../shiftPatterns.js";
 import type * as shifts from "../shifts.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   organizations: typeof organizations;
   posts: typeof posts;
   profiles: typeof profiles;
+  recognitions: typeof recognitions;
   rewards: typeof rewards;
   shiftPatterns: typeof shiftPatterns;
   shifts: typeof shifts;
