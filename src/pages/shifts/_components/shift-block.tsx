@@ -94,13 +94,10 @@ export default function ShiftBlock({
       </div>
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
-        <span className="truncate">{callSign || vehicle}</span>
+        <span className="truncate">
+          {callSign || vehicle}{staffRole ? ` · ${staffRole}` : ""}
+        </span>
       </div>
-      {staffRole && (
-        <div className="text-[10px] opacity-75 truncate mt-0.5 font-medium">
-          {staffRole}
-        </div>
-      )}
       {!published && isAdmin && (
         <div className="text-[9px] uppercase tracking-wider opacity-50 mt-0.5 font-medium">
           Draft
