@@ -31,6 +31,23 @@ export async function checkUserShiftOverlap(
   }
 }
 
+/** Check if a user's job title matches the shift's required staff role */
+async function checkRoleMatch(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  staffRole?: string,
+) {
+  if (!staffRole) return; // no role requirement on this shift
+  const user = await ctx.db.get(userId);
+  if (!user) return;
+  if (user.jobTitle !== staffRole) {
+    throw new ConvexError({
+      message: `${user.name ?? "Staff member"} is ${user.jobTitle || "unassigned"} — this shift requires ${staffRole}`,
+      code: "BAD_REQUEST",
+    });
+  }
+}
+
 /** Get the current user's next upcoming shift */
 export const getNextShift = query({
   args: {},
@@ -182,8 +199,9 @@ export const create = mutation({
     if (currentUser.role !== "admin") {
       throw new ConvexError({ message: "Only admins can create shifts", code: "FORBIDDEN" });
     }
-    // Check for overlapping shifts for each assigned member
+    // Check for overlapping shifts and role match for each assigned member
     for (const memberId of args.memberIds) {
+      await checkRoleMatch(ctx, memberId, args.staffRole);
       await checkUserShiftOverlap(ctx, memberId, args.startTime, args.endTime);
     }
 
@@ -251,8 +269,12 @@ export const update = mutation({
       finalMemberIds = existingMembers.map((m) => m.userId);
     }
 
-    // Check for overlapping shifts for all final members (exclude current shift)
+    // Determine final staff role for role-match check
+    const finalStaffRole = fields.staffRole ?? currentShift.staffRole;
+
+    // Check for overlapping shifts and role match for all final members (exclude current shift)
     for (const uid of finalMemberIds) {
+      await checkRoleMatch(ctx, uid, finalStaffRole);
       await checkUserShiftOverlap(ctx, uid, finalStartTime, finalEndTime, shiftId);
     }
 
@@ -348,6 +370,14 @@ export const moveShiftAssignment = mutation({
     const sameUser = membership.userId === args.targetUserId;
     const sameDay = args.dayOffset === 0;
     if (sameUser && sameDay) return;
+
+    // Derive staffRole from pattern callSign for older shifts missing it
+    const effectiveRole = shift.staffRole ?? (shift.callSign ? (await buildCallSignRoleMap(ctx))[shift.callSign] : undefined);
+
+    // Check role match for target user (skip if reassigning to same user on different day)
+    if (!sameUser) {
+      await checkRoleMatch(ctx, args.targetUserId, effectiveRole);
+    }
 
     if (sameDay) {
       // Same day, different employee — reassign
@@ -472,7 +502,11 @@ export const assignToShift = mutation({
       throw new ConvexError({ message: "User already assigned to this shift", code: "CONFLICT" });
     }
 
-    // Prevent time overlap for this user
+    // Derive staffRole from pattern callSign for older shifts missing it
+    const effectiveRole = shift.staffRole ?? (shift.callSign ? (await buildCallSignRoleMap(ctx))[shift.callSign] : undefined);
+
+    // Prevent role mismatch and time overlap
+    await checkRoleMatch(ctx, args.userId, effectiveRole);
     await checkUserShiftOverlap(ctx, args.userId, shift.startTime, shift.endTime);
 
     await ctx.db.insert("shiftMembers", {
