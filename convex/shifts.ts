@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel.d.ts";
+import type { Doc, Id } from "./_generated/dataModel.d.ts";
 
 /** Check if assigning a user to a shift would cause a time overlap with their existing shifts */
 export async function checkUserShiftOverlap(
@@ -74,14 +74,7 @@ export const getNextShift = query({
       .withIndex("by_user", (q) => q.eq("userId", currentUser._id))
       .collect();
 
-    let nextShift: {
-      _id: typeof memberships[0]["shiftId"];
-      startTime: string;
-      endTime: string;
-      vehicle: string;
-      callSign?: string;
-      notes?: string;
-    } | null = null;
+    let nextShift: Doc<"shifts"> | null = null;
 
     for (const mem of memberships) {
       const shift = await ctx.db.get(mem.shiftId);
@@ -94,6 +87,17 @@ export const getNextShift = query({
     }
 
     if (!nextShift) return null;
+
+    // Overlay live pattern data — makes this query reactive to pattern changes
+    const { byId, bySig } = await buildPatternLookup(ctx);
+    const pattern = findMatchingPattern(nextShift, byId, bySig);
+    const overlay = pattern ? getPatternOverlay(nextShift.startTime, pattern) : null;
+
+    const effectiveStartTime = overlay?.startTime ?? nextShift.startTime;
+    const effectiveEndTime = overlay?.endTime ?? nextShift.endTime;
+    const effectiveVehicle = overlay?.vehicle ?? nextShift.vehicle;
+    const effectiveCallSign = overlay?.callSign ?? nextShift.callSign;
+    const effectiveNotes = overlay?.notes ?? nextShift.notes;
 
     const shiftMembers = await ctx.db
       .query("shiftMembers")
@@ -118,12 +122,12 @@ export const getNextShift = query({
 
     // Look up allocated vehicle for this shift's callSign + date
     let allocatedVehicle: string | undefined;
-    if (nextShift.callSign) {
-      const shiftDate = nextShift.startTime.slice(0, 10); // "YYYY-MM-DD"
+    if (effectiveCallSign) {
+      const shiftDate = effectiveStartTime.slice(0, 10);
       const allocation = await ctx.db
         .query("vehicleAllocations")
         .withIndex("by_date_and_callSign", (q) =>
-          q.eq("date", shiftDate).eq("callSign", nextShift.callSign!)
+          q.eq("date", shiftDate).eq("callSign", effectiveCallSign)
         )
         .first();
       if (allocation) {
@@ -133,12 +137,12 @@ export const getNextShift = query({
 
     return {
       _id: nextShift._id,
-      startTime: nextShift.startTime,
-      endTime: nextShift.endTime,
-      vehicle: nextShift.vehicle,
+      startTime: effectiveStartTime,
+      endTime: effectiveEndTime,
+      vehicle: effectiveVehicle,
       allocatedVehicle,
-      callSign: nextShift.callSign,
-      notes: nextShift.notes,
+      callSign: effectiveCallSign,
+      notes: effectiveNotes,
       crew: crewMembers.filter((c): c is NonNullable<typeof c> => c !== null),
     };
   },
@@ -165,6 +169,64 @@ function resolveShiftPosition(
   return shift.position ?? shift.staffRole ?? (shift.callSign ? callSignPositionMap[shift.callSign] : undefined);
 }
 
+// ── Pattern overlay helpers ──
+// These make queries reactive: when a pattern changes the query re-evaluates
+// and the frontend receives updated data instantly via the WebSocket.
+
+/** Build lookup maps of active patterns by ID and by time/vehicle/callSign signature */
+async function buildPatternLookup(ctx: { db: QueryCtx["db"] }) {
+  const patterns = await ctx.db.query("shiftPatterns").collect();
+  const byId = new Map<string, Doc<"shiftPatterns">>();
+  const bySig = new Map<string, Doc<"shiftPatterns">>();
+
+  for (const p of patterns) {
+    if (!p.active) continue;
+    byId.set(p._id as string, p);
+    const sig = `${p.startTime}|${p.endTime}|${p.vehicle ?? ""}|${p.callSign ?? ""}`;
+    bySig.set(sig, p);
+  }
+
+  return { byId, bySig };
+}
+
+/** Find the active pattern that matches a shift (by patternId or signature) */
+function findMatchingPattern(
+  shift: { patternId?: Id<"shiftPatterns">; startTime: string; endTime: string; vehicle: string; callSign?: string },
+  byId: Map<string, Doc<"shiftPatterns">>,
+  bySig: Map<string, Doc<"shiftPatterns">>,
+): Doc<"shiftPatterns"> | undefined {
+  if (shift.patternId) {
+    const p = byId.get(shift.patternId as string);
+    if (p) return p;
+  }
+  // Fallback: match by time/vehicle/callSign signature
+  const startHHmm = new Date(shift.startTime).toISOString().slice(11, 16);
+  const endHHmm = new Date(shift.endTime).toISOString().slice(11, 16);
+  const sig = `${startHHmm}|${endHHmm}|${shift.vehicle ?? ""}|${shift.callSign ?? ""}`;
+  return bySig.get(sig);
+}
+
+/** Derive display properties from the current pattern values */
+function getPatternOverlay(
+  shiftStartTime: string,
+  pattern: Doc<"shiftPatterns">,
+): { startTime: string; endTime: string; vehicle: string; callSign?: string; position?: string; notes?: string } {
+  const dateStr = shiftStartTime.slice(0, 10);
+  const newStart = new Date(`${dateStr}T${pattern.startTime}:00`);
+  let newEnd = new Date(`${dateStr}T${pattern.endTime}:00`);
+  if (newEnd <= newStart) {
+    newEnd = new Date(newEnd.getTime() + 86400000); // overnight
+  }
+  return {
+    startTime: newStart.toISOString(),
+    endTime: newEnd.toISOString(),
+    vehicle: pattern.vehicle ?? "",
+    callSign: pattern.callSign,
+    position: pattern.position,
+    notes: pattern.notes,
+  };
+}
+
 /** Get shifts within a date range, enriched with member details */
 export const getShiftsByDateRange = query({
   args: { startDate: v.string(), endDate: v.string() },
@@ -181,7 +243,11 @@ export const getShiftsByDateRange = query({
       )
       .collect();
 
-    // Build callSign→position fallback for older shifts
+    // Build pattern lookup — reading shiftPatterns makes this query reactive
+    // so any pattern change instantly re-evaluates and pushes to the frontend
+    const { byId, bySig } = await buildPatternLookup(ctx);
+
+    // Build callSign→position fallback for older shifts without a pattern match
     const callSignPositionMap = await buildCallSignPositionMap(ctx);
 
     return await Promise.all(
@@ -202,8 +268,16 @@ export const getShiftsByDateRange = query({
           })
         );
 
-        const position = resolveShiftPosition(shift, callSignPositionMap);
+        // Overlay current pattern properties for instant reactivity
+        const pattern = findMatchingPattern(shift, byId, bySig);
+        if (pattern) {
+          const overlay = getPatternOverlay(shift.startTime, pattern);
+          const position = overlay.position ?? shift.position ?? shift.staffRole;
+          return { ...shift, ...overlay, position, members: memberDetails };
+        }
 
+        // No matching pattern — use shift's own data
+        const position = resolveShiftPosition(shift, callSignPositionMap);
         return { ...shift, position, members: memberDetails };
       })
     );
