@@ -47,19 +47,19 @@ const COLOR_PRESETS = [
 ] as const;
 
 export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
-  const jobTitles = useQuery(api.jobTitles.listAll);
-  const createTitle = useMutation(api.jobTitles.create);
-  const updateTitle = useMutation(api.jobTitles.update);
-  const removeTitle = useMutation(api.jobTitles.remove);
-  const reorderTitles = useMutation(api.jobTitles.reorder);
+  const positions = useQuery(api.positions.listAll);
+  const createPosition = useMutation(api.positions.create);
+  const updatePosition = useMutation(api.positions.update);
+  const removePosition = useMutation(api.positions.remove);
+  const reorderPositions = useMutation(api.positions.reorder);
 
   const [newLabel, setNewLabel] = useState("");
   const [newColor, setNewColor] = useState<string>(COLOR_PRESETS[0].hex);
   const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<Id<"jobTitles"> | null>(null);
+  const [editingId, setEditingId] = useState<Id<"positions"> | null>(null);
   const [editLabel, setEditLabel] = useState("");
 
-  if (jobTitles === undefined) {
+  if (positions === undefined) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -72,27 +72,27 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
     if (!newLabel.trim()) return;
     setAdding(true);
     try {
-      await createTitle({ label: newLabel.trim(), color: newColor });
+      await createPosition({ label: newLabel.trim(), color: newColor });
       setNewLabel("");
-      toast.success("Job title added");
+      toast.success("Position added");
     } catch (error) {
       if (error instanceof ConvexError) {
         const { message } = error.data as { message: string };
         toast.error(message);
       } else {
-        toast.error("Failed to add job title");
+        toast.error("Failed to add position");
       }
     } finally {
       setAdding(false);
     }
   };
 
-  const handleUpdate = async (id: Id<"jobTitles">) => {
+  const handleUpdate = async (id: Id<"positions">) => {
     if (!editLabel.trim()) return;
     try {
-      await updateTitle({ id, label: editLabel.trim() });
+      await updatePosition({ id, label: editLabel.trim() });
       setEditingId(null);
-      toast.success("Job title updated");
+      toast.success("Position updated");
     } catch (error) {
       if (error instanceof ConvexError) {
         const { message } = error.data as { message: string };
@@ -103,44 +103,44 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
     }
   };
 
-  const handleColorChange = async (id: Id<"jobTitles">, color: string) => {
+  const handleColorChange = async (id: Id<"positions">, color: string) => {
     try {
-      await updateTitle({ id, color });
+      await updatePosition({ id, color });
       toast.success("Colour updated");
     } catch {
       toast.error("Failed to update colour");
     }
   };
 
-  const handleToggleActive = async (id: Id<"jobTitles">, currentlyActive: boolean) => {
+  const handleToggleActive = async (id: Id<"positions">, currentlyActive: boolean) => {
     try {
-      await updateTitle({ id, active: !currentlyActive });
-      toast.success(currentlyActive ? "Job title hidden" : "Job title restored");
+      await updatePosition({ id, active: !currentlyActive });
+      toast.success(currentlyActive ? "Position hidden" : "Position restored");
     } catch {
       toast.error("Failed to update");
     }
   };
 
-  const handleRemove = async (id: Id<"jobTitles">) => {
+  const handleRemove = async (id: Id<"positions">) => {
     try {
-      await removeTitle({ id });
-      toast.success("Job title removed");
+      await removePosition({ id });
+      toast.success("Position removed");
     } catch {
       toast.error("Failed to remove");
     }
   };
 
   const handleMove = async (index: number, direction: "up" | "down") => {
-    if (!jobTitles) return;
+    if (!positions) return;
     const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= jobTitles.length) return;
+    if (newIndex < 0 || newIndex >= positions.length) return;
 
-    const reordered = [...jobTitles];
+    const reordered = [...positions];
     const [moved] = reordered.splice(index, 1);
     reordered.splice(newIndex, 0, moved);
 
     try {
-      await reorderTitles({ orderedIds: reordered.map((t) => t._id) });
+      await reorderPositions({ orderedIds: reordered.map((t) => t._id) });
     } catch {
       toast.error("Failed to reorder");
     }
@@ -164,17 +164,17 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Briefcase className="size-4" />
-            Job Titles
+            Positions
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Manage the dropdown options and colours for job titles. Colours are used on shift blocks and pattern cards.
+            Manage the dropdown options and colours for positions. Colours are used on shift blocks and pattern cards. Staff can hold multiple positions.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add new */}
           <div className="flex gap-2 items-end">
             <div className="flex-1 space-y-1.5">
-              <Label className="text-xs">New job title</Label>
+              <Label className="text-xs">New position</Label>
               <Input
                 placeholder="e.g. Paramedic, Driver, Care Assistant"
                 value={newLabel}
@@ -198,15 +198,15 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
           </div>
 
           {/* List */}
-          {jobTitles.length === 0 ? (
+          {positions.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              No job titles defined yet. Add your first one above.
+              No positions defined yet. Add your first one above.
             </p>
           ) : (
             <div className="space-y-1">
-              {jobTitles.map((title, index) => (
+              {positions.map((pos, index) => (
                 <div
-                  key={title._id}
+                  key={pos._id}
                   className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 group"
                 >
                   {/* Reorder buttons */}
@@ -222,7 +222,7 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                     <button
                       type="button"
                       onClick={() => handleMove(index, "down")}
-                      disabled={index === jobTitles.length - 1}
+                      disabled={index === positions.length - 1}
                       className="text-muted-foreground hover:text-foreground disabled:opacity-30 p-0.5"
                     >
                       <ArrowDown className="size-3" />
@@ -231,12 +231,12 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
 
                   {/* Colour dot */}
                   <ColorPicker
-                    value={title.color ?? "#64748b"}
-                    onChange={(c) => handleColorChange(title._id, c)}
+                    value={pos.color ?? "#64748b"}
+                    onChange={(c) => handleColorChange(pos._id, c)}
                   />
 
                   {/* Label (editable or display) */}
-                  {editingId === title._id ? (
+                  {editingId === pos._id ? (
                     <div className="flex-1 flex gap-2 items-center">
                       <Input
                         value={editLabel}
@@ -246,12 +246,12 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
-                            handleUpdate(title._id);
+                            handleUpdate(pos._id);
                           }
                           if (e.key === "Escape") setEditingId(null);
                         }}
                       />
-                      <Button size="sm" variant="ghost" className="size-7 p-0" onClick={() => handleUpdate(title._id)}>
+                      <Button size="sm" variant="ghost" className="size-7 p-0" onClick={() => handleUpdate(pos._id)}>
                         <Check className="size-4 text-green-600" />
                       </Button>
                       <Button size="sm" variant="ghost" className="size-7 p-0" onClick={() => setEditingId(null)}>
@@ -259,26 +259,26 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                       </Button>
                     </div>
                   ) : (
-                    <span className={cn("flex-1 text-sm", !title.active && "text-muted-foreground line-through")}>
-                      {title.label}
+                    <span className={cn("flex-1 text-sm", !pos.active && "text-muted-foreground line-through")}>
+                      {pos.label}
                     </span>
                   )}
 
                   {/* Status badge */}
-                  {!title.active && (
+                  {!pos.active && (
                     <Badge variant="secondary" className="text-[10px]">Hidden</Badge>
                   )}
 
                   {/* Actions */}
-                  {editingId !== title._id && (
+                  {editingId !== pos._id && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm"
                         variant="ghost"
                         className="size-7 p-0"
                         onClick={() => {
-                          setEditingId(title._id);
-                          setEditLabel(title.label);
+                          setEditingId(pos._id);
+                          setEditLabel(pos.label);
                         }}
                       >
                         <Pencil className="size-3.5" />
@@ -287,9 +287,9 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                         size="sm"
                         variant="ghost"
                         className="size-7 p-0"
-                        onClick={() => handleToggleActive(title._id, title.active)}
+                        onClick={() => handleToggleActive(pos._id, pos.active)}
                       >
-                        {title.active ? (
+                        {pos.active ? (
                           <EyeOff className="size-3.5" />
                         ) : (
                           <Eye className="size-3.5" />
@@ -299,7 +299,7 @@ export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
                         size="sm"
                         variant="ghost"
                         className="size-7 p-0 text-destructive hover:text-destructive"
-                        onClick={() => handleRemove(title._id)}
+                        onClick={() => handleRemove(pos._id)}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>

@@ -31,7 +31,7 @@ export async function checkUserShiftOverlap(
   }
 }
 
-/** Check if a user's job title matches the shift's required staff role */
+/** Check if a user has a position matching the shift's required staff role */
 async function checkRoleMatch(
   ctx: MutationCtx,
   userId: Id<"users">,
@@ -40,9 +40,13 @@ async function checkRoleMatch(
   if (!staffRole) return; // no role requirement on this shift
   const user = await ctx.db.get(userId);
   if (!user) return;
-  if (user.jobTitle !== staffRole) {
+
+  // Use the positions array (may be undefined for users not yet updated)
+  const userPositions: string[] = user.positions ?? [];
+
+  if (!userPositions.includes(staffRole)) {
     throw new ConvexError({
-      message: `${user.name ?? "Staff member"} is ${user.jobTitle || "unassigned"} — this shift requires ${staffRole}`,
+      message: `${user.name ?? "Staff member"} does not hold the "${staffRole}" position — this shift requires it`,
       code: "BAD_REQUEST",
     });
   }

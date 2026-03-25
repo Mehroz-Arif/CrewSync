@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Spinner } from "@/components/ui/spinner.tsx";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
+import { cn } from "@/lib/utils.ts";
 
 type ProfileData = {
   _id: string;
@@ -33,7 +34,7 @@ type ProfileData = {
   phone?: string;
   bio?: string;
   employmentType?: "employee" | "subcontractor";
-  jobTitle?: string;
+  positions?: string[];
   startDate?: string;
   address?: string;
   emergencyContactName?: string;
@@ -59,7 +60,6 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
     phone: profile.phone ?? "",
     bio: profile.bio ?? "",
     employmentType: (profile.employmentType ?? "employee") as "employee" | "subcontractor",
-    jobTitle: profile.jobTitle ?? "",
     startDate: profile.startDate ?? "",
     address: profile.address ?? "",
     emergencyContactName: profile.emergencyContactName ?? "",
@@ -67,6 +67,7 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
     hourlyRate: profile.hourlyRate?.toString() ?? "",
     notes: profile.notes ?? "",
   });
+  const [selectedPositions, setSelectedPositions] = useState<string[]>(profile.positions ?? []);
   const [skills, setSkills] = useState<string[]>(profile.skills ?? []);
   const [certifications, setCertifications] = useState<string[]>(profile.certifications ?? []);
   const [newSkill, setNewSkill] = useState("");
@@ -74,10 +75,16 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
   const [loading, setLoading] = useState(false);
 
   const updateProfile = useMutation(api.profiles.updateProfileAsAdmin);
-  const jobTitleOptions = useQuery(api.jobTitles.list);
+  const positionOptions = useQuery(api.positions.list);
 
   const set = (key: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const togglePosition = (label: string) => {
+    setSelectedPositions((prev) =>
+      prev.includes(label) ? prev.filter((p) => p !== label) : [...prev, label]
+    );
+  };
 
   const addSkill = () => {
     const s = newSkill.trim();
@@ -101,7 +108,7 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
         phone: form.phone || undefined,
         bio: form.bio || undefined,
         employmentType: form.employmentType,
-        jobTitle: form.jobTitle || undefined,
+        positions: selectedPositions.length > 0 ? selectedPositions : undefined,
         startDate: form.startDate || undefined,
         address: form.address || undefined,
         emergencyContactName: form.emergencyContactName || undefined,
@@ -139,22 +146,44 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
                 <Label>Email</Label>
                 <Input value={form.email} onChange={(e) => set("email", e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Job Title</Label>
-                <Select value={form.jobTitle || "none"} onValueChange={(v) => set("jobTitle", v === "none" ? "" : v)}>
-                  <SelectTrigger><SelectValue placeholder="Select job title" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No title</SelectItem>
-                    {jobTitleOptions?.map((jt) => (
-                      <SelectItem key={jt._id} value={jt.label}>{jt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Input placeholder="e.g. Operations" value={form.department} onChange={(e) => set("department", e.target.value)} />
-              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Positions</Label>
+              <p className="text-xs text-muted-foreground">Select all positions this staff member holds.</p>
+              {positionOptions && positionOptions.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {positionOptions.map((pos) => {
+                    const isSelected = selectedPositions.includes(pos.label);
+                    return (
+                      <button
+                        key={pos._id}
+                        type="button"
+                        onClick={() => togglePosition(pos.label)}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border transition-all",
+                          isSelected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-muted/50 text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        {isSelected && <Check className="size-3" />}
+                        {pos.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No positions configured. Add them in Settings &gt; Fields.</p>
+              )}
+              {selectedPositions.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedPositions.length} position{selectedPositions.length !== 1 ? "s" : ""} selected
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Input placeholder="e.g. Operations" value={form.department} onChange={(e) => set("department", e.target.value)} />
             </div>
           </div>
 
@@ -283,5 +312,3 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
     </Dialog>
   );
 }
-
-

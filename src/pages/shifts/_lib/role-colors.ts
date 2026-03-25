@@ -17,13 +17,13 @@ const DEFAULT_COLOR = "#64748b"; // slate-500
 
 /** Build a lookup map from role label → hex colour */
 export function buildRoleColorMap(
-  jobTitles: Array<{ label: string; color?: string }> | undefined,
+  positions: Array<{ label: string; color?: string }> | undefined,
 ): Record<string, string> {
   const map: Record<string, string> = {};
-  if (!jobTitles) return map;
-  for (const jt of jobTitles) {
-    if (jt.color) {
-      map[jt.label] = jt.color;
+  if (!positions) return map;
+  for (const pos of positions) {
+    if (pos.color) {
+      map[pos.label] = pos.color;
     }
   }
   return map;

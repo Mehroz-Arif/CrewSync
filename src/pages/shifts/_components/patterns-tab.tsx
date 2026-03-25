@@ -86,8 +86,8 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
   const patterns = useQuery(api.shiftPatterns.list);
   const applyToWeek = useMutation(api.shiftPatterns.applyToWeek);
   const toggleActive = useMutation(api.shiftPatterns.toggleActive);
-  const jobTitles = useQuery(api.jobTitles.list);
-  const roleColorMap = useMemo(() => buildRoleColorMap(jobTitles), [jobTitles]);
+  const positionOptions = useQuery(api.positions.list);
+  const roleColorMap = useMemo(() => buildRoleColorMap(positionOptions), [positionOptions]);
 
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })

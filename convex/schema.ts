@@ -16,7 +16,8 @@ export default defineSchema({
     phone: v.optional(v.string()),
     bio: v.optional(v.string()),
     employmentType: v.optional(v.union(v.literal("employee"), v.literal("subcontractor"))),
-    jobTitle: v.optional(v.string()),
+    positions: v.optional(v.array(v.string())),
+    jobTitle: v.optional(v.string()), // Deprecated: use positions array instead
     startDate: v.optional(v.string()), // ISO date
     address: v.optional(v.string()),
     emergencyContactName: v.optional(v.string()),
@@ -224,10 +225,18 @@ export default defineSchema({
       searchField: "name",
     }),
 
-  jobTitles: defineTable({
+  positions: defineTable({
     label: v.string(), // Display label e.g. "Paramedic"
     color: v.optional(v.string()), // Hex colour e.g. "#3b82f6"
     sortOrder: v.number(), // For custom ordering
+    active: v.boolean(),
+  }),
+
+  // Deprecated: kept for backwards compatibility with existing data
+  jobTitles: defineTable({
+    label: v.string(),
+    color: v.optional(v.string()),
+    sortOrder: v.number(),
     active: v.boolean(),
   }),
 

@@ -16,7 +16,7 @@ type MemberData = {
   role?: string;
   department?: string;
   employmentType?: "employee" | "subcontractor";
-  jobTitle?: string;
+  positions?: string[];
   phone?: string;
   skills?: string[];
 };
@@ -56,8 +56,8 @@ export default function MemberCard({ member }: { member: MemberData }) {
 
       {/* Name and title */}
       <p className="font-semibold text-sm truncate w-full">{member.name ?? "Unnamed"}</p>
-      {member.jobTitle && (
-        <p className="text-xs text-muted-foreground mt-0.5 truncate w-full">{member.jobTitle}</p>
+      {member.positions && member.positions.length > 0 && (
+        <p className="text-xs text-muted-foreground mt-0.5 truncate w-full">{member.positions.join(", ")}</p>
       )}
 
       {/* Employment type badge */}

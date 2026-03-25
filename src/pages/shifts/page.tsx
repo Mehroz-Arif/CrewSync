@@ -115,8 +115,8 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   const weekEnd = addWeeks(weekStart, 1);
 
   // Query job titles for role colour map
-  const jobTitles = useQuery(api.jobTitles.list);
-  const roleColorMap = useMemo(() => buildRoleColorMap(jobTitles), [jobTitles]);
+  const positionOptions = useQuery(api.positions.list);
+  const roleColorMap = useMemo(() => buildRoleColorMap(positionOptions), [positionOptions]);
 
   // Auto-apply active patterns when the viewed week changes
   const applyToWeek = useMutation(api.shiftPatterns.applyToWeek);

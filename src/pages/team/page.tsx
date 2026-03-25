@@ -55,7 +55,7 @@ export default function TeamPage() {
         (m) =>
           m.name?.toLowerCase().includes(q) ||
           m.email?.toLowerCase().includes(q) ||
-          m.jobTitle?.toLowerCase().includes(q) ||
+          m.positions?.some((p) => p.toLowerCase().includes(q)) ||
           m.department?.toLowerCase().includes(q) ||
           m.skills?.some((s) => s.toLowerCase().includes(q)),
       );

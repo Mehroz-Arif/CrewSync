@@ -40,7 +40,7 @@ type StaffMember = {
   _id: Id<"users">;
   name?: string;
   role?: string;
-  jobTitle?: string;
+  positions?: string[];
 };
 
 type PatternData = {
@@ -83,7 +83,7 @@ export default function PatternDialog({
   const createPattern = useMutation(api.shiftPatterns.create);
   const updatePattern = useMutation(api.shiftPatterns.update);
   const deletePattern = useMutation(api.shiftPatterns.remove);
-  const jobTitleOptions = useQuery(api.jobTitles.list);
+  const positionOptions = useQuery(api.positions.list);
 
   const [name, setName] = useState(() => pattern?.name ?? "");
   const [patternType, setPatternType] = useState<"weekly" | "rotation">(
@@ -289,7 +289,7 @@ export default function PatternDialog({
               <SelectTrigger><SelectValue placeholder="Select staff role" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No role</SelectItem>
-                {jobTitleOptions?.map((jt) => (
+                {positionOptions?.map((jt) => (
                   <SelectItem key={jt._id} value={jt.label}>{jt.label}</SelectItem>
                 ))}
               </SelectContent>

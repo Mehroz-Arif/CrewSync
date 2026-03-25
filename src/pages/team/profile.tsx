@@ -96,8 +96,8 @@ export default function ProfilePage() {
             </div>
 
             <h2 className="font-heading font-bold text-xl">{profile.name ?? "Unnamed"}</h2>
-            {profile.jobTitle && (
-              <p className="text-sm text-muted-foreground mt-1">{profile.jobTitle}</p>
+            {profile.positions && profile.positions.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-1">{profile.positions.join(", ")}</p>
             )}
 
             <div className="mt-3">
