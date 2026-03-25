@@ -36,7 +36,7 @@ export default function DayCell({
       ref={setNodeRef}
       onClick={isAdmin ? onCellClick : undefined}
       className={cn(
-        "min-h-[72px] p-1 border-b border-r relative group/cell transition-colors",
+        "min-h-[56px] p-0.5 border-b border-r relative group/cell transition-colors",
         isOver && isAdmin && "bg-primary/10 ring-1 ring-inset ring-primary/25",
         isToday && !isOver && "bg-primary/[0.03]",
         isAdmin && !hasShifts && "cursor-pointer hover:bg-muted/40",

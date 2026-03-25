@@ -85,7 +85,7 @@ function UnassignedDropCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[72px] p-1 border-b border-r bg-amber-500/[0.02] transition-colors",
+        "min-h-[56px] p-0.5 border-b border-r bg-amber-500/[0.02] transition-colors",
         isCurrentDay && "bg-amber-500/[0.05]",
         isShiftDragging && !isOver && "bg-amber-500/[0.06] ring-1 ring-inset ring-dashed ring-amber-500/20",
         isOver && "bg-amber-500/15 ring-2 ring-inset ring-amber-500/40"
@@ -264,13 +264,13 @@ export default function ScheduleGrid({
       <div className="border rounded-xl overflow-hidden bg-card">
         <div className="overflow-x-auto">
           <div
-            className="grid min-w-[960px]"
+            className="grid min-w-[900px]"
             style={{
-              gridTemplateColumns: "180px repeat(7, minmax(110px, 1fr))",
+              gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
             }}
           >
             {/* Header row */}
-            <div className="px-3 py-2 border-b border-r bg-muted/40 flex items-end">
+            <div className="px-2 py-1.5 border-b border-r bg-muted/40 flex items-end">
               <span className="font-heading font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
                 Crew
               </span>
@@ -279,7 +279,7 @@ export default function ScheduleGrid({
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "px-2 py-2 border-b text-center",
+                  "px-1.5 py-1.5 border-b text-center",
                   isToday(day)
                     ? "bg-primary/8"
                     : "bg-muted/40"
@@ -303,11 +303,11 @@ export default function ScheduleGrid({
             {isAdmin && (
               <>
                 <div className={cn(
-                  "px-3 py-2 border-b border-r flex items-center gap-2.5 bg-amber-500/5 transition-colors",
+                  "px-2 py-1.5 border-b border-r flex items-center gap-2 bg-amber-500/5 transition-colors",
                   isDraggingUnpublishedShift && "bg-amber-500/10"
                 )}>
-                  <div className="size-7 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
-                    <Package className="size-3.5 text-amber-600 dark:text-amber-400" />
+                  <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+                    <Package className="size-3 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
@@ -348,8 +348,8 @@ export default function ScheduleGrid({
             {staff.map((employee) => (
               <Fragment key={employee._id}>
                 {/* Name cell */}
-                <div className="px-3 py-2 border-b border-r flex items-center gap-2.5 bg-muted/20">
-                  <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[10px] shrink-0">
+                <div className="px-2 py-1.5 border-b border-r flex items-center gap-2 bg-muted/20">
+                  <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[10px] shrink-0">
                     {employee.name?.charAt(0)?.toUpperCase() ?? "?"}
                   </div>
                   <div className="min-w-0">

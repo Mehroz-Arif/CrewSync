@@ -69,7 +69,7 @@ export default function ShiftBlock({
   const colorStyle = roleColorStyles(colorHex);
 
   const blockClassName = cn(
-    "group/block relative rounded-md border-l-3 px-2 py-1.5 text-[11px] select-none transition-all",
+    "group/block relative rounded-md border-l-3 px-1.5 py-1 text-[11px] select-none transition-all",
     isDragging && "opacity-30 scale-95",
     isAdmin && "cursor-grab active:cursor-grabbing",
     !isAdmin && "cursor-pointer",

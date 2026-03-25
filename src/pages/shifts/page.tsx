@@ -78,9 +78,9 @@ function AdminView() {
   }
 
   return (
-    <Tabs defaultValue="schedule" className="space-y-5">
+    <Tabs defaultValue="schedule" className="space-y-3">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="font-heading font-bold text-2xl md:text-3xl">
+        <h1 className="font-heading font-bold text-xl md:text-2xl">
           Shift Schedule
         </h1>
         <TabsList>
@@ -317,10 +317,10 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   const isCurrentWeek = isThisWeek(weekStart, { weekStartsOn: 1 });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 -mx-2 md:-mx-3 lg:-mx-4">
       {/* Sub-header with actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="text-muted-foreground text-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-2 md:px-3 lg:px-4">
+        <p className="text-muted-foreground text-xs">
           Drag shifts between cells or back to unassigned. Publish when ready.
         </p>
         <div className="flex items-center gap-2">
@@ -363,7 +363,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       </div>
 
       {/* Week navigator */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 px-2 md:px-3 lg:px-4">
         <Button
           variant="ghost"
           size="icon-sm"
@@ -398,7 +398,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+      <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground px-2 md:px-3 lg:px-4">
         <div className="flex items-center gap-1.5">
           <div className="size-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40" />
           <span>Available</span>
