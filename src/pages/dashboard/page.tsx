@@ -42,10 +42,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Your Next Shift — always visible at the top */}
+      <NextShiftCard />
+
       {/* Stats overview */}
       <StatsCards />
 
-      {/* Next shift + Newsfeed grid */}
+      {/* Newsfeed + sidebar grid */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Newsfeed - takes 2 columns */}
         <div className="lg:col-span-2 space-y-4">
@@ -53,10 +56,9 @@ export default function DashboardPage() {
           <NewsFeed />
         </div>
 
-        {/* Sidebar - recognition wall, next shift, pinned posts, quick links */}
+        {/* Sidebar - recognition wall, pinned posts, quick links */}
         <div className="space-y-6">
           <RecognitionWall />
-          <NextShiftCard />
           <PinnedPosts />
 
           {/* Quick links panel */}
