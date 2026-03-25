@@ -128,22 +128,24 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       {/* Logo */}
       <div className="p-5 border-b">
         <a href="/" className="flex items-center gap-3">
-          <div className="size-11 rounded-xl bg-primary flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-primary/20">
-            {organization?.logoUrl ? (
-              <img
-                src={organization.logoUrl}
-                alt={`${organization.name} logo`}
-                className="size-full object-cover"
-              />
-            ) : (
-              <span className="text-primary-foreground font-heading font-black text-sm">
-                CS
+          {organization?.logoUrl ? (
+            <img
+              src={organization.logoUrl}
+              alt={`${organization.name} logo`}
+              className="h-10 max-w-[200px] object-contain"
+            />
+          ) : (
+            <>
+              <div className="size-11 rounded-xl bg-primary flex items-center justify-center shrink-0">
+                <span className="text-primary-foreground font-heading font-black text-sm">
+                  CS
+                </span>
+              </div>
+              <span className="font-heading font-bold text-lg tracking-tight text-foreground truncate">
+                {organization?.name ?? "CrewSync"}
               </span>
-            )}
-          </div>
-          <span className="font-heading font-bold text-lg tracking-tight text-foreground truncate">
-            {organization?.name ?? "CrewSync"}
-          </span>
+            </>
+          )}
         </a>
       </div>
 
