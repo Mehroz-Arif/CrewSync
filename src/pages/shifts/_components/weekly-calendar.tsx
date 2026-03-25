@@ -17,7 +17,6 @@ import {
   CalendarDays,
   Clock,
   Truck,
-  Radio,
   Users,
   Check,
   X as XIcon,
@@ -383,19 +382,10 @@ function ShiftCard({
       </div>
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <Truck className="size-3 shrink-0" />
-        <span className="truncate">{shift.vehicle}</span>
+        <span className="truncate">
+          {shift.callSign ? `${shift.callSign} · ${shift.vehicle}` : shift.vehicle}{shift.position ? ` · ${shift.position}` : ""}
+        </span>
       </div>
-      {shift.callSign && (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Radio className="size-3 shrink-0" />
-          <span className="truncate">{shift.callSign}</span>
-        </div>
-      )}
-      {shift.position && (
-        <div className="text-[10px] font-medium text-muted-foreground/80 uppercase tracking-wider">
-          {shift.position}
-        </div>
-      )}
       {shift.members.length > 1 && (
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Users className="size-3 shrink-0" />
