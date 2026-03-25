@@ -59,17 +59,19 @@ type ScheduleGridProps = {
 };
 
 type ActiveDrag =
-  | { type: "shift"; startTime: string; endTime: string; vehicle: string; sourceDate: string }
+  | { type: "shift"; startTime: string; endTime: string; vehicle: string; sourceDate: string; published: boolean }
   | { type: "unassigned"; shift: UnassignedShift };
 
 /** Droppable cell for the unassigned row */
 function UnassignedDropCell({
   dateStr,
   isCurrentDay,
+  isShiftDragging,
   children,
 }: {
   dateStr: string;
   isCurrentDay: boolean;
+  isShiftDragging: boolean;
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -83,10 +85,18 @@ function UnassignedDropCell({
       className={cn(
         "min-h-[72px] p-1 border-b border-r bg-amber-500/[0.02] transition-colors",
         isCurrentDay && "bg-amber-500/[0.05]",
-        isOver && "bg-amber-500/10 ring-1 ring-inset ring-amber-500/25"
+        isShiftDragging && !isOver && "bg-amber-500/[0.06] ring-1 ring-inset ring-dashed ring-amber-500/20",
+        isOver && "bg-amber-500/15 ring-2 ring-inset ring-amber-500/40"
       )}
     >
-      <div className="space-y-1">{children}</div>
+      <div className="space-y-1">
+        {children}
+        {isShiftDragging && !isOver && (
+          <div className="flex items-center justify-center py-2 text-[10px] text-amber-600/60 dark:text-amber-400/60">
+            Drop here
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -151,6 +161,7 @@ export default function ScheduleGrid({
           endTime: String(d.endTime),
           vehicle: String(d.vehicle),
           sourceDate: String(d.sourceDate),
+          published: Boolean(d.published),
         });
       } else if (d?.type === "unassigned") {
         const shift = unassignedShifts.find(
@@ -175,6 +186,10 @@ export default function ScheduleGrid({
 
       // Handle drop onto unassigned row (drag back to unassign)
       if (tgt?.type === "unassigned-cell" && src?.type === "shift") {
+        if (src.published) {
+          toast.error("Unpublish the shift first before moving it to unassigned");
+          return;
+        }
         try {
           await unassignFromShift({
             membershipId: String(src.membershipId) as Id<"shiftMembers">,
@@ -237,6 +252,10 @@ export default function ScheduleGrid({
 
   const hasUnassigned = unassignedShifts.length > 0;
 
+  // True when an unpublished assigned shift is being dragged (can be dropped to unassign)
+  const isDraggingUnpublishedShift =
+    activeDrag?.type === "shift" && !activeDrag.published;
+
   return (
     <DndContext
       sensors={sensors}
@@ -284,15 +303,18 @@ export default function ScheduleGrid({
             {/* Unassigned shifts row (admin only, always shown) */}
             {isAdmin && (
               <>
-                <div className="px-3 py-2 border-b border-r flex items-center gap-2.5 bg-amber-500/5">
+                <div className={cn(
+                  "px-3 py-2 border-b border-r flex items-center gap-2.5 bg-amber-500/5 transition-colors",
+                  isDraggingUnpublishedShift && "bg-amber-500/10"
+                )}>
                   <div className="size-7 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
                     <Package className="size-3.5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
-                      Unassigned
+                      {isDraggingUnpublishedShift ? "Drop to unassign" : "Unassigned"}
                     </div>
-                    {hasUnassigned && (
+                    {hasUnassigned && !isDraggingUnpublishedShift && (
                       <div className="text-[10px] text-muted-foreground">
                         {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
                       </div>
@@ -307,6 +329,7 @@ export default function ScheduleGrid({
                       key={`unassigned-${dateStr}`}
                       dateStr={dateStr}
                       isCurrentDay={isToday(day)}
+                      isShiftDragging={isDraggingUnpublishedShift}
                     >
                       {dayUnassigned.map((shift) => (
                         <DraggableUnassignedShift
