@@ -25,7 +25,7 @@ import DayCell from "./day-cell.tsx";
 import ShiftBlock from "./shift-block.tsx";
 import { ShiftBlockOverlay } from "./shift-block.tsx";
 import type { UnassignedShift } from "./unassigned-pool.tsx";
-import { UnassignedShiftOverlay, DraggableUnassignedShift } from "./unassigned-pool.tsx";
+import { UnassignedShiftOverlay, DraggableUnassignedGroup, groupUnassignedShifts } from "./unassigned-pool.tsx";
 import { Package } from "lucide-react";
 
 type StaffMember = {
@@ -139,17 +139,11 @@ export default function ScheduleGrid({
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  // Group unassigned shifts by date
-  const unassignedByDate = useMemo(() => {
-    const map = new Map<string, UnassignedShift[]>();
-    for (const shift of unassignedShifts) {
-      const dateStr = format(parseISO(shift.startTime), "yyyy-MM-dd");
-      const existing = map.get(dateStr) ?? [];
-      existing.push(shift);
-      map.set(dateStr, existing);
-    }
-    return map;
-  }, [unassignedShifts]);
+  // Group unassigned shifts by date and pattern signature
+  const unassignedGroupsByDate = useMemo(
+    () => groupUnassignedShifts(unassignedShifts),
+    [unassignedShifts]
+  );
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -324,7 +318,7 @@ export default function ScheduleGrid({
                 </div>
                 {days.map((day) => {
                   const dateStr = format(day, "yyyy-MM-dd");
-                  const dayUnassigned = unassignedByDate.get(dateStr) ?? [];
+                  const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
                   return (
                     <UnassignedDropCell
                       key={`unassigned-${dateStr}`}
@@ -332,11 +326,11 @@ export default function ScheduleGrid({
                       isCurrentDay={isToday(day)}
                       isShiftDragging={isDraggingUnpublishedShift}
                     >
-                      {dayUnassigned.map((shift) => (
-                        <DraggableUnassignedShift
-                          key={shift._id}
-                          shift={shift}
-                          onClick={() => onUnassignedShiftClick?.(shift)}
+                      {dayGroups.map((group) => (
+                        <DraggableUnassignedGroup
+                          key={group.key}
+                          group={group}
+                          onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
                         />
                       ))}
                     </UnassignedDropCell>
