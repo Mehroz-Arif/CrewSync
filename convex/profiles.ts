@@ -42,6 +42,8 @@ export const getProfile = query({
       emergencyContactPhone: isAdmin || isSelf ? target.emergencyContactPhone : undefined,
       hourlyRate: isAdmin ? target.hourlyRate : undefined,
       notes: isAdmin ? target.notes : undefined,
+      suspended: target.suspended,
+      isSuperAdmin: target.isSuperAdmin,
     };
   },
 });
@@ -109,7 +111,7 @@ export const updateProfileAsAdmin = mutation({
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
     if (!admin) throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
-    if (admin.role !== "admin") throw new ConvexError({ code: "FORBIDDEN", message: "Admin only" });
+    if (admin.role !== "admin" && !admin.isSuperAdmin) throw new ConvexError({ code: "FORBIDDEN", message: "Admin only" });
 
     const { userId, ...fields } = args;
     await ctx.db.patch(userId, fields);
@@ -135,6 +137,34 @@ export const getDirectory = query({
       jobTitle: u.jobTitle,
       phone: u.phone,
       skills: u.skills,
+      suspended: u.suspended,
     }));
+  },
+});
+
+/** Admin/Super Admin: suspend or reactivate a user */
+export const toggleSuspend = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not logged in" });
+
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin) throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
+    if (admin.role !== "admin" && !admin.isSuperAdmin) {
+      throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
+    }
+    if (args.userId === admin._id) {
+      throw new ConvexError({ code: "BAD_REQUEST", message: "Cannot suspend yourself" });
+    }
+
+    const target = await ctx.db.get(args.userId);
+    if (!target) throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
+
+    await ctx.db.patch(args.userId, { suspended: !target.suspended });
+    return !target.suspended;
   },
 });

@@ -15,6 +15,7 @@ import {
   Eye,
   ShieldCheck,
   BarChart3,
+  Ban,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -322,10 +323,55 @@ export default function DashboardLayout() {
         </div>
       </Unauthenticated>
       <Authenticated>
-        <StaffPreviewProvider>
-          <DashboardShell />
-        </StaffPreviewProvider>
+        <SuspensionGate />
       </Authenticated>
     </>
+  );
+}
+
+/** Checks if the current user is suspended and blocks access if so */
+function SuspensionGate() {
+  const currentUser = useQuery(api.users.getCurrentUser);
+  const { removeUser } = useAuth();
+
+  // Still loading user data
+  if (currentUser === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="space-y-4 w-full max-w-sm">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser?.suspended) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
+        <div className="size-14 rounded-xl bg-destructive/10 flex items-center justify-center">
+          <Ban className="size-7 text-destructive" />
+        </div>
+        <h1 className="font-heading font-bold text-2xl">Account Suspended</h1>
+        <p className="text-muted-foreground text-center max-w-sm">
+          Your account has been suspended. Please contact your administrator for more information.
+        </p>
+        <Button
+          variant="secondary"
+          onClick={async () => {
+            await removeUser();
+          }}
+        >
+          Sign Out
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <StaffPreviewProvider>
+      <DashboardShell />
+    </StaffPreviewProvider>
   );
 }

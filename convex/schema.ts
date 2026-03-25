@@ -11,6 +11,7 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     organizationId: v.optional(v.id("organizations")),
     isSuperAdmin: v.optional(v.boolean()),
+    suspended: v.optional(v.boolean()),
     // Profile fields
     phone: v.optional(v.string()),
     bio: v.optional(v.string()),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import { cn } from "@/lib/utils.ts";
@@ -20,6 +20,8 @@ import {
   Award,
   Wrench,
   StickyNote,
+  Ban,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
@@ -27,6 +29,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.t
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import EditProfileDialog from "./_components/edit-profile-dialog.tsx";
 import AdminEditProfileDialog from "./_components/admin-edit-profile-dialog.tsx";
+import { toast } from "sonner";
+import { ConvexError } from "convex/values";
+import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 export default function ProfilePage() {
   const { userId } = useParams();
@@ -39,8 +44,10 @@ export default function ProfilePage() {
     api.profiles.getProfile,
     userId ? { userId: userId as Id<"users"> } : "skip",
   );
+  const toggleSuspend = useMutation(api.profiles.toggleSuspend);
+  const { isPreviewingAsStaff } = useStaffPreview();
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = (currentUser?.role === "admin" || currentUser?.isSuperAdmin) && !isPreviewingAsStaff;
   const isSelf = currentUser?._id === userId;
   const isSubcontractor = profile?.employmentType === "subcontractor";
 
@@ -111,6 +118,12 @@ export default function ProfilePage() {
                   Admin
                 </Badge>
               )}
+              {profile.suspended && (
+                <Badge variant="destructive" className="ml-2 gap-1">
+                  <Ban className="size-3" />
+                  Suspended
+                </Badge>
+              )}
             </div>
 
             {profile.bio && (
@@ -135,6 +148,42 @@ export default function ProfilePage() {
                 <Button variant="ghost" size="sm" className="w-full gap-2" onClick={() => setShowAdminEdit(true)}>
                   <Shield className="size-4" />
                   Admin Edit
+                </Button>
+              )}
+              {isAdmin && !isSelf && (
+                <Button
+                  variant={profile.suspended ? "secondary" : "destructive"}
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={async () => {
+                    try {
+                      const nowSuspended = await toggleSuspend({ userId: userId as Id<"users"> });
+                      toast.success(
+                        nowSuspended
+                          ? `${profile.name ?? "User"} has been suspended`
+                          : `${profile.name ?? "User"} has been reactivated`,
+                      );
+                    } catch (error) {
+                      if (error instanceof ConvexError) {
+                        const { message } = error.data as { message: string };
+                        toast.error(message);
+                      } else {
+                        toast.error("Failed to update suspension status");
+                      }
+                    }
+                  }}
+                >
+                  {profile.suspended ? (
+                    <>
+                      <CheckCircle2 className="size-4" />
+                      Reactivate Account
+                    </>
+                  ) : (
+                    <>
+                      <Ban className="size-4" />
+                      Suspend Account
+                    </>
+                  )}
                 </Button>
               )}
             </div>
