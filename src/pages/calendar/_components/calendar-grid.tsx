@@ -25,6 +25,7 @@ export type CalendarEvent = {
   endTime?: string;
   allDay: boolean;
   location?: string;
+  teamsLink?: string;
   creatorName: string;
   attendanceEnabled?: boolean;
   maxAttendees?: number;

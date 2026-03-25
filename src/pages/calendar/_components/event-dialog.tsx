@@ -49,6 +49,7 @@ type EventDialogProps = {
     endTime?: string;
     allDay: boolean;
     location?: string;
+    teamsLink?: string;
     attendanceEnabled?: boolean;
     maxAttendees?: number;
   };
@@ -72,6 +73,7 @@ export default function EventDialog({
   const [endTime, setEndTime] = useState("10:00");
   const [allDay, setAllDay] = useState(false);
   const [location, setLocation] = useState("");
+  const [teamsLink, setTeamsLink] = useState("");
   const [attendanceEnabled, setAttendanceEnabled] = useState(false);
   const [maxAttendees, setMaxAttendees] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,6 +88,7 @@ export default function EventDialog({
       setEndTime(event.endTime ?? "10:00");
       setAllDay(event.allDay);
       setLocation(event.location ?? "");
+      setTeamsLink(event.teamsLink ?? "");
       setAttendanceEnabled(event.attendanceEnabled ?? false);
       setMaxAttendees(event.maxAttendees ? String(event.maxAttendees) : "");
     } else {
@@ -97,6 +100,7 @@ export default function EventDialog({
       setEndTime("10:00");
       setAllDay(false);
       setLocation("");
+      setTeamsLink("");
       setAttendanceEnabled(false);
       setMaxAttendees("");
     }
@@ -121,6 +125,7 @@ export default function EventDialog({
         endTime: allDay ? undefined : endTime,
         allDay,
         location: location.trim() || undefined,
+        teamsLink: teamsLink.trim() || undefined,
         attendanceEnabled,
         maxAttendees: attendanceEnabled ? parsedMax : undefined,
       };
@@ -236,6 +241,24 @@ export default function EventDialog({
               onChange={(e) => setLocation(e.target.value)}
               maxLength={100}
             />
+          </div>
+
+          {/* Teams Meeting Link */}
+          <div className="space-y-1.5">
+            <Label htmlFor="event-teams-link">
+              Teams Meeting Link
+              <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+            </Label>
+            <Input
+              id="event-teams-link"
+              placeholder="https://teams.microsoft.com/l/meetup-join/..."
+              value={teamsLink}
+              onChange={(e) => setTeamsLink(e.target.value)}
+              type="url"
+            />
+            <p className="text-xs text-muted-foreground">
+              Paste a Microsoft Teams meeting link so staff can join directly.
+            </p>
           </div>
 
           {/* Attendance toggle */}

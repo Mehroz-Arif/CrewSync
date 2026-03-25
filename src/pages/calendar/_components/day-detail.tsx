@@ -18,6 +18,7 @@ import {
   XCircle,
   Check,
   X,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -168,6 +169,20 @@ function EventCard({ event, isAdmin, onEdit, onDelete }: EventCardProps) {
           <MapPin className="size-3.5" />
           <span>{event.location}</span>
         </div>
+      )}
+
+      {/* Teams Meeting Link */}
+      {event.teamsLink && (
+        <a
+          href={event.teamsLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Video className="size-3.5" />
+          <span>Join Teams Meeting</span>
+        </a>
       )}
 
       {/* Description */}

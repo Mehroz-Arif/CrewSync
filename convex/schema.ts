@@ -181,6 +181,7 @@ export default defineSchema({
     endTime: v.optional(v.string()), // "HH:mm"
     allDay: v.boolean(),
     location: v.optional(v.string()),
+    teamsLink: v.optional(v.string()), // Microsoft Teams meeting URL
     createdBy: v.id("users"),
     // Attendance fields
     attendanceEnabled: v.optional(v.boolean()),

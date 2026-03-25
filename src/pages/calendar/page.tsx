@@ -222,6 +222,7 @@ export default function CalendarPage() {
                 endTime: editingEvent.endTime,
                 allDay: editingEvent.allDay,
                 location: editingEvent.location,
+                teamsLink: editingEvent.teamsLink,
                 attendanceEnabled: editingEvent.attendanceEnabled,
                 maxAttendees: editingEvent.maxAttendees,
               }
