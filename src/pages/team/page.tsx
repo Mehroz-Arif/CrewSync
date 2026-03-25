@@ -12,8 +12,10 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from "@/components/ui/empty.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import { cn } from "@/lib/utils.ts";
 import MemberCard from "./_components/member-card.tsx";
+import PendingInviteCard from "./_components/pending-invite-card.tsx";
 import AddMemberDialog from "../settings/_components/add-member-dialog.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
@@ -30,6 +32,7 @@ export default function TeamPage() {
   const [filter, setFilter] = useState<FilterValue>("all");
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const directory = useQuery(api.profiles.getDirectory);
+  const pendingInvites = useQuery(api.organizations.getInvites);
   const currentUser = useQuery(api.users.getCurrentUser);
   const { isPreviewingAsStaff } = useStaffPreview();
 
@@ -145,6 +148,27 @@ export default function TeamPage() {
           {filtered.map((member) => (
             <MemberCard key={member._id} member={member} />
           ))}
+        </div>
+      )}
+
+      {/* Pending Invites Section */}
+      {pendingInvites && pendingInvites.length > 0 && canAddMembers && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center gap-2">
+            <h2 className="font-heading font-semibold text-base">Pending Invites</h2>
+            <Badge variant="secondary" className="text-xs">
+              {pendingInvites.length}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {pendingInvites.map((invite) => (
+              <PendingInviteCard
+                key={invite._id}
+                invite={invite}
+                canCancel={canAddMembers}
+              />
+            ))}
+          </div>
         </div>
       )}
 
