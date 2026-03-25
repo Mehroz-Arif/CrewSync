@@ -45,8 +45,8 @@ export default function DashboardPage() {
       {/* Your Next Shift — always visible at the top */}
       <NextShiftCard />
 
-      {/* Stats overview */}
-      <StatsCards />
+      {/* Stats overview — admin only */}
+      {isAdmin && <StatsCards />}
 
       {/* Newsfeed + sidebar grid */}
       <div className="grid lg:grid-cols-3 gap-6">
