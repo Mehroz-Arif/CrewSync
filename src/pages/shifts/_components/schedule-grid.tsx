@@ -45,6 +45,7 @@ export type CellShift = {
   position?: string;
   notes?: string;
   published: boolean;
+  allocatedVehicle?: string;
 };
 
 type ScheduleGridProps = {
@@ -393,6 +394,7 @@ export default function ScheduleGrid({
                           vehicle={shift.vehicle}
                           callSign={shift.callSign}
                           position={shift.position}
+                          allocatedVehicle={shift.allocatedVehicle}
                           roleColor={shift.position ? roleColorMap[shift.position] : undefined}
                           sourceDate={dateStr}
                           isAdmin={isAdmin}

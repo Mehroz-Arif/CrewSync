@@ -19,6 +19,7 @@ type ShiftBlockProps = {
   vehicle: string;
   callSign?: string;
   position?: string;
+  allocatedVehicle?: string;
   roleColor?: string; // hex colour from position
   sourceDate: string;
   isAdmin: boolean;
@@ -35,6 +36,7 @@ export default function ShiftBlock({
   vehicle,
   callSign,
   position,
+  allocatedVehicle,
   roleColor,
   sourceDate,
   isAdmin,
@@ -81,6 +83,8 @@ export default function ShiftBlock({
     if (!isDragging) onClick();
   };
 
+  const displayVehicle = allocatedVehicle ?? vehicle;
+
   const blockContent = (
     <>
       <div className="font-semibold truncate leading-tight flex items-center gap-1">
@@ -95,9 +99,15 @@ export default function ShiftBlock({
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
         <span className="truncate">
-          {callSign || vehicle}{position ? ` · ${position}` : ""}
+          {callSign || displayVehicle}{position ? ` · ${position}` : ""}
         </span>
       </div>
+      {allocatedVehicle && callSign && (
+        <div className="flex items-center gap-1 text-[10px] opacity-60 truncate">
+          <Truck className="size-2.5 shrink-0" />
+          <span className="truncate">{allocatedVehicle}</span>
+        </div>
+      )}
       {!published && isAdmin && (
         <div className="text-[9px] uppercase tracking-wider opacity-50 mt-0.5 font-medium">
           Draft

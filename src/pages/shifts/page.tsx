@@ -160,6 +160,12 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     endDate: format(addDays(weekStart, 7), "yyyy-MM-dd"),
   });
 
+  // Fetch vehicle allocations for the same week
+  const vehicleAllocations = useQuery(api.vehicleAllocations.getByDateRange, {
+    startDate: format(weekStart, "yyyy-MM-dd"),
+    endDate: format(addDays(weekStart, 6), "yyyy-MM-dd"),
+  });
+
   const setPublished = useMutation(api.shifts.setPublished);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -186,6 +192,16 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     | undefined
   >();
 
+  // Build vehicle allocation lookup: "date__callSign" → vehicle
+  const vehicleAllocationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!vehicleAllocations) return map;
+    for (const alloc of vehicleAllocations) {
+      map.set(`${alloc.date}__${alloc.callSign}`, alloc.vehicle);
+    }
+    return map;
+  }, [vehicleAllocations]);
+
   // Build grid data: cellId → CellShift[]
   const gridData = useMemo(() => {
     const map = new Map<string, CellShift[]>();
@@ -193,6 +209,11 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
 
     for (const shift of shifts) {
       const dateStr = format(parseISO(shift.startTime), "yyyy-MM-dd");
+      // Look up allocated vehicle for this shift's callSign + date
+      const allocatedVehicle = shift.callSign
+        ? vehicleAllocationMap.get(`${dateStr}__${shift.callSign}`)
+        : undefined;
+
       for (const member of shift.members) {
         const key = `${member.userId}__${dateStr}`;
         const existing = map.get(key) ?? [];
@@ -206,12 +227,13 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           position: shift.position,
           notes: shift.notes,
           published: shift.published === true,
+          allocatedVehicle,
         });
         map.set(key, existing);
       }
     }
     return map;
-  }, [shifts]);
+  }, [shifts, vehicleAllocationMap]);
 
   // Build availability map
   const availabilityData = useMemo(() => {
@@ -310,7 +332,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   }
 
   // Loading
-  if (shifts === undefined || unassigned === undefined || allAvailability === undefined) {
+  if (shifts === undefined || unassigned === undefined || allAvailability === undefined || vehicleAllocations === undefined) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-20 w-full rounded-xl" />
