@@ -222,7 +222,7 @@ function getPatternOverlay(
     endTime: newEnd.toISOString(),
     vehicle: pattern.vehicle ?? "",
     callSign: pattern.callSign,
-    position: pattern.position,
+    position: pattern.position ?? pattern.staffRole,
     notes: pattern.notes,
   };
 }
