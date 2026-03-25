@@ -49,6 +49,7 @@ type PatternData = {
   startTime: string;
   endTime: string;
   vehicle: string;
+  callSign?: string;
   notes?: string;
   memberIds: Id<"users">[];
   crewNumber?: number;
@@ -106,6 +107,7 @@ export default function PatternDialog({
   const [startTime, setStartTime] = useState(() => pattern?.startTime ?? "08:00");
   const [endTime, setEndTime] = useState(() => pattern?.endTime ?? "16:00");
   const [vehicle, setVehicle] = useState(() => pattern?.vehicle ?? "");
+  const [callSign, setCallSign] = useState(() => pattern?.callSign ?? "");
   const [notes, setNotes] = useState(() => pattern?.notes ?? "");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
     () => new Set(pattern?.memberIds ?? [])
@@ -190,6 +192,7 @@ export default function PatternDialog({
           startTime,
           endTime,
           vehicle: vehicle.trim(),
+          callSign: callSign.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
           crewNumber,
@@ -210,6 +213,7 @@ export default function PatternDialog({
           startTime,
           endTime,
           vehicle: vehicle.trim(),
+          callSign: callSign.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
           crewNumber,
@@ -424,6 +428,19 @@ export default function PatternDialog({
               value={vehicle}
               onChange={(e) => setVehicle(e.target.value)}
               placeholder="Engine 7 — Pumper Truck"
+            />
+          </div>
+
+          {/* Call Sign */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">
+              Call Sign
+              <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+            </Label>
+            <Input
+              value={callSign}
+              onChange={(e) => setCallSign(e.target.value)}
+              placeholder="Alpha-1"
             />
           </div>
 

@@ -51,6 +51,7 @@ export const create = mutation({
     startTime: v.string(),
     endTime: v.string(),
     vehicle: v.string(),
+    callSign: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
     crewNumber: v.optional(v.number()),
@@ -112,6 +113,7 @@ export const create = mutation({
       startTime: args.startTime,
       endTime: args.endTime,
       vehicle: args.vehicle,
+      callSign: args.callSign,
       notes: args.notes,
       memberIds: args.memberIds,
       crewNumber: args.crewNumber ?? 1,
@@ -137,6 +139,7 @@ export const update = mutation({
     startTime: v.optional(v.string()),
     endTime: v.optional(v.string()),
     vehicle: v.optional(v.string()),
+    callSign: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.optional(v.array(v.id("users"))),
     crewNumber: v.optional(v.number()),
@@ -174,6 +177,7 @@ export const update = mutation({
     if (fields.startTime !== undefined) patch.startTime = fields.startTime;
     if (fields.endTime !== undefined) patch.endTime = fields.endTime;
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
+    if (fields.callSign !== undefined) patch.callSign = fields.callSign;
     if (fields.notes !== undefined) patch.notes = fields.notes;
     if (fields.memberIds !== undefined) patch.memberIds = fields.memberIds;
     if (fields.crewNumber !== undefined) patch.crewNumber = fields.crewNumber;
@@ -378,6 +382,7 @@ export const applyToWeek = mutation({
             startTime: startISO,
             endTime: endISO,
             vehicle: pattern.vehicle,
+            callSign: pattern.callSign,
             notes: pattern.notes,
             createdBy: user._id,
           });

@@ -142,6 +142,7 @@ export default defineSchema({
     startTime: v.string(), // "HH:mm"
     endTime: v.string(), // "HH:mm"
     vehicle: v.string(),
+    callSign: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
     crewNumber: v.optional(v.number()), // How many shifts to create per day (e.g. 2 = two separate shifts)

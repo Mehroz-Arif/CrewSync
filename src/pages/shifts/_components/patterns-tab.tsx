@@ -20,6 +20,7 @@ import {
   CalendarRange,
   RotateCw,
   Hash,
+  Radio,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -70,6 +71,7 @@ type PatternWithMembers = {
   startTime: string;
   endTime: string;
   vehicle: string;
+  callSign?: string;
   notes?: string;
   memberIds: Id<"users">[];
   crewNumber?: number;
@@ -392,6 +394,12 @@ function PatternCard({
             <Truck className="size-3 shrink-0" />
             <span className="truncate">{pattern.vehicle}</span>
           </div>
+          {pattern.callSign && (
+            <div className="flex items-center gap-2">
+              <Radio className="size-3 shrink-0" />
+              <span className="truncate">{pattern.callSign}</span>
+            </div>
+          )}
           {(pattern.crewNumber ?? 1) > 1 && (
             <div className="flex items-center gap-2">
               <Hash className="size-3 shrink-0" />
