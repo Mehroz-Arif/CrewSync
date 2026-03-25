@@ -41,8 +41,8 @@ async function checkRoleMatch(
   const user = await ctx.db.get(userId);
   if (!user) return;
 
-  // Use the positions array (may be undefined for users not yet updated)
-  const userPositions: string[] = user.positions ?? [];
+  // Support both new array field and legacy single string
+  const userPositions: string[] = user.positions ?? (user.jobTitle ? [user.jobTitle] : []);
 
   if (!userPositions.includes(staffRole)) {
     throw new ConvexError({
