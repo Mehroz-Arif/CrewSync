@@ -1,4 +1,4 @@
-/** Preset colour palette for staff roles */
+/** Preset colour palette for positions */
 export const ROLE_COLOR_PRESETS = [
   { id: "blue", label: "Blue", hex: "#3b82f6" },
   { id: "red", label: "Red", hex: "#ef4444" },
@@ -12,10 +12,10 @@ export const ROLE_COLOR_PRESETS = [
   { id: "cyan", label: "Cyan", hex: "#06b6d4" },
 ] as const;
 
-/** Default fallback colour when role has no colour assigned */
+/** Default fallback colour when position has no colour assigned */
 const DEFAULT_COLOR = "#64748b"; // slate-500
 
-/** Build a lookup map from role label → hex colour */
+/** Build a lookup map from position label → hex colour */
 export function buildRoleColorMap(
   positions: Array<{ label: string; color?: string }> | undefined,
 ): Record<string, string> {
@@ -29,16 +29,16 @@ export function buildRoleColorMap(
   return map;
 }
 
-/** Get the hex colour for a given staff role */
+/** Get the hex colour for a given position */
 export function getRoleColor(
   roleColorMap: Record<string, string>,
-  staffRole?: string,
+  position?: string,
 ): string {
-  if (!staffRole) return DEFAULT_COLOR;
-  return roleColorMap[staffRole] ?? DEFAULT_COLOR;
+  if (!position) return DEFAULT_COLOR;
+  return roleColorMap[position] ?? DEFAULT_COLOR;
 }
 
-/** Generate inline CSS styles for a shift block based on role colour */
+/** Generate inline CSS styles for a shift block based on position colour */
 export function roleColorStyles(hex: string): {
   backgroundColor: string;
   borderColor: string;

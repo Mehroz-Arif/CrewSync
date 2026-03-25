@@ -58,7 +58,7 @@ type PatternData = {
   endTime: string;
   vehicle?: string;
   callSign?: string;
-  staffRole?: string;
+  position?: string;
   notes?: string;
   memberIds: Id<"users">[];
   crewNumber?: number;
@@ -118,7 +118,7 @@ export default function PatternDialog({
   const [endTime, setEndTime] = useState(() => pattern?.endTime ?? "16:00");
   const [vehicle, setVehicle] = useState(() => pattern?.vehicle ?? "");
   const [callSign, setCallSign] = useState(() => pattern?.callSign ?? "");
-  const [staffRole, setStaffRole] = useState(() => pattern?.staffRole ?? "");
+  const [position, setPosition] = useState(() => pattern?.position ?? "");
   const [notes, setNotes] = useState(() => pattern?.notes ?? "");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
     () => new Set(pattern?.memberIds ?? [])
@@ -200,7 +200,7 @@ export default function PatternDialog({
           endTime,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
-          staffRole: staffRole.trim() || undefined,
+          position: position.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
           crewNumber,
@@ -222,7 +222,7 @@ export default function PatternDialog({
           endTime,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
-          staffRole: staffRole.trim() || undefined,
+          position: position.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
           crewNumber,
@@ -279,16 +279,16 @@ export default function PatternDialog({
             />
           </div>
 
-          {/* Staff Role */}
+          {/* Position */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Staff Role</Label>
+            <Label className="text-xs font-medium">Position</Label>
             <p className="text-xs text-muted-foreground -mt-0.5">
-              The role required for this shift pattern.
+              The position required for this shift pattern.
             </p>
-            <Select value={staffRole || "none"} onValueChange={(v) => setStaffRole(v === "none" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Select staff role" /></SelectTrigger>
+            <Select value={position || "none"} onValueChange={(v) => setPosition(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No role</SelectItem>
+                <SelectItem value="none">No position</SelectItem>
                 {positionOptions?.map((jt) => (
                   <SelectItem key={jt._id} value={jt.label}>{jt.label}</SelectItem>
                 ))}

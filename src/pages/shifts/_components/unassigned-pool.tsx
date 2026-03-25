@@ -11,7 +11,7 @@ export type UnassignedShift = {
   endTime: string;
   vehicle: string;
   callSign?: string;
-  staffRole?: string;
+  position?: string;
   notes?: string;
 };
 
@@ -23,7 +23,7 @@ export type UnassignedGroup = {
   endTime: string;
   vehicle: string;
   callSign?: string;
-  staffRole?: string;
+  position?: string;
 };
 
 /** Group unassigned shifts by date → pattern signature */
@@ -55,7 +55,7 @@ export function groupUnassignedShifts(shifts: UnassignedShift[]): Map<string, Un
         endTime: first.endTime,
         vehicle: first.vehicle,
         callSign: first.callSign,
-        staffRole: first.staffRole,
+        position: first.position,
       });
     }
     result.set(dateStr, groups);
@@ -133,7 +133,7 @@ export function DraggableUnassignedGroup({
       {(first.callSign || first.vehicle) && (
         <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
           <Truck className="size-2.5 shrink-0" />
-          <span className="truncate">{first.callSign || first.vehicle}{group.staffRole ? ` · ${group.staffRole}` : ""}</span>
+          <span className="truncate">{first.callSign || first.vehicle}{group.position ? ` · ${group.position}` : ""}</span>
         </div>
       )}
     </div>
@@ -162,7 +162,7 @@ export function UnassignedShiftOverlay({
       {(shift.callSign || shift.vehicle) && (
         <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
           <Truck className="size-2.5 shrink-0" />
-          <span className="truncate">{shift.callSign || shift.vehicle}{shift.staffRole ? ` · ${shift.staffRole}` : ""}</span>
+          <span className="truncate">{shift.callSign || shift.vehicle}{shift.position ? ` · ${shift.position}` : ""}</span>
         </div>
       )}
     </div>

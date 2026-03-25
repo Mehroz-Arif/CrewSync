@@ -18,8 +18,8 @@ type ShiftBlockProps = {
   endTime: string;
   vehicle: string;
   callSign?: string;
-  staffRole?: string;
-  roleColor?: string; // hex colour from job title
+  position?: string;
+  roleColor?: string; // hex colour from position
   sourceDate: string;
   isAdmin: boolean;
   published: boolean;
@@ -34,7 +34,7 @@ export default function ShiftBlock({
   endTime,
   vehicle,
   callSign,
-  staffRole,
+  position,
   roleColor,
   sourceDate,
   isAdmin,
@@ -54,7 +54,7 @@ export default function ShiftBlock({
         endTime,
         vehicle,
         callSign,
-        staffRole,
+        position,
         published,
       },
       disabled: !isAdmin,
@@ -64,7 +64,7 @@ export default function ShiftBlock({
     ? { transform: CSS.Translate.toString(transform) }
     : undefined;
 
-  // Use role colour if available, otherwise fall back to default
+  // Use position colour if available, otherwise fall back to default
   const colorHex = roleColor ?? "#64748b";
   const colorStyle = roleColorStyles(colorHex);
 
@@ -95,7 +95,7 @@ export default function ShiftBlock({
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
         <span className="truncate">
-          {callSign || vehicle}{staffRole ? ` · ${staffRole}` : ""}
+          {callSign || vehicle}{position ? ` · ${position}` : ""}
         </span>
       </div>
       {!published && isAdmin && (

@@ -170,7 +170,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         endTime: string;
         vehicle: string;
         callSign?: string;
-        staffRole?: string;
+        position?: string;
         notes?: string;
         members: Array<{
           membershipId: Id<"shiftMembers">;
@@ -198,7 +198,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           endTime: shift.endTime,
           vehicle: shift.vehicle,
           callSign: shift.callSign,
-          staffRole: shift.staffRole,
+          position: shift.position,
           notes: shift.notes,
           published: shift.published === true,
         });
@@ -250,7 +250,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       endTime: full.endTime,
       vehicle: full.vehicle,
       callSign: full.callSign,
-      staffRole: full.staffRole,
+      position: full.position,
       notes: full.notes,
       members: full.members,
     });
@@ -267,7 +267,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       endTime: uShift.endTime,
       vehicle: uShift.vehicle,
       callSign: uShift.callSign,
-      staffRole: uShift.staffRole,
+      position: uShift.position,
       notes: uShift.notes,
       members: [],
     });

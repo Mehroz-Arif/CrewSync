@@ -95,7 +95,8 @@ export default defineSchema({
     endTime: v.string(),
     vehicle: v.string(),
     callSign: v.optional(v.string()),
-    staffRole: v.optional(v.string()), // Required role e.g. "Ambulance Care Assistant"
+    position: v.optional(v.string()), // Required position e.g. "Ambulance Care Assistant"
+    staffRole: v.optional(v.string()), // Deprecated: use position instead
     notes: v.optional(v.string()),
     createdBy: v.id("users"),
     published: v.optional(v.boolean()),
@@ -145,7 +146,8 @@ export default defineSchema({
     endTime: v.string(), // "HH:mm"
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
-    staffRole: v.optional(v.string()), // Required role e.g. "Ambulance Care Assistant"
+    position: v.optional(v.string()), // Required position e.g. "Ambulance Care Assistant"
+    staffRole: v.optional(v.string()), // Deprecated: use position instead
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
     crewNumber: v.optional(v.number()), // How many shifts to create per day (e.g. 2 = two separate shifts)

@@ -42,7 +42,7 @@ export type CellShift = {
   endTime: string;
   vehicle: string;
   callSign?: string;
-  staffRole?: string;
+  position?: string;
   notes?: string;
   published: boolean;
 };
@@ -54,14 +54,14 @@ type ScheduleGridProps = {
   isAdmin: boolean;
   unassignedShifts: UnassignedShift[];
   availabilityData: Map<string, "available" | "unavailable">;
-  roleColorMap: Record<string, string>; // staffRole label → hex colour
+  roleColorMap: Record<string, string>; // position label → hex colour
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
   onUnassignedShiftClick?: (shift: UnassignedShift) => void;
 };
 
 type ActiveDrag =
-  | { type: "shift"; startTime: string; endTime: string; vehicle: string; callSign?: string; staffRole?: string; sourceDate: string; published: boolean }
+  | { type: "shift"; startTime: string; endTime: string; vehicle: string; callSign?: string; position?: string; sourceDate: string; published: boolean }
   | { type: "unassigned"; shift: UnassignedShift };
 
 /** Droppable cell for the unassigned row */
@@ -158,7 +158,7 @@ export default function ScheduleGrid({
           endTime: String(d.endTime),
           vehicle: String(d.vehicle),
           callSign: d.callSign ? String(d.callSign) : undefined,
-          staffRole: d.staffRole ? String(d.staffRole) : undefined,
+          position: d.position ? String(d.position) : undefined,
           sourceDate: String(d.sourceDate),
           published: Boolean(d.published),
         });
@@ -334,7 +334,7 @@ export default function ScheduleGrid({
                         <DraggableUnassignedGroup
                           key={group.key}
                           group={group}
-                          roleColor={group.staffRole ? roleColorMap[group.staffRole] : undefined}
+                          roleColor={group.position ? roleColorMap[group.position] : undefined}
                           onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
                         />
                       ))}
@@ -392,8 +392,8 @@ export default function ScheduleGrid({
                           endTime={shift.endTime}
                           vehicle={shift.vehicle}
                           callSign={shift.callSign}
-                          staffRole={shift.staffRole}
-                          roleColor={shift.staffRole ? roleColorMap[shift.staffRole] : undefined}
+                          position={shift.position}
+                          roleColor={shift.position ? roleColorMap[shift.position] : undefined}
                           sourceDate={dateStr}
                           isAdmin={isAdmin}
                           published={shift.published}
@@ -418,12 +418,12 @@ export default function ScheduleGrid({
             endTime={activeDrag.endTime}
             vehicle={activeDrag.vehicle}
             callSign={activeDrag.callSign}
-            roleColor={activeDrag.staffRole ? roleColorMap[activeDrag.staffRole] : undefined}
+            roleColor={activeDrag.position ? roleColorMap[activeDrag.position] : undefined}
           />
         ) : activeDrag?.type === "unassigned" ? (
           <UnassignedShiftOverlay
             shift={activeDrag.shift}
-            roleColor={activeDrag.shift.staffRole ? roleColorMap[activeDrag.shift.staffRole] : undefined}
+            roleColor={activeDrag.shift.position ? roleColorMap[activeDrag.shift.position] : undefined}
           />
         ) : null}
       </DragOverlay>

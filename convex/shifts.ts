@@ -31,22 +31,22 @@ export async function checkUserShiftOverlap(
   }
 }
 
-/** Check if a user has a position matching the shift's required staff role */
-async function checkRoleMatch(
+/** Check if a user has a position matching the shift's required position */
+async function checkPositionMatch(
   ctx: MutationCtx,
   userId: Id<"users">,
-  staffRole?: string,
+  position?: string,
 ) {
-  if (!staffRole) return; // no role requirement on this shift
+  if (!position) return; // no position requirement on this shift
   const user = await ctx.db.get(userId);
   if (!user) return;
 
   // Support both new array field and legacy single string
   const userPositions: string[] = user.positions ?? (user.jobTitle ? [user.jobTitle] : []);
 
-  if (!userPositions.includes(staffRole)) {
+  if (!userPositions.includes(position)) {
     throw new ConvexError({
-      message: `${user.name ?? "Staff member"} does not hold the "${staffRole}" position — this shift requires it`,
+      message: `${user.name ?? "Staff member"} does not hold the "${position}" position — this shift requires it`,
       code: "BAD_REQUEST",
     });
   }
@@ -119,16 +119,25 @@ export const getNextShift = query({
   },
 });
 
-/** Build a lookup from callSign → staffRole using active patterns */
-async function buildCallSignRoleMap(ctx: { db: QueryCtx["db"] }): Promise<Record<string, string>> {
+/** Build a lookup from callSign → position using active patterns */
+async function buildCallSignPositionMap(ctx: { db: QueryCtx["db"] }): Promise<Record<string, string>> {
   const patterns = await ctx.db.query("shiftPatterns").collect();
   const map: Record<string, string> = {};
   for (const p of patterns) {
-    if (p.callSign && p.staffRole) {
-      map[p.callSign] = p.staffRole;
+    const pos = p.position ?? p.staffRole; // fallback to legacy field
+    if (p.callSign && pos) {
+      map[p.callSign] = pos;
     }
   }
   return map;
+}
+
+/** Resolve a shift's effective position from its own field, legacy field, or pattern fallback */
+function resolveShiftPosition(
+  shift: { position?: string; staffRole?: string; callSign?: string },
+  callSignPositionMap: Record<string, string>,
+): string | undefined {
+  return shift.position ?? shift.staffRole ?? (shift.callSign ? callSignPositionMap[shift.callSign] : undefined);
 }
 
 /** Get shifts within a date range, enriched with member details */
@@ -147,8 +156,8 @@ export const getShiftsByDateRange = query({
       )
       .collect();
 
-    // Build callSign→staffRole fallback for older shifts missing staffRole
-    const callSignRoleMap = await buildCallSignRoleMap(ctx);
+    // Build callSign→position fallback for older shifts
+    const callSignPositionMap = await buildCallSignPositionMap(ctx);
 
     return await Promise.all(
       shifts.map(async (shift) => {
@@ -168,10 +177,9 @@ export const getShiftsByDateRange = query({
           })
         );
 
-        // Derive staffRole from pattern callSign when not set on the shift
-        const staffRole = shift.staffRole ?? (shift.callSign ? callSignRoleMap[shift.callSign] : undefined);
+        const position = resolveShiftPosition(shift, callSignPositionMap);
 
-        return { ...shift, staffRole, members: memberDetails };
+        return { ...shift, position, members: memberDetails };
       })
     );
   },
@@ -184,7 +192,7 @@ export const create = mutation({
     endTime: v.string(),
     vehicle: v.string(),
     callSign: v.optional(v.string()),
-    staffRole: v.optional(v.string()),
+    position: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
   },
@@ -203,9 +211,9 @@ export const create = mutation({
     if (currentUser.role !== "admin") {
       throw new ConvexError({ message: "Only admins can create shifts", code: "FORBIDDEN" });
     }
-    // Check for overlapping shifts and role match for each assigned member
+    // Check for overlapping shifts and position match for each assigned member
     for (const memberId of args.memberIds) {
-      await checkRoleMatch(ctx, memberId, args.staffRole);
+      await checkPositionMatch(ctx, memberId, args.position);
       await checkUserShiftOverlap(ctx, memberId, args.startTime, args.endTime);
     }
 
@@ -214,7 +222,7 @@ export const create = mutation({
       endTime: args.endTime,
       vehicle: args.vehicle,
       callSign: args.callSign,
-      staffRole: args.staffRole,
+      position: args.position,
       notes: args.notes,
       createdBy: currentUser._id,
     });
@@ -234,7 +242,7 @@ export const update = mutation({
     endTime: v.optional(v.string()),
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
-    staffRole: v.optional(v.string()),
+    position: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.optional(v.array(v.id("users"))),
   },
@@ -273,21 +281,21 @@ export const update = mutation({
       finalMemberIds = existingMembers.map((m) => m.userId);
     }
 
-    // Determine final staff role for role-match check
-    const finalStaffRole = fields.staffRole ?? currentShift.staffRole;
+    // Determine final position for match check
+    const finalPosition = fields.position ?? currentShift.position ?? currentShift.staffRole;
 
-    // Check for overlapping shifts and role match for all final members (exclude current shift)
+    // Check for overlapping shifts and position match for all final members (exclude current shift)
     for (const uid of finalMemberIds) {
-      await checkRoleMatch(ctx, uid, finalStaffRole);
+      await checkPositionMatch(ctx, uid, finalPosition);
       await checkUserShiftOverlap(ctx, uid, finalStartTime, finalEndTime, shiftId);
     }
 
-    const patch: { startTime?: string; endTime?: string; vehicle?: string; callSign?: string; staffRole?: string; notes?: string } = {};
+    const patch: { startTime?: string; endTime?: string; vehicle?: string; callSign?: string; position?: string; notes?: string } = {};
     if (fields.startTime !== undefined) patch.startTime = fields.startTime;
     if (fields.endTime !== undefined) patch.endTime = fields.endTime;
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
     if (fields.callSign !== undefined) patch.callSign = fields.callSign;
-    if (fields.staffRole !== undefined) patch.staffRole = fields.staffRole;
+    if (fields.position !== undefined) patch.position = fields.position;
     if (fields.notes !== undefined) patch.notes = fields.notes;
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(shiftId, patch);
@@ -375,12 +383,13 @@ export const moveShiftAssignment = mutation({
     const sameDay = args.dayOffset === 0;
     if (sameUser && sameDay) return;
 
-    // Derive staffRole from pattern callSign for older shifts missing it
-    const effectiveRole = shift.staffRole ?? (shift.callSign ? (await buildCallSignRoleMap(ctx))[shift.callSign] : undefined);
+    // Derive position from pattern callSign for older shifts missing it
+    const callSignPositionMap = await buildCallSignPositionMap(ctx);
+    const effectivePosition = resolveShiftPosition(shift, callSignPositionMap);
 
-    // Check role match for target user (skip if reassigning to same user on different day)
+    // Check position match for target user (skip if reassigning to same user on different day)
     if (!sameUser) {
-      await checkRoleMatch(ctx, args.targetUserId, effectiveRole);
+      await checkPositionMatch(ctx, args.targetUserId, effectivePosition);
     }
 
     if (sameDay) {
@@ -417,7 +426,7 @@ export const moveShiftAssignment = mutation({
       endTime: newEnd,
       vehicle: shift.vehicle,
       callSign: shift.callSign,
-      staffRole: shift.staffRole,
+      position: shift.position ?? shift.staffRole, // migrate legacy field
       notes: shift.notes,
       createdBy: shift.createdBy,
     });
@@ -453,8 +462,8 @@ export const getUnassignedByDateRange = query({
       )
       .collect();
 
-    // Build callSign→staffRole fallback for older shifts missing staffRole
-    const callSignRoleMap = await buildCallSignRoleMap(ctx);
+    // Build callSign→position fallback for older shifts
+    const callSignPositionMap = await buildCallSignPositionMap(ctx);
 
     const unassigned = [];
     for (const shift of shifts) {
@@ -463,9 +472,8 @@ export const getUnassignedByDateRange = query({
         .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
         .collect();
       if (members.length === 0) {
-        // Derive staffRole from pattern callSign when not set on the shift
-        const staffRole = shift.staffRole ?? (shift.callSign ? callSignRoleMap[shift.callSign] : undefined);
-        unassigned.push({ ...shift, staffRole });
+        const position = resolveShiftPosition(shift, callSignPositionMap);
+        unassigned.push({ ...shift, position });
       }
     }
     return unassigned;
@@ -506,11 +514,12 @@ export const assignToShift = mutation({
       throw new ConvexError({ message: "User already assigned to this shift", code: "CONFLICT" });
     }
 
-    // Derive staffRole from pattern callSign for older shifts missing it
-    const effectiveRole = shift.staffRole ?? (shift.callSign ? (await buildCallSignRoleMap(ctx))[shift.callSign] : undefined);
+    // Derive position from pattern callSign for older shifts missing it
+    const callSignPositionMap = await buildCallSignPositionMap(ctx);
+    const effectivePosition = resolveShiftPosition(shift, callSignPositionMap);
 
-    // Prevent role mismatch and time overlap
-    await checkRoleMatch(ctx, args.userId, effectiveRole);
+    // Prevent position mismatch and time overlap
+    await checkPositionMatch(ctx, args.userId, effectivePosition);
     await checkUserShiftOverlap(ctx, args.userId, shift.startTime, shift.endTime);
 
     await ctx.db.insert("shiftMembers", {
@@ -541,8 +550,8 @@ export const getMyShiftsByDateRange = query({
       .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
-    // Build callSign→staffRole fallback for older shifts missing staffRole
-    const callSignRoleMap = await buildCallSignRoleMap(ctx);
+    // Build callSign→position fallback for older shifts
+    const callSignPositionMap = await buildCallSignPositionMap(ctx);
 
     const shifts = [];
     for (const mem of memberships) {
@@ -563,12 +572,11 @@ export const getMyShiftsByDateRange = query({
           })
         );
 
-        // Derive staffRole from pattern callSign when not set on the shift
-        const staffRole = shift.staffRole ?? (shift.callSign ? callSignRoleMap[shift.callSign] : undefined);
+        const position = resolveShiftPosition(shift, callSignPositionMap);
 
         shifts.push({
           ...shift,
-          staffRole,
+          position,
           membershipId: mem._id,
           members: memberDetails,
         });

@@ -52,7 +52,7 @@ export const create = mutation({
     endTime: v.string(),
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
-    staffRole: v.optional(v.string()),
+    position: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
     crewNumber: v.optional(v.number()),
@@ -115,7 +115,7 @@ export const create = mutation({
       endTime: args.endTime,
       vehicle: args.vehicle,
       callSign: args.callSign,
-      staffRole: args.staffRole,
+      position: args.position,
       notes: args.notes,
       memberIds: args.memberIds,
       crewNumber: args.crewNumber ?? 1,
@@ -142,7 +142,7 @@ export const update = mutation({
     endTime: v.optional(v.string()),
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
-    staffRole: v.optional(v.string()),
+    position: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.optional(v.array(v.id("users"))),
     crewNumber: v.optional(v.number()),
@@ -181,7 +181,7 @@ export const update = mutation({
     if (fields.endTime !== undefined) patch.endTime = fields.endTime;
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
     if (fields.callSign !== undefined) patch.callSign = fields.callSign;
-    if (fields.staffRole !== undefined) patch.staffRole = fields.staffRole;
+    if (fields.position !== undefined) patch.position = fields.position;
     if (fields.notes !== undefined) patch.notes = fields.notes;
     if (fields.memberIds !== undefined) patch.memberIds = fields.memberIds;
     if (fields.crewNumber !== undefined) patch.crewNumber = fields.crewNumber;
@@ -387,7 +387,7 @@ export const applyToWeek = mutation({
             endTime: endISO,
             vehicle: pattern.vehicle ?? "",
             callSign: pattern.callSign,
-            staffRole: pattern.staffRole,
+            position: pattern.position ?? pattern.staffRole, // fallback to legacy
             notes: pattern.notes,
             createdBy: user._id,
           });

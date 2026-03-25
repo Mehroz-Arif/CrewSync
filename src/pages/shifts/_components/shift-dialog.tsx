@@ -31,7 +31,7 @@ type ShiftData = {
   endTime: string;
   vehicle: string;
   callSign?: string;
-  staffRole?: string;
+  position?: string;
   notes?: string;
   members: Array<{
     membershipId: Id<"shiftMembers">;
@@ -77,7 +77,7 @@ export default function ShiftDialog({
   });
   const [vehicle, setVehicle] = useState(() => shift?.vehicle ?? "");
   const [callSign, setCallSign] = useState(() => shift?.callSign ?? "");
-  const [staffRole, setStaffRole] = useState(() => shift?.staffRole ?? "");
+  const [position, setPosition] = useState(() => shift?.position ?? "");
   const [notes, setNotes] = useState(() => shift?.notes ?? "");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(() => {
     if (shift) return new Set(shift.members.map((m) => m.userId));
@@ -120,7 +120,7 @@ export default function ShiftDialog({
           endTime: endDate.toISOString(),
           vehicle: vehicle.trim(),
           callSign: callSign.trim() || undefined,
-          staffRole: staffRole.trim() || undefined,
+          position: position.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
         });
@@ -132,7 +132,7 @@ export default function ShiftDialog({
           endTime: endDate.toISOString(),
           vehicle: vehicle.trim(),
           callSign: callSign.trim() || undefined,
-          staffRole: staffRole.trim() || undefined,
+          position: position.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
         });
@@ -230,12 +230,12 @@ export default function ShiftDialog({
             />
           </div>
 
-          {/* Staff Role */}
+          {/* Position */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Staff Role</Label>
+            <Label className="text-xs font-medium">Position</Label>
             <Input
-              value={staffRole}
-              onChange={(e) => setStaffRole(e.target.value)}
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
               placeholder="Ambulance Care Assistant, Emergency Care Assistant..."
             />
           </div>

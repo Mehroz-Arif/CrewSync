@@ -74,7 +74,7 @@ type PatternWithMembers = {
   endTime: string;
   vehicle?: string;
   callSign?: string;
-  staffRole?: string;
+  position?: string;
   notes?: string;
   memberIds: Id<"users">[];
   crewNumber?: number;
@@ -268,7 +268,7 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
             <PatternCard
               key={pattern._id}
               pattern={pattern}
-              roleColor={pattern.staffRole ? roleColorMap[pattern.staffRole] : undefined}
+              roleColor={pattern.position ? roleColorMap[pattern.position] : undefined}
               onEdit={() => handleEdit(pattern)}
               onToggle={() => handleToggle(pattern._id)}
             />
@@ -411,14 +411,14 @@ function PatternCard({
               <span className="truncate">{pattern.callSign}</span>
             </div>
           )}
-          {pattern.staffRole && (
+          {pattern.position && (
             <div className="flex items-center gap-2">
               <ShieldCheck className="size-3 shrink-0" />
               <span
                 className="truncate font-semibold"
                 style={roleColor ? { color: roleColor } : undefined}
               >
-                {pattern.staffRole}
+                {pattern.position}
               </span>
             </div>
           )}
