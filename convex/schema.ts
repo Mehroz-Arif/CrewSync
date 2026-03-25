@@ -141,7 +141,7 @@ export default defineSchema({
     // Shared fields
     startTime: v.string(), // "HH:mm"
     endTime: v.string(), // "HH:mm"
-    vehicle: v.string(),
+    vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),

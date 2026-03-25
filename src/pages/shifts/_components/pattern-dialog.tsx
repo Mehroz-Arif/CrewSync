@@ -48,7 +48,7 @@ type PatternData = {
   effectiveEndDate?: string;
   startTime: string;
   endTime: string;
-  vehicle: string;
+  vehicle?: string;
   callSign?: string;
   notes?: string;
   memberIds: Id<"users">[];
@@ -139,10 +139,6 @@ export default function PatternDialog({
       toast.error("Please enter a pattern name");
       return;
     }
-    if (!vehicle.trim()) {
-      toast.error("Please enter a vehicle name");
-      return;
-    }
 
     if (patternType === "weekly" && selectedDays.size === 0) {
       toast.error("Select at least one day");
@@ -191,7 +187,7 @@ export default function PatternDialog({
           effectiveEndDate: effectiveEndDate || undefined,
           startTime,
           endTime,
-          vehicle: vehicle.trim(),
+          vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,
@@ -212,7 +208,7 @@ export default function PatternDialog({
           effectiveEndDate: effectiveEndDate || undefined,
           startTime,
           endTime,
-          vehicle: vehicle.trim(),
+          vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
           notes: notes.trim() || undefined,
           memberIds,

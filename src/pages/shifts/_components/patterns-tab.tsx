@@ -70,7 +70,7 @@ type PatternWithMembers = {
   effectiveEndDate?: string;
   startTime: string;
   endTime: string;
-  vehicle: string;
+  vehicle?: string;
   callSign?: string;
   notes?: string;
   memberIds: Id<"users">[];
@@ -390,10 +390,12 @@ function PatternCard({
               {pattern.startTime} – {pattern.endTime}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Truck className="size-3 shrink-0" />
-            <span className="truncate">{pattern.vehicle}</span>
-          </div>
+          {pattern.vehicle && (
+            <div className="flex items-center gap-2">
+              <Truck className="size-3 shrink-0" />
+              <span className="truncate">{pattern.vehicle}</span>
+            </div>
+          )}
           {pattern.callSign && (
             <div className="flex items-center gap-2">
               <Radio className="size-3 shrink-0" />

@@ -50,7 +50,7 @@ export const create = mutation({
     // Shared
     startTime: v.string(),
     endTime: v.string(),
-    vehicle: v.string(),
+    vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
@@ -355,7 +355,7 @@ export const applyToWeek = mutation({
           .collect();
 
         const matchingExisting = existingShifts.filter(
-          (s) => s.endTime === endISO && s.vehicle === pattern.vehicle
+          (s) => s.endTime === endISO && (s.vehicle ?? "") === (pattern.vehicle ?? "")
         );
 
         const crewCount = pattern.crewNumber ?? 1;
@@ -381,7 +381,7 @@ export const applyToWeek = mutation({
           const shiftId = await ctx.db.insert("shifts", {
             startTime: startISO,
             endTime: endISO,
-            vehicle: pattern.vehicle,
+            vehicle: pattern.vehicle ?? "",
             callSign: pattern.callSign,
             notes: pattern.notes,
             createdBy: user._id,
