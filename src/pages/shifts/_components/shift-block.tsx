@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { GripVertical, Truck, Send, UserMinus } from "lucide-react";
+import { Truck, Send, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import {
   ContextMenu,
@@ -87,14 +87,6 @@ export default function ShiftBlock({
 
   const blockContent = (
     <>
-      {isAdmin && (
-        <div
-          {...listeners}
-          className="absolute -left-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/block:opacity-50 transition-opacity"
-        >
-          <GripVertical className="size-3" />
-        </div>
-      )}
       <div className="font-semibold truncate leading-tight flex items-center gap-1">
         <span>
           {format(parseISO(startTime), "HH:mm")} –{" "}
@@ -130,6 +122,7 @@ export default function ShiftBlock({
             ref={setNodeRef}
             style={style}
             {...attributes}
+            {...listeners}
             className={blockClassName}
             onClick={handleClick}
           >
@@ -157,6 +150,7 @@ export default function ShiftBlock({
       ref={setNodeRef}
       style={style}
       {...attributes}
+      {...listeners}
       className={blockClassName}
       onClick={handleClick}
     >
