@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
-import { Search, Users, Filter } from "lucide-react";
+import { Search, Users, Filter, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/empty.tsx";
 import { cn } from "@/lib/utils.ts";
 import MemberCard from "./_components/member-card.tsx";
+import AddMemberDialog from "../settings/_components/add-member-dialog.tsx";
+import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 const FILTERS = [
   { value: "all", label: "All" },
@@ -26,7 +28,14 @@ type FilterValue = (typeof FILTERS)[number]["value"];
 export default function TeamPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const directory = useQuery(api.profiles.getDirectory);
+  const currentUser = useQuery(api.users.getCurrentUser);
+  const { isPreviewingAsStaff } = useStaffPreview();
+
+  const canAddMembers =
+    (currentUser?.role === "admin" || currentUser?.isSuperAdmin) &&
+    !isPreviewingAsStaff;
 
   const filtered = useMemo(() => {
     if (!directory) return [];
@@ -67,11 +76,19 @@ export default function TeamPage() {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="font-heading font-bold text-2xl tracking-tight">Team</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {directory ? `${directory.length} team members` : "Loading..."}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading font-bold text-2xl tracking-tight">Team</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {directory ? `${directory.length} team members` : "Loading..."}
+          </p>
+        </div>
+        {canAddMembers && (
+          <Button onClick={() => setAddMemberOpen(true)}>
+            <UserPlus className="size-4 mr-1.5" />
+            Add Member
+          </Button>
+        )}
       </div>
 
       {/* Search & Filter */}
@@ -130,6 +147,9 @@ export default function TeamPage() {
           ))}
         </div>
       )}
+
+      {/* Add member dialog */}
+      <AddMemberDialog open={addMemberOpen} onOpenChange={setAddMemberOpen} />
     </div>
   );
 }
