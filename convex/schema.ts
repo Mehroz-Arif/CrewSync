@@ -100,6 +100,7 @@ export default defineSchema({
     notes: v.optional(v.string()),
     createdBy: v.id("users"),
     published: v.optional(v.boolean()),
+    patternId: v.optional(v.id("shiftPatterns")), // Links shift back to the pattern that generated it
   }).index("by_start_time", ["startTime"]),
 
   shiftMembers: defineTable({

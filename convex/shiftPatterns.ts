@@ -190,6 +190,89 @@ export const update = mutation({
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(patternId, patch);
     }
+
+    // ── Sync future shifts linked to this pattern ──
+    const updatedPattern = await ctx.db.get(patternId);
+    if (!updatedPattern) return;
+
+    const now = new Date().toISOString();
+    // Limit scan to the next 6 months of shifts
+    const sixMonthsOut = new Date(Date.now() + 180 * 86400000).toISOString();
+    const futureShifts = await ctx.db
+      .query("shifts")
+      .withIndex("by_start_time", (q) =>
+        q.gte("startTime", now).lt("startTime", sixMonthsOut)
+      )
+      .collect();
+
+    const linkedShifts = futureShifts.filter(
+      (s) => s.patternId === patternId
+    );
+
+    // Update shift properties to match the updated pattern
+    for (const shift of linkedShifts) {
+      const dateStr = shift.startTime.slice(0, 10);
+      const newStartDate = new Date(`${dateStr}T${updatedPattern.startTime}:00`);
+      let newEndDate = new Date(`${dateStr}T${updatedPattern.endTime}:00`);
+      if (newEndDate <= newStartDate) {
+        // Overnight shift — push end to the next day
+        newEndDate = new Date(newEndDate.getTime() + 86400000);
+      }
+
+      await ctx.db.patch(shift._id, {
+        startTime: newStartDate.toISOString(),
+        endTime: newEndDate.toISOString(),
+        vehicle: updatedPattern.vehicle ?? "",
+        callSign: updatedPattern.callSign,
+        position: updatedPattern.position,
+        notes: updatedPattern.notes,
+      });
+    }
+
+    // Sync member assignments for single-crew patterns
+    const crewCount = updatedPattern.crewNumber ?? 1;
+    if (crewCount === 1) {
+      for (const shift of linkedShifts) {
+        const currentMembers = await ctx.db
+          .query("shiftMembers")
+          .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
+          .collect();
+
+        const currentIds = new Set(currentMembers.map((m) => m.userId));
+        const targetIds = new Set(updatedPattern.memberIds);
+
+        // Remove members no longer in the pattern
+        for (const m of currentMembers) {
+          if (!targetIds.has(m.userId)) {
+            await ctx.db.delete(m._id);
+          }
+        }
+
+        // Add new members from the pattern (skip on overlap)
+        for (const memberId of updatedPattern.memberIds) {
+          if (!currentIds.has(memberId)) {
+            try {
+              const patchedShift = await ctx.db.get(shift._id);
+              if (patchedShift) {
+                await checkUserShiftOverlap(
+                  ctx,
+                  memberId,
+                  patchedShift.startTime,
+                  patchedShift.endTime,
+                  shift._id
+                );
+                await ctx.db.insert("shiftMembers", {
+                  shiftId: shift._id,
+                  userId: memberId,
+                });
+              }
+            } catch {
+              // Overlap — skip this member for this shift
+            }
+          }
+        }
+      }
+    }
   },
 });
 
@@ -390,6 +473,7 @@ export const applyToWeek = mutation({
             position: pattern.position ?? pattern.staffRole, // fallback to legacy
             notes: pattern.notes,
             createdBy: user._id,
+            patternId: pattern._id,
           });
 
           // Assign the members allocated to this slot
