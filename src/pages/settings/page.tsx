@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import OrganizationTab from "./_components/organization-tab.tsx";
 import TeamMembersTab from "./_components/team-members-tab.tsx";
 import FieldsTab from "./_components/fields-tab.tsx";
+import VehiclesTab from "./_components/vehicles-tab.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 export default function SettingsPage() {
@@ -36,6 +37,7 @@ export default function SettingsPage() {
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="team">Team Members</TabsTrigger>
           {isAdmin && <TabsTrigger value="fields">Positions</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="vehicles">Vehicles</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="organization" className="mt-6">
@@ -52,6 +54,12 @@ export default function SettingsPage() {
         {isAdmin && (
           <TabsContent value="fields" className="mt-6">
             <FieldsTab isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="vehicles" className="mt-6">
+            <VehiclesTab />
           </TabsContent>
         )}
       </Tabs>
