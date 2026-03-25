@@ -148,7 +148,7 @@ export default function SuperAdminOrgDetailPage() {
 
       {/* Org header */}
       <div className="flex items-center gap-4">
-        <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
+        <div className="size-16 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden ring-2 ring-primary/20">
           {orgDetails.logoUrl ? (
             <img
               src={orgDetails.logoUrl}
@@ -156,7 +156,7 @@ export default function SuperAdminOrgDetailPage() {
               className="size-full object-cover"
             />
           ) : (
-            <Building2 className="size-7 text-primary" />
+            <Building2 className="size-8 text-primary" />
           )}
         </div>
         <div>

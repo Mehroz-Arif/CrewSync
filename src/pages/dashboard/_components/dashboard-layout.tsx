@@ -127,8 +127,8 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
 
       {/* Logo */}
       <div className="p-5 border-b">
-        <a href="/" className="flex items-center gap-2.5">
-          <div className="size-9 rounded-lg bg-primary flex items-center justify-center overflow-hidden shrink-0">
+        <a href="/" className="flex items-center gap-3">
+          <div className="size-11 rounded-xl bg-primary flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-primary/20">
             {organization?.logoUrl ? (
               <img
                 src={organization.logoUrl}
@@ -141,7 +141,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               </span>
             )}
           </div>
-          <span className="font-heading font-bold text-lg tracking-tight text-foreground">
+          <span className="font-heading font-bold text-lg tracking-tight text-foreground truncate">
             {organization?.name ?? "CrewSync"}
           </span>
         </a>

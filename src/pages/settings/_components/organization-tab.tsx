@@ -169,15 +169,15 @@ export default function OrganizationTab({ isAdmin }: { isAdmin: boolean }) {
         <CardContent>
           <div className="flex items-center gap-6">
             {/* Logo preview */}
-            <div className="size-24 rounded-xl border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden shrink-0 bg-muted/30">
+            <div className="size-28 rounded-2xl border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden shrink-0 bg-muted/30">
               {organization.logoUrl ? (
                 <img
                   src={organization.logoUrl}
                   alt={`${organization.name} logo`}
-                  className="size-full object-cover rounded-xl"
+                  className="size-full object-cover rounded-2xl"
                 />
               ) : (
-                <Building2 className="size-10 text-muted-foreground/40" />
+                <Building2 className="size-12 text-muted-foreground/40" />
               )}
             </div>
 

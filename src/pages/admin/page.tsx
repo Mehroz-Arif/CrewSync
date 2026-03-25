@@ -242,7 +242,7 @@ export default function SuperAdminPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                        <div className="size-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-primary/15">
                           {org.logoUrl ? (
                             <img
                               src={org.logoUrl}
