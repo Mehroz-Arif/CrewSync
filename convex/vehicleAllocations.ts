@@ -99,6 +99,21 @@ export const setAllocation = mutation({
       )
       .first();
 
+    // Check if the vehicle is already assigned to a different call sign on this date
+    const sameDateAllocations = await ctx.db
+      .query("vehicleAllocations")
+      .withIndex("by_date", (q) => q.eq("date", args.date))
+      .collect();
+    const conflict = sameDateAllocations.find(
+      (a) => a.vehicle === args.vehicle && a.callSign !== args.callSign
+    );
+    if (conflict) {
+      throw new ConvexError({
+        message: `Vehicle ${args.vehicle} is already assigned to ${conflict.callSign} on this date`,
+        code: "CONFLICT",
+      });
+    }
+
     if (existing) {
       // Update existing allocation
       await ctx.db.patch(existing._id, {
@@ -174,6 +189,19 @@ export const copyAllocations = mutation({
           q.eq("date", args.toDate).eq("callSign", alloc.callSign)
         )
         .first();
+
+      // Check if the vehicle is already assigned to a different call sign on the target date
+      const targetAllocations = await ctx.db
+        .query("vehicleAllocations")
+        .withIndex("by_date", (q) => q.eq("date", args.toDate))
+        .collect();
+      const conflict = targetAllocations.find(
+        (a) => a.vehicle === alloc.vehicle && a.callSign !== alloc.callSign
+      );
+      if (conflict) {
+        // Skip conflicting allocations during copy
+        continue;
+      }
 
       if (existing) {
         await ctx.db.patch(existing._id, { vehicle: alloc.vehicle, notes: alloc.notes });

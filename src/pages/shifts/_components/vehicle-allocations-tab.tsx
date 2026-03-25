@@ -97,6 +97,17 @@ export default function VehicleAllocationsTab() {
     return map;
   }, [allocations]);
 
+  // Build lookup: date → set of vehicles already assigned that day
+  const takenVehiclesByDate = useMemo(() => {
+    const map = new Map<string, Map<string, string>>();
+    if (!allocations) return map;
+    for (const a of allocations) {
+      if (!map.has(a.date)) map.set(a.date, new Map());
+      map.get(a.date)!.set(a.vehicle, a.callSign);
+    }
+    return map;
+  }, [allocations]);
+
   const isCurrentWeek = isThisWeek(weekStart, { weekStartsOn: 1 });
 
   const handleSetAllocation = async (
@@ -312,6 +323,8 @@ export default function VehicleAllocationsTab() {
                       <AllocationCell
                         allocation={allocation}
                         vehicles={vehicles}
+                        takenVehicles={takenVehiclesByDate.get(dateStr)}
+                        currentCallSign={callSign}
                         onSet={(vehicle) =>
                           handleSetAllocation(dateStr, callSign, vehicle)
                         }
@@ -347,11 +360,15 @@ export default function VehicleAllocationsTab() {
 function AllocationCell({
   allocation,
   vehicles,
+  takenVehicles,
+  currentCallSign,
   onSet,
   onRemove,
 }: {
   allocation?: { _id: string; vehicle: string; notes?: string };
   vehicles: string[];
+  takenVehicles?: Map<string, string>;
+  currentCallSign: string;
   onSet: (vehicle: string) => void;
   onRemove: () => void;
 }) {
@@ -400,14 +417,23 @@ function AllocationCell({
           <SelectValue placeholder="Assign..." />
         </SelectTrigger>
         <SelectContent>
-          {vehicles.map((v) => (
-            <SelectItem key={v} value={v}>
-              <div className="flex items-center gap-1.5">
-                <Truck className="size-3" />
-                {v}
-              </div>
-            </SelectItem>
-          ))}
+          {vehicles.map((v) => {
+            const assignedTo = takenVehicles?.get(v);
+            const isTaken = assignedTo !== undefined && assignedTo !== currentCallSign;
+            return (
+              <SelectItem key={v} value={v} disabled={isTaken}>
+                <div className="flex items-center gap-1.5">
+                  <Truck className={cn("size-3", isTaken && "text-muted-foreground/50")} />
+                  <span className={cn(isTaken && "text-muted-foreground/50")}>{v}</span>
+                  {isTaken && (
+                    <span className="text-[10px] text-muted-foreground/50 ml-1">
+                      ({assignedTo})
+                    </span>
+                  )}
+                </div>
+              </SelectItem>
+            );
+          })}
           <SelectItem value="__custom__">
             <span className="text-muted-foreground">Custom vehicle...</span>
           </SelectItem>
