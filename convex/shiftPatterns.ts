@@ -53,6 +53,9 @@ export const create = mutation({
     vehicle: v.string(),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
+    // Effective date range (optional for all pattern types)
+    effectiveStartDate: v.optional(v.string()),
+    effectiveEndDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -90,6 +93,11 @@ export const create = mutation({
       }
     }
 
+    // Validate effective date range if both are provided
+    if (args.effectiveStartDate && args.effectiveEndDate && args.effectiveEndDate <= args.effectiveStartDate) {
+      throw new ConvexError({ message: "Effective end date must be after start date", code: "BAD_REQUEST" });
+    }
+
     return await ctx.db.insert("shiftPatterns", {
       name: args.name,
       patternType: args.patternType,
@@ -98,6 +106,8 @@ export const create = mutation({
       daysOff: args.patternType === "rotation" ? args.daysOff : undefined,
       rotationStartDate: args.patternType === "rotation" ? args.rotationStartDate : undefined,
       rotationEndDate: args.patternType === "rotation" ? args.rotationEndDate : undefined,
+      effectiveStartDate: args.effectiveStartDate,
+      effectiveEndDate: args.effectiveEndDate,
       startTime: args.startTime,
       endTime: args.endTime,
       vehicle: args.vehicle,
@@ -120,6 +130,8 @@ export const update = mutation({
     daysOff: v.optional(v.number()),
     rotationStartDate: v.optional(v.string()),
     rotationEndDate: v.optional(v.string()),
+    effectiveStartDate: v.optional(v.string()),
+    effectiveEndDate: v.optional(v.string()),
     startTime: v.optional(v.string()),
     endTime: v.optional(v.string()),
     vehicle: v.optional(v.string()),
@@ -154,6 +166,8 @@ export const update = mutation({
     if (fields.daysOff !== undefined) patch.daysOff = fields.daysOff;
     if (fields.rotationStartDate !== undefined) patch.rotationStartDate = fields.rotationStartDate;
     if (fields.rotationEndDate !== undefined) patch.rotationEndDate = fields.rotationEndDate;
+    if (fields.effectiveStartDate !== undefined) patch.effectiveStartDate = fields.effectiveStartDate;
+    if (fields.effectiveEndDate !== undefined) patch.effectiveEndDate = fields.effectiveEndDate;
     if (fields.startTime !== undefined) patch.startTime = fields.startTime;
     if (fields.endTime !== undefined) patch.endTime = fields.endTime;
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
@@ -280,7 +294,13 @@ export const applyToWeek = mutation({
         for (const isoDay of days) {
           const dayOffset = isoDay - 1; // 1=Mon → offset 0
           const shiftDate = new Date(weekStart.getTime() + dayOffset * 86400000);
-          shiftDates.push(shiftDate.toISOString().slice(0, 10));
+          const dateStr = shiftDate.toISOString().slice(0, 10);
+
+          // Skip dates outside the effective range
+          if (pattern.effectiveStartDate && dateStr < pattern.effectiveStartDate) continue;
+          if (pattern.effectiveEndDate && dateStr > pattern.effectiveEndDate) continue;
+
+          shiftDates.push(dateStr);
         }
       } else {
         // Rotation: check each day of the week
@@ -290,6 +310,11 @@ export const applyToWeek = mutation({
         for (let offset = 0; offset < 7; offset++) {
           const dayDate = new Date(weekStart.getTime() + offset * 86400000);
           const dateStr = dayDate.toISOString().slice(0, 10);
+
+          // Skip dates outside the effective range
+          if (pattern.effectiveStartDate && dateStr < pattern.effectiveStartDate) continue;
+          if (pattern.effectiveEndDate && dateStr > pattern.effectiveEndDate) continue;
+
           if (
             isRotationOnDay(
               dateStr,

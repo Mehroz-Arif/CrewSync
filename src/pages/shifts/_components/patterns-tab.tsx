@@ -64,6 +64,8 @@ type PatternWithMembers = {
   daysOff?: number;
   rotationStartDate?: string;
   rotationEndDate?: string;
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
   startTime: string;
   endTime: string;
   vehicle: string;
@@ -323,19 +325,35 @@ function PatternCard({
       <CardContent className="space-y-3">
         {/* Schedule info */}
         {pattern.patternType === "weekly" ? (
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-              <Badge
-                key={day}
-                variant={(pattern.days ?? []).includes(day) ? "default" : "secondary"}
-                className={cn(
-                  "text-[10px] px-1.5 py-0",
-                  !(pattern.days ?? []).includes(day) && "opacity-30"
-                )}
-              >
-                {DAY_LABELS[day]}
-              </Badge>
-            ))}
+          <div className="space-y-1.5">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                <Badge
+                  key={day}
+                  variant={(pattern.days ?? []).includes(day) ? "default" : "secondary"}
+                  className={cn(
+                    "text-[10px] px-1.5 py-0",
+                    !(pattern.days ?? []).includes(day) && "opacity-30"
+                  )}
+                >
+                  {DAY_LABELS[day]}
+                </Badge>
+              ))}
+            </div>
+            {(pattern.effectiveStartDate || pattern.effectiveEndDate) && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CalendarRange className="size-3 shrink-0" />
+                <span>
+                  {pattern.effectiveStartDate
+                    ? format(new Date(pattern.effectiveStartDate + "T00:00:00"), "MMM d, yyyy")
+                    : "No start"}{" "}
+                  –{" "}
+                  {pattern.effectiveEndDate
+                    ? format(new Date(pattern.effectiveEndDate + "T00:00:00"), "MMM d, yyyy")
+                    : "No end"}
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-1.5">

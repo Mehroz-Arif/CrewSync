@@ -44,6 +44,8 @@ type PatternData = {
   daysOff?: number;
   rotationStartDate?: string;
   rotationEndDate?: string;
+  effectiveStartDate?: string;
+  effectiveEndDate?: string;
   startTime: string;
   endTime: string;
   vehicle: string;
@@ -89,6 +91,14 @@ export default function PatternDialog({
   );
   const [rotationEndDate, setRotationEndDate] = useState(
     () => pattern?.rotationEndDate ?? ""
+  );
+
+  // Effective date range (applies to all pattern types)
+  const [effectiveStartDate, setEffectiveStartDate] = useState(
+    () => pattern?.effectiveStartDate ?? ""
+  );
+  const [effectiveEndDate, setEffectiveEndDate] = useState(
+    () => pattern?.effectiveEndDate ?? ""
   );
 
   // Shared fields
@@ -154,6 +164,12 @@ export default function PatternDialog({
       }
     }
 
+    // Validate effective date range
+    if (effectiveStartDate && effectiveEndDate && effectiveEndDate <= effectiveStartDate) {
+      toast.error("Effective end date must be after start date");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const memberIds = [...selectedMembers] as Id<"users">[];
@@ -167,6 +183,8 @@ export default function PatternDialog({
           daysOff: patternType === "rotation" ? daysOff : undefined,
           rotationStartDate: patternType === "rotation" ? rotationStartDate : undefined,
           rotationEndDate: patternType === "rotation" ? rotationEndDate : undefined,
+          effectiveStartDate: effectiveStartDate || undefined,
+          effectiveEndDate: effectiveEndDate || undefined,
           startTime,
           endTime,
           vehicle: vehicle.trim(),
@@ -184,6 +202,8 @@ export default function PatternDialog({
           daysOff: patternType === "rotation" ? daysOff : undefined,
           rotationStartDate: patternType === "rotation" ? rotationStartDate : undefined,
           rotationEndDate: patternType === "rotation" ? rotationEndDate : undefined,
+          effectiveStartDate: effectiveStartDate || undefined,
+          effectiveEndDate: effectiveEndDate || undefined,
           startTime,
           endTime,
           vehicle: vehicle.trim(),
@@ -327,7 +347,7 @@ export default function PatternDialog({
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Start Date</Label>
+                  <Label className="text-xs font-medium">Rotation Start</Label>
                   <Input
                     type="date"
                     value={rotationStartDate}
@@ -335,7 +355,7 @@ export default function PatternDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">End Date</Label>
+                  <Label className="text-xs font-medium">Rotation End</Label>
                   <Input
                     type="date"
                     value={rotationEndDate}
@@ -346,6 +366,32 @@ export default function PatternDialog({
               </div>
             </>
           )}
+
+          {/* Effective Date Range (optional, all pattern types) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">
+              Active Date Range
+              <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+            </Label>
+            <p className="text-xs text-muted-foreground -mt-0.5">
+              Limit when this pattern generates shifts. Leave blank for no limit.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                type="date"
+                value={effectiveStartDate}
+                onChange={(e) => setEffectiveStartDate(e.target.value)}
+                placeholder="Start date"
+              />
+              <Input
+                type="date"
+                value={effectiveEndDate}
+                onChange={(e) => setEffectiveEndDate(e.target.value)}
+                min={effectiveStartDate || undefined}
+                placeholder="End date"
+              />
+            </div>
+          </div>
 
           {/* Times */}
           <div className="grid grid-cols-2 gap-3">

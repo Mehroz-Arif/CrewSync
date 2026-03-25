@@ -130,6 +130,9 @@ export default defineSchema({
     daysOff: v.optional(v.number()),
     rotationStartDate: v.optional(v.string()), // "YYYY-MM-DD" — cycle anchor
     rotationEndDate: v.optional(v.string()), // "YYYY-MM-DD" — when to stop
+    // Effective date range (applies to all pattern types)
+    effectiveStartDate: v.optional(v.string()), // "YYYY-MM-DD"
+    effectiveEndDate: v.optional(v.string()), // "YYYY-MM-DD"
     // Shared fields
     startTime: v.string(), // "HH:mm"
     endTime: v.string(), // "HH:mm"
