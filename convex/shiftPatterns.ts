@@ -450,18 +450,63 @@ export const applyToWeek = mutation({
         }
         const endISO = endDate.toISOString();
 
-        // Check how many matching shifts already exist for this vehicle+time
-        const existingShifts = await ctx.db
+        const crewCount = pattern.crewNumber ?? 1;
+
+        // ── 1) Find existing shifts already linked to this pattern on this date ──
+        // Scan all shifts on this date and match by patternId
+        const dayStart = `${dateStr}T00:00:00.000Z`;
+        const dayEnd = new Date(new Date(dayStart).getTime() + 86400000).toISOString();
+        const dayShifts = await ctx.db
           .query("shifts")
-          .withIndex("by_start_time", (q) => q.eq("startTime", startISO))
+          .withIndex("by_start_time", (q) =>
+            q.gte("startTime", dayStart).lt("startTime", dayEnd)
+          )
           .collect();
 
-        const matchingExisting = existingShifts.filter(
-          (s) => s.endTime === endISO && (s.vehicle ?? "") === (pattern.vehicle ?? "")
+        const linkedExisting = dayShifts.filter(
+          (s) => s.patternId === pattern._id
         );
 
-        const crewCount = pattern.crewNumber ?? 1;
-        const shiftsToCreate = crewCount - matchingExisting.length;
+        // ── 2) Also find matches by exact time+vehicle (legacy, no patternId) ──
+        const exactMatches = dayShifts.filter(
+          (s) =>
+            !s.patternId &&
+            s.startTime === startISO &&
+            s.endTime === endISO &&
+            (s.vehicle ?? "") === (pattern.vehicle ?? "")
+        );
+
+        const allMatching = [...linkedExisting, ...exactMatches];
+
+        // ── 3) Update existing linked shifts in place ──
+        for (const existing of linkedExisting) {
+          // Only patch if something actually changed
+          const needsUpdate =
+            existing.startTime !== startISO ||
+            existing.endTime !== endISO ||
+            (existing.vehicle ?? "") !== (pattern.vehicle ?? "") ||
+            (existing.callSign ?? "") !== (pattern.callSign ?? "") ||
+            (existing.position ?? "") !== (pattern.position ?? pattern.staffRole ?? "") ||
+            (existing.notes ?? "") !== (pattern.notes ?? "");
+
+          if (needsUpdate) {
+            await ctx.db.patch(existing._id, {
+              startTime: startISO,
+              endTime: endISO,
+              vehicle: pattern.vehicle ?? "",
+              callSign: pattern.callSign,
+              position: pattern.position ?? pattern.staffRole,
+              notes: pattern.notes,
+            });
+          }
+        }
+
+        // Backfill patternId on legacy exact matches
+        for (const existing of exactMatches) {
+          await ctx.db.patch(existing._id, { patternId: pattern._id });
+        }
+
+        const shiftsToCreate = crewCount - allMatching.length;
 
         if (shiftsToCreate <= 0) {
           skippedDuplicates++;
@@ -477,9 +522,9 @@ export const applyToWeek = mutation({
           memberChunks[idx % crewCount].push(memberId);
         });
 
-        // Create the needed shifts
+        // Create only the additional shifts needed
         for (let si = 0; si < shiftsToCreate; si++) {
-          const slotIndex = matchingExisting.length + si;
+          const slotIndex = allMatching.length + si;
           const shiftId = await ctx.db.insert("shifts", {
             startTime: startISO,
             endTime: endISO,
