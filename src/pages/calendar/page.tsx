@@ -23,6 +23,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
@@ -66,6 +72,9 @@ export default function CalendarPage() {
   const [dialogDate, setDialogDate] = useState("");
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>();
 
+  // Mobile event detail dialog
+  const [mobileDetailEvent, setMobileDetailEvent] = useState<CalendarEvent | null>(null);
+
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<CalendarEvent | null>(null);
 
@@ -79,13 +88,31 @@ export default function CalendarPage() {
   function handleEditEvent(event: CalendarEvent) {
     setDialogMode("edit");
     setEditingEvent(event);
+    setMobileDetailEvent(null);
     setDialogOpen(true);
   }
 
   function handleEventClick(event: CalendarEvent) {
-    // Select the event's date and show in day panel
-    const eventDate = new Date(event.date + "T00:00:00");
-    setSelectedDate(eventDate);
+    // On mobile: open event detail dialog
+    // On desktop: select the date to show in side panel
+    if (window.innerWidth < 1024) {
+      setMobileDetailEvent(event);
+    } else {
+      const eventDate = new Date(event.date + "T00:00:00");
+      setSelectedDate(eventDate);
+    }
+  }
+
+  function handleDateSelect(date: Date) {
+    setSelectedDate(date);
+    // On mobile, if the date has events, show the first one
+    if (window.innerWidth < 1024 && events) {
+      const dateStr = format(date, "yyyy-MM-dd");
+      const dayEvents = events.filter((e) => e.date === dateStr);
+      if (dayEvents.length > 0) {
+        setMobileDetailEvent(dayEvents[0]);
+      }
+    }
   }
 
   async function handleDeleteConfirm() {
@@ -93,6 +120,7 @@ export default function CalendarPage() {
     try {
       await deleteEvent({ eventId: deleteTarget._id });
       toast.success("Event deleted");
+      setMobileDetailEvent(null);
     } catch (error) {
       if (error instanceof ConvexError) {
         const { message } = error.data as { code: string; message: string };
@@ -117,7 +145,7 @@ export default function CalendarPage() {
     format(currentDate, "yyyy-MM") === format(new Date(), "yyyy-MM");
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-5">
+    <div className="w-full max-w-6xl mx-auto space-y-5 pb-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -171,20 +199,21 @@ export default function CalendarPage() {
       {/* Legend */}
       <CalendarLegend />
 
-      {/* Main layout: calendar + day detail */}
+      {/* Main layout: calendar + day detail (desktop only for side panel) */}
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
           <CalendarGrid
             currentDate={currentDate}
             events={events}
             selectedDate={selectedDate}
-            onSelectDate={(date) => setSelectedDate(date)}
+            onSelectDate={handleDateSelect}
             onEventClick={handleEventClick}
             isAdmin={isAdmin}
           />
         </div>
 
-        <div>
+        {/* Desktop side panel — hidden on mobile */}
+        <div className="hidden lg:block">
           {selectedDate ? (
             <DayDetail
               date={selectedDate}
@@ -202,6 +231,37 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+
+      {/* Mobile event detail dialog */}
+      <Dialog
+        open={mobileDetailEvent !== null}
+        onOpenChange={(open) => {
+          if (!open) setMobileDetailEvent(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{mobileDetailEvent?.title}</DialogTitle>
+          </DialogHeader>
+          {mobileDetailEvent && (
+            <DayDetail
+              date={new Date(mobileDetailEvent.date + "T00:00:00")}
+              events={events}
+              isAdmin={isAdmin}
+              onEdit={handleEditEvent}
+              onDelete={(evt) => {
+                setMobileDetailEvent(null);
+                setDeleteTarget(evt);
+              }}
+              onAddEvent={() => {
+                setMobileDetailEvent(null);
+                handleAddEvent(new Date(mobileDetailEvent.date + "T00:00:00"));
+              }}
+              compact
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Event dialog */}
       <EventDialog

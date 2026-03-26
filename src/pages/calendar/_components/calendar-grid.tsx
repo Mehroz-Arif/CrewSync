@@ -127,7 +127,7 @@ export default function CalendarGrid({
               key={dateStr}
               onClick={() => onSelectDate(day)}
               className={cn(
-                "relative min-h-[90px] md:min-h-[110px] border-b border-r p-1.5 text-left transition-colors group",
+                "relative min-h-[70px] md:min-h-[110px] border-b border-r p-1 md:p-1.5 text-left transition-colors group touch-manipulation",
                 inMonth
                   ? "hover:bg-muted/50"
                   : "opacity-40 hover:opacity-60",

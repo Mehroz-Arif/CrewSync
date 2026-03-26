@@ -46,6 +46,7 @@ type DayDetailProps = {
   onEdit: (event: CalendarEvent) => void;
   onDelete: (event: CalendarEvent) => void;
   onAddEvent: () => void;
+  compact?: boolean;
 };
 
 export default function DayDetail({
@@ -55,17 +56,20 @@ export default function DayDetail({
   onEdit,
   onDelete,
   onAddEvent,
+  compact,
 }: DayDetailProps) {
   const dayEvents = events.filter((e) => e.date === format(date, "yyyy-MM-dd"));
 
-  return (
-    <div className="bg-card border rounded-xl p-5 space-y-4">
+  const content = (
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-heading font-semibold text-base">
-            {format(date, "EEEE, d MMMM yyyy")}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          {!compact && (
+            <h3 className="font-heading font-semibold text-base">
+              {format(date, "EEEE, d MMMM yyyy")}
+            </h3>
+          )}
+          <p className={cn("text-xs text-muted-foreground", compact && "mt-0")}>
             {dayEvents.length === 0
               ? "No events scheduled"
               : `${dayEvents.length} event${dayEvents.length !== 1 ? "s" : ""}`}
@@ -95,6 +99,16 @@ export default function DayDetail({
           ))}
         </div>
       )}
+    </div>
+  );
+
+  if (compact) {
+    return content;
+  }
+
+  return (
+    <div className="bg-card border rounded-xl p-5">
+      {content}
     </div>
   );
 }
