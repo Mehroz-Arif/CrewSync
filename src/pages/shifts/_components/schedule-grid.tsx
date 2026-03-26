@@ -57,6 +57,13 @@ export type DeclineNote = {
   userName: string;
 };
 
+export type UnavailNote = {
+  notes: string;
+  allDay: boolean;
+  startTime?: string;
+  endTime?: string;
+};
+
 type ScheduleGridProps = {
   weekStart: Date;
   staff: StaffMember[];
@@ -64,6 +71,7 @@ type ScheduleGridProps = {
   isAdmin: boolean;
   unassignedShifts: UnassignedShift[];
   availabilityData: Map<string, "available" | "unavailable">;
+  unavailabilityNotes?: Map<string, UnavailNote[]>;
   declineData?: Map<string, DeclineNote[]>;
   roleColorMap: Record<string, string>; // position label → hex colour
   onCellClick: (userId: Id<"users">, date: Date) => void;
@@ -121,6 +129,7 @@ export default function ScheduleGrid({
   isAdmin,
   unassignedShifts,
   availabilityData,
+  unavailabilityNotes,
   declineData,
   roleColorMap,
   onCellClick,
@@ -401,6 +410,7 @@ export default function ScheduleGrid({
                   const availKey = `${employee._id}__${dateStr}`;
                   const avail = availabilityData.get(availKey);
                   const cellDeclines = declineData?.get(availKey) ?? [];
+                  const cellUnavailNotes = isAdmin ? (unavailabilityNotes?.get(availKey) ?? []) : [];
                   return (
                     <DayCell
                       key={cellId}
@@ -434,6 +444,25 @@ export default function ScheduleGrid({
                           onUnassign={() => handleUnassign(shift.membershipId)}
                           onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}
                         />
+                      ))}
+                      {/* Unavailability notes (admin only) */}
+                      {cellUnavailNotes.map((u, i) => (
+                        <div
+                          key={`unavail-${i}`}
+                          className="rounded border border-rose-400/30 bg-rose-500/8 px-1.5 py-0.5 text-[9px] text-rose-600 dark:text-rose-400"
+                          title={
+                            u.allDay
+                              ? `Unavailable (all day)${u.notes ? `: ${u.notes}` : ""}`
+                              : `Unavailable ${u.startTime ?? ""}–${u.endTime ?? ""}${u.notes ? `: ${u.notes}` : ""}`
+                          }
+                        >
+                          <span className="font-medium">
+                            {u.allDay ? "Unavailable" : `Unavail ${u.startTime}–${u.endTime}`}
+                          </span>
+                          {u.notes && (
+                            <span className="opacity-75 truncate"> {u.notes}</span>
+                          )}
+                        </div>
                       ))}
                       {/* Decline notes */}
                       {cellDeclines.map((d, i) => (

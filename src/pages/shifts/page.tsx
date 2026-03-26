@@ -333,6 +333,31 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     return map;
   }, [allAvailability]);
 
+  // Build unavailability notes map: "userId__date" → notes[]
+  type UnavailNote = {
+    notes: string;
+    allDay: boolean;
+    startTime?: string;
+    endTime?: string;
+  };
+  const unavailabilityNotes = useMemo(() => {
+    const map = new Map<string, UnavailNote[]>();
+    if (!allAvailability) return map;
+    for (const entry of allAvailability) {
+      if (entry.status !== "unavailable") continue;
+      const key = `${entry.userId}__${entry.date}`;
+      const existing = map.get(key) ?? [];
+      existing.push({
+        notes: entry.notes ?? "",
+        allDay: entry.allDay ?? true,
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+      });
+      map.set(key, existing);
+    }
+    return map;
+  }, [allAvailability]);
+
   // Build decline notes map: "userId__date" → decline entries
   type DeclineNote = { reason: string; shiftStartTime: string; shiftEndTime: string; userName: string };
   const declineData = useMemo(() => {
@@ -563,6 +588,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         isAdmin={true}
         unassignedShifts={unassigned}
         availabilityData={availabilityData}
+        unavailabilityNotes={unavailabilityNotes}
         declineData={declineData}
         roleColorMap={roleColorMap}
         onCellClick={handleCellClick}
