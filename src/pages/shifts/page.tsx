@@ -125,22 +125,28 @@ function AdminView() {
   }
 
   return (
-    <Tabs defaultValue="schedule" className="space-y-2">
-      <div className="flex items-center justify-end">
-        <TabsList>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
-          <TabsTrigger value="patterns">Patterns</TabsTrigger>
-        </TabsList>
-      </div>
-
+    <Tabs defaultValue="schedule">
       <TabsContent value="schedule" className="mt-0">
         <AdminScheduleView staff={staff} />
       </TabsContent>
       <TabsContent value="vehicles" className="mt-0">
+        <div className="flex items-center justify-end mb-1">
+          <TabsList>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+            <TabsTrigger value="patterns">Patterns</TabsTrigger>
+          </TabsList>
+        </div>
         <VehicleAllocationsTab />
       </TabsContent>
       <TabsContent value="patterns" className="mt-0">
+        <div className="flex items-center justify-end mb-1">
+          <TabsList>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+            <TabsTrigger value="patterns">Patterns</TabsTrigger>
+          </TabsList>
+        </div>
         <PatternsTab staff={staff} />
       </TabsContent>
     </Tabs>
@@ -444,7 +450,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   const isCurrentWeek = isThisWeek(weekStart, { weekStartsOn: 1 });
 
   return (
-    <div className="space-y-2 -mx-2 md:-mx-3 lg:-mx-4">
+    <div className="space-y-1 -mx-2 md:-mx-3 lg:-mx-4">
       {/* Actions row */}
       <div className="flex items-center justify-between gap-2 px-2 md:px-3 lg:px-4">
         {/* Week navigator */}
@@ -482,7 +488,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           )}
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons + tab switcher */}
         <div className="flex items-center gap-2">
           {hasPublished && (
             <Button
@@ -519,30 +525,11 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
             <Plus className="size-4 mr-1.5" />
             Add Shift
           </Button>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground px-2 md:px-3 lg:px-4">
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40" />
-          <span>Available</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-rose-500/20 border border-rose-500/40" />
-          <span>Unavailable</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm border-2 border-dashed border-muted-foreground/30" />
-          <span>Draft (unpublished)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Send className="size-3 opacity-60" />
-          <span>Published</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-rose-500/10 border border-rose-400/40" />
-          <span>Declined</span>
+          <TabsList>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+            <TabsTrigger value="patterns">Patterns</TabsTrigger>
+          </TabsList>
         </div>
       </div>
 
