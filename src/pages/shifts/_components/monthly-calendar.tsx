@@ -222,17 +222,17 @@ export default function MonthlyCalendar() {
   const weekDayHeadersShort = ["M", "T", "W", "T", "F", "S", "S"];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* ================================================================ */}
       {/* MOBILE VIEW: compact mini-calendar + selected day detail list    */}
       {/* ================================================================ */}
       <div className="md:hidden space-y-0">
         {/* Selected day header */}
-        <div className="flex items-center justify-between px-1 pb-3">
+        <div className="flex items-center justify-between pb-2">
           <button
             type="button"
             onClick={() => openAvailabilityDialog(selectedDateStr)}
-            className="flex items-center gap-1.5 text-base font-heading font-bold"
+            className="flex items-center gap-1.5 text-sm font-heading font-bold"
           >
             {format(selectedDate, "EEE d MMMM")}
             <ChevronDown className="size-4 text-muted-foreground" />
@@ -252,14 +252,14 @@ export default function MonthlyCalendar() {
           {/* Day-of-week headers */}
           <div className="grid grid-cols-7">
             {weekDayHeadersShort.map((d, i) => (
-              <div key={i} className="py-2 text-center">
-                <span className="text-[11px] font-medium text-muted-foreground">{d}</span>
+              <div key={i} className="py-1 text-center">
+                <span className="text-[10px] font-medium text-muted-foreground">{d}</span>
               </div>
             ))}
           </div>
 
           {/* Day number grid */}
-          <div className="grid grid-cols-7 pb-1">
+          <div className="grid grid-cols-7">
             {calendarDays.map((day) => {
               const dateStr = format(day, "yyyy-MM-dd");
               const inMonth = isSameMonth(day, currentMonth);
@@ -274,13 +274,13 @@ export default function MonthlyCalendar() {
                   type="button"
                   onClick={() => setSelectedDate(day)}
                   className={cn(
-                    "relative flex flex-col items-center justify-center py-1.5 transition-colors",
+                    "relative flex flex-col items-center justify-center py-0.5 transition-colors",
                     !inMonth && "opacity-30"
                   )}
                 >
                   <span
                     className={cn(
-                      "size-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors",
+                      "size-7 flex items-center justify-center rounded-full text-xs font-medium transition-colors",
                       today && !selected && "bg-primary/20 text-primary font-bold",
                       selected && "bg-primary text-primary-foreground font-bold",
                       !today && !selected && "text-foreground"
@@ -289,15 +289,15 @@ export default function MonthlyCalendar() {
                     {format(day, "d")}
                   </span>
                   {/* Indicator dots */}
-                  <div className="flex items-center gap-0.5 h-2 mt-0.5">
+                  <div className="flex items-center gap-0.5 h-1.5">
                     {hasShifts && (
-                      <span className="size-1.5 rounded-full bg-primary" />
+                      <span className="size-1 rounded-full bg-primary" />
                     )}
                     {dayStatus === "available" && (
-                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                      <span className="size-1 rounded-full bg-emerald-500" />
                     )}
                     {dayStatus === "unavailable" && (
-                      <span className="size-1.5 rounded-full bg-rose-500" />
+                      <span className="size-1 rounded-full bg-rose-500" />
                     )}
                   </div>
                 </button>
@@ -307,10 +307,10 @@ export default function MonthlyCalendar() {
         </div>
 
         {/* Divider */}
-        <div className="border-t my-3" />
+        <div className="border-t my-2" />
 
         {/* Selected day detail list */}
-        <div className="space-y-2 min-h-[200px]">
+        <div className="space-y-2 min-h-[120px]">
           {/* Availability entries */}
           {selectedDayEntries.map((entry) => (
             <div
@@ -413,9 +413,9 @@ export default function MonthlyCalendar() {
 
           {/* Empty state */}
           {selectedDayShifts.length === 0 && selectedDayEntries.length === 0 && (
-            <div className="text-center py-10 text-muted-foreground">
-              <p className="text-sm">No shifts or availability set</p>
-              <p className="text-xs mt-1">Tap the date header to set availability</p>
+            <div className="text-center py-6 text-muted-foreground">
+              <p className="text-sm">No shifts or availability</p>
+              <p className="text-xs mt-1">Tap the date to set availability</p>
             </div>
           )}
         </div>

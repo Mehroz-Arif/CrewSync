@@ -70,17 +70,9 @@ function StaffScheduleView() {
   const [view, setView] = useState<"week" | "month">("week");
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5">
-      {/* Header with view toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="font-heading font-bold text-2xl md:text-3xl">
-            My Schedule
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            View your shifts and set your availability for each day and time
-          </p>
-        </div>
+    <div className="space-y-2">
+      {/* View toggle */}
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
           <Button
             variant={view === "week" ? "secondary" : "ghost"}
@@ -100,34 +92,6 @@ function StaffScheduleView() {
             <Calendar className="size-4" />
             Month
           </Button>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-emerald-500/20 border border-emerald-500/40" />
-          <span>Available</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-rose-500/20 border border-rose-500/40" />
-          <span>Unavailable</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-primary/15 border border-primary/30" />
-          <span>Pending response</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-emerald-500/10 border border-emerald-500/40" />
-          <span>Accepted</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="size-3 rounded-sm bg-rose-500/10 border border-rose-500/40" />
-          <span>Declined</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Clock className="size-3 text-muted-foreground" />
-          <span>Timed entry</span>
         </div>
       </div>
 
