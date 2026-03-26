@@ -19,7 +19,6 @@ import {
   Undo2,
   Calendar,
   CalendarRange,
-  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -126,11 +125,8 @@ function AdminView() {
   }
 
   return (
-    <Tabs defaultValue="schedule" className="space-y-3">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="font-heading font-bold text-xl md:text-2xl">
-          Shift Schedule
-        </h1>
+    <Tabs defaultValue="schedule" className="space-y-2">
+      <div className="flex items-center justify-end">
         <TabsList>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
           <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
@@ -448,12 +444,45 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   const isCurrentWeek = isThisWeek(weekStart, { weekStartsOn: 1 });
 
   return (
-    <div className="space-y-3 -mx-2 md:-mx-3 lg:-mx-4">
-      {/* Sub-header with actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-2 md:px-3 lg:px-4">
-        <p className="text-muted-foreground text-xs">
-          Drag shifts between cells or back to unassigned. Publish when ready.
-        </p>
+    <div className="space-y-2 -mx-2 md:-mx-3 lg:-mx-4">
+      {/* Actions row */}
+      <div className="flex items-center justify-between gap-2 px-2 md:px-3 lg:px-4">
+        {/* Week navigator */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setWeekStart((w) => subWeeks(w, 1))}
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <div className="text-sm font-heading font-semibold min-w-[200px] text-center">
+            {format(weekStart, "MMM d")} –{" "}
+            {format(addDays(weekStart, 6), "MMM d, yyyy")}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setWeekStart((w) => addWeeks(w, 1))}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+          {!isCurrentWeek && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="ml-1"
+              onClick={() =>
+                setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
+              }
+            >
+              <CalendarDays className="size-4 mr-1.5" />
+              Today
+            </Button>
+          )}
+        </div>
+
+        {/* Action buttons */}
         <div className="flex items-center gap-2">
           {hasPublished && (
             <Button
@@ -491,41 +520,6 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
             Add Shift
           </Button>
         </div>
-      </div>
-
-      {/* Week navigator */}
-      <div className="flex items-center gap-2 px-2 md:px-3 lg:px-4">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setWeekStart((w) => subWeeks(w, 1))}
-        >
-          <ChevronLeft className="size-4" />
-        </Button>
-        <div className="text-sm font-heading font-semibold min-w-[200px] text-center">
-          {format(weekStart, "MMM d")} –{" "}
-          {format(addDays(weekStart, 6), "MMM d, yyyy")}
-        </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setWeekStart((w) => addWeeks(w, 1))}
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-        {!isCurrentWeek && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="ml-1"
-            onClick={() =>
-              setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
-            }
-          >
-            <CalendarDays className="size-4 mr-1.5" />
-            Today
-          </Button>
-        )}
       </div>
 
       {/* Legend */}
