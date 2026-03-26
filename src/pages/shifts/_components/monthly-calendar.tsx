@@ -12,6 +12,7 @@ import {
   format,
   parseISO,
   isSameMonth,
+  isSameDay,
   isToday,
 } from "date-fns";
 import {
@@ -22,10 +23,12 @@ import {
   Truck,
   Radio,
   Users,
+  Briefcase,
   Check,
   X as XIcon,
   CheckCircle2,
   XCircle,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -55,6 +58,7 @@ type AvailabilityEntry = {
 
 export default function MonthlyCalendar() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -109,7 +113,7 @@ export default function MonthlyCalendar() {
     return map;
   }, [myShifts]);
 
-  // Map availability by date string — supports multiple entries per day
+  // Map availability by date string
   const availabilityByDate = useMemo(() => {
     const map = new Map<string, AvailabilityEntry[]>();
     if (!availability) return map;
@@ -129,7 +133,7 @@ export default function MonthlyCalendar() {
     return map;
   }, [availability]);
 
-  // Derive dominant status per day (for background color)
+  // Derive dominant status per day
   function getDayStatus(dateStr: string): "available" | "unavailable" | null {
     const entries = availabilityByDate.get(dateStr);
     if (!entries || entries.length === 0) return null;
@@ -147,7 +151,6 @@ export default function MonthlyCalendar() {
     });
   }, []);
 
-  // Close context menu on click outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -196,8 +199,8 @@ export default function MonthlyCalendar() {
     setContextMenu(null);
   }
 
-  function handleShiftTap(shift: ShiftForResponse, e: React.MouseEvent) {
-    e.stopPropagation(); // Prevent opening availability dialog
+  function handleShiftTap(shift: ShiftForResponse, e?: React.MouseEvent) {
+    e?.stopPropagation();
     setSelectedShift(shift);
     setShiftDialogOpen(true);
   }
@@ -211,144 +214,347 @@ export default function MonthlyCalendar() {
     );
   }
 
-  const weekDayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+  const selectedDayShifts = shiftsByDate.get(selectedDateStr) ?? [];
+  const selectedDayEntries = availabilityByDate.get(selectedDateStr) ?? [];
+
+  const weekDayHeadersFull = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weekDayHeadersShort = ["M", "T", "W", "T", "F", "S", "S"];
 
   return (
     <div className="space-y-5">
-      {/* Month navigator */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth((m) => subMonths(m, 1))}>
-          <ChevronLeft className="size-4" />
-        </Button>
-        <div className="text-sm font-heading font-semibold min-w-[160px] text-center">
-          {format(currentMonth, "MMMM yyyy")}
-        </div>
-        <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth((m) => addMonths(m, 1))}>
-          <ChevronRight className="size-4" />
-        </Button>
-        {!isSameMonth(currentMonth, new Date()) && (
-          <Button variant="secondary" size="sm" className="ml-1" onClick={() => setCurrentMonth(new Date())}>
-            <CalendarDays className="size-4 mr-1.5" />
-            Today
-          </Button>
-        )}
-      </div>
-
-      {/* Calendar grid */}
-      <div className="border rounded-xl overflow-hidden bg-card">
-        {/* Day headers */}
-        <div className="grid grid-cols-7">
-          {weekDayHeaders.map((day) => (
-            <div key={day} className="px-2 py-2 text-center bg-muted/40 border-b">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                {day}
-              </span>
-            </div>
-          ))}
+      {/* ================================================================ */}
+      {/* MOBILE VIEW: compact mini-calendar + selected day detail list    */}
+      {/* ================================================================ */}
+      <div className="md:hidden space-y-0">
+        {/* Selected day header */}
+        <div className="flex items-center justify-between px-1 pb-3">
+          <button
+            type="button"
+            onClick={() => openAvailabilityDialog(selectedDateStr)}
+            className="flex items-center gap-1.5 text-base font-heading font-bold"
+          >
+            {format(selectedDate, "EEE d MMMM")}
+            <ChevronDown className="size-4 text-muted-foreground" />
+          </button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth((m) => subMonths(m, 1))}>
+              <ChevronLeft className="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth((m) => addMonths(m, 1))}>
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
         </div>
 
-        {/* Day cells */}
-        <div className="grid grid-cols-7">
-          {calendarDays.map((day) => {
-            const dateStr = format(day, "yyyy-MM-dd");
-            const inMonth = isSameMonth(day, currentMonth);
-            const today = isToday(day);
-            const dayShifts = shiftsByDate.get(dateStr) ?? [];
-            const dayEntries = availabilityByDate.get(dateStr) ?? [];
-            const dayStatus = getDayStatus(dateStr);
+        {/* Compact mini-calendar */}
+        <div className="rounded-xl bg-muted/30 border overflow-hidden">
+          {/* Day-of-week headers */}
+          <div className="grid grid-cols-7">
+            {weekDayHeadersShort.map((d, i) => (
+              <div key={i} className="py-2 text-center">
+                <span className="text-[11px] font-medium text-muted-foreground">{d}</span>
+              </div>
+            ))}
+          </div>
 
-            return (
-              <div
-                key={dateStr}
-                onClick={() => openAvailabilityDialog(dateStr)}
-                onContextMenu={(e) => handleContextMenu(e, day)}
-                className={cn(
-                  "min-h-[90px] md:min-h-[110px] p-1.5 border-b border-r relative transition-colors cursor-pointer hover:bg-muted/30",
-                  !inMonth && "opacity-40",
-                  today && "bg-primary/[0.04]",
-                  dayStatus === "available" && "bg-emerald-500/[0.06]",
-                  dayStatus === "unavailable" && "bg-rose-500/[0.06]"
-                )}
-              >
-                {/* Day number + availability dots */}
-                <div className="flex items-center justify-between mb-1">
+          {/* Day number grid */}
+          <div className="grid grid-cols-7 pb-1">
+            {calendarDays.map((day) => {
+              const dateStr = format(day, "yyyy-MM-dd");
+              const inMonth = isSameMonth(day, currentMonth);
+              const today = isToday(day);
+              const selected = isSameDay(day, selectedDate);
+              const hasShifts = (shiftsByDate.get(dateStr)?.length ?? 0) > 0;
+              const dayStatus = getDayStatus(dateStr);
+
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  onClick={() => setSelectedDate(day)}
+                  className={cn(
+                    "relative flex flex-col items-center justify-center py-1.5 transition-colors",
+                    !inMonth && "opacity-30"
+                  )}
+                >
                   <span
                     className={cn(
-                      "text-xs font-semibold",
-                      today && "bg-primary text-primary-foreground rounded-full size-6 flex items-center justify-center",
-                      !inMonth && "text-muted-foreground"
+                      "size-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors",
+                      today && !selected && "bg-primary/20 text-primary font-bold",
+                      selected && "bg-primary text-primary-foreground font-bold",
+                      !today && !selected && "text-foreground"
                     )}
                   >
                     {format(day, "d")}
                   </span>
-                  <div className="flex items-center gap-0.5">
-                    {dayEntries.map((entry) => (
-                      <span
-                        key={entry._id}
-                        className={cn(
-                          "size-2 rounded-full",
-                          entry.status === "available" ? "bg-emerald-500" : "bg-rose-500"
-                        )}
-                      />
-                    ))}
+                  {/* Indicator dots */}
+                  <div className="flex items-center gap-0.5 h-2 mt-0.5">
+                    {hasShifts && (
+                      <span className="size-1.5 rounded-full bg-primary" />
+                    )}
+                    {dayStatus === "available" && (
+                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                    )}
+                    {dayStatus === "unavailable" && (
+                      <span className="size-1.5 rounded-full bg-rose-500" />
+                    )}
                   </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t my-3" />
+
+        {/* Selected day detail list */}
+        <div className="space-y-2 min-h-[200px]">
+          {/* Availability entries */}
+          {selectedDayEntries.map((entry) => (
+            <div
+              key={entry._id}
+              className={cn(
+                "rounded-xl px-4 py-3 flex items-center gap-3",
+                entry.status === "available"
+                  ? "bg-emerald-500/10 border border-emerald-500/20"
+                  : "bg-rose-500/10 border border-rose-500/20"
+              )}
+            >
+              <span
+                className={cn(
+                  "size-2.5 rounded-full shrink-0",
+                  entry.status === "available" ? "bg-emerald-500" : "bg-rose-500"
+                )}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">
+                  {entry.allDay === false && entry.startTime && entry.endTime
+                    ? `${entry.status === "available" ? "Available" : "Unavailable"} ${entry.startTime} – ${entry.endTime}`
+                    : entry.status === "available"
+                      ? "Available all day"
+                      : "Unavailable all day"}
+                </div>
+                {entry.notes && (
+                  <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {entry.notes}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Shift cards */}
+          {selectedDayShifts.map((shift) => {
+            const statusDot =
+              shift.responseStatus === "accepted"
+                ? "bg-emerald-500"
+                : shift.responseStatus === "declined"
+                  ? "bg-rose-500"
+                  : "bg-primary";
+            const statusBg =
+              shift.responseStatus === "accepted"
+                ? "border-emerald-500/20"
+                : shift.responseStatus === "declined"
+                  ? "border-rose-500/20"
+                  : "border-border";
+
+            return (
+              <button
+                key={shift._id}
+                type="button"
+                onClick={(e) => handleShiftTap(shift, e)}
+                className={cn(
+                  "w-full text-left rounded-xl px-4 py-3 bg-card border transition-all active:scale-[0.98] flex items-center gap-3",
+                  statusBg
+                )}
+              >
+                {/* Status dot */}
+                <span className={cn("size-2.5 rounded-full shrink-0", statusDot)} />
+
+                {/* Shift info */}
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="text-sm font-semibold">
+                    {format(parseISO(shift.startTime), "HH:mm")} – {format(parseISO(shift.endTime), "HH:mm")}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {shift.callSign ? `${shift.callSign} · ` : ""}{shift.vehicle}
+                  </div>
+                  {shift.position && (
+                    <div className="text-xs text-muted-foreground truncate">
+                      {shift.position}
+                    </div>
+                  )}
+                  {shift.responseStatus === "pending" && (
+                    <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                      Tap to respond
+                    </div>
+                  )}
+                  {shift.responseStatus === "accepted" && (
+                    <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="size-3" />
+                      Accepted
+                    </div>
+                  )}
+                  {shift.responseStatus === "declined" && (
+                    <div className="flex items-center gap-1 text-[11px] font-medium text-rose-600 dark:text-rose-400">
+                      <XCircle className="size-3" />
+                      Declined
+                    </div>
+                  )}
                 </div>
 
-                {/* Availability entries */}
-                {dayEntries.map((entry) => (
-                  <div
-                    key={entry._id}
-                    className={cn(
-                      "rounded px-1 py-0.5 text-[9px] mb-0.5 truncate",
-                      entry.status === "available"
-                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                        : "bg-rose-500/10 text-rose-700 dark:text-rose-400"
-                    )}
-                  >
-                    {entry.allDay === false && entry.startTime && entry.endTime
-                      ? `${entry.startTime}–${entry.endTime}`
-                      : entry.status === "available"
-                        ? "Available"
-                        : "Unavailable"}
+                {/* Chevron */}
+                <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+              </button>
+            );
+          })}
+
+          {/* Empty state */}
+          {selectedDayShifts.length === 0 && selectedDayEntries.length === 0 && (
+            <div className="text-center py-10 text-muted-foreground">
+              <p className="text-sm">No shifts or availability set</p>
+              <p className="text-xs mt-1">Tap the date header to set availability</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ================================================================ */}
+      {/* DESKTOP VIEW: full grid calendar                                  */}
+      {/* ================================================================ */}
+      <div className="hidden md:block space-y-5">
+        {/* Month navigator */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth((m) => subMonths(m, 1))}>
+            <ChevronLeft className="size-4" />
+          </Button>
+          <div className="text-sm font-heading font-semibold min-w-[160px] text-center">
+            {format(currentMonth, "MMMM yyyy")}
+          </div>
+          <Button variant="ghost" size="icon-sm" onClick={() => setCurrentMonth((m) => addMonths(m, 1))}>
+            <ChevronRight className="size-4" />
+          </Button>
+          {!isSameMonth(currentMonth, new Date()) && (
+            <Button variant="secondary" size="sm" className="ml-1" onClick={() => setCurrentMonth(new Date())}>
+              <CalendarDays className="size-4 mr-1.5" />
+              Today
+            </Button>
+          )}
+        </div>
+
+        {/* Calendar grid */}
+        <div className="border rounded-xl overflow-hidden bg-card">
+          {/* Day headers */}
+          <div className="grid grid-cols-7">
+            {weekDayHeadersFull.map((day) => (
+              <div key={day} className="px-2 py-2 text-center bg-muted/40 border-b">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  {day}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Day cells */}
+          <div className="grid grid-cols-7">
+            {calendarDays.map((day) => {
+              const dateStr = format(day, "yyyy-MM-dd");
+              const inMonth = isSameMonth(day, currentMonth);
+              const today = isToday(day);
+              const dayShifts = shiftsByDate.get(dateStr) ?? [];
+              const dayEntries = availabilityByDate.get(dateStr) ?? [];
+              const dayStatus = getDayStatus(dateStr);
+
+              return (
+                <div
+                  key={dateStr}
+                  onClick={() => openAvailabilityDialog(dateStr)}
+                  onContextMenu={(e) => handleContextMenu(e, day)}
+                  className={cn(
+                    "min-h-[110px] p-1.5 border-b border-r relative transition-colors cursor-pointer hover:bg-muted/30",
+                    !inMonth && "opacity-40",
+                    today && "bg-primary/[0.04]",
+                    dayStatus === "available" && "bg-emerald-500/[0.06]",
+                    dayStatus === "unavailable" && "bg-rose-500/[0.06]"
+                  )}
+                >
+                  {/* Day number + availability dots */}
+                  <div className="flex items-center justify-between mb-1">
+                    <span
+                      className={cn(
+                        "text-xs font-semibold",
+                        today && "bg-primary text-primary-foreground rounded-full size-6 flex items-center justify-center",
+                        !inMonth && "text-muted-foreground"
+                      )}
+                    >
+                      {format(day, "d")}
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                      {dayEntries.map((entry) => (
+                        <span
+                          key={entry._id}
+                          className={cn(
+                            "size-2 rounded-full",
+                            entry.status === "available" ? "bg-emerald-500" : "bg-rose-500"
+                          )}
+                        />
+                      ))}
+                    </div>
                   </div>
-                ))}
 
-                {/* Shifts */}
-                <div className="space-y-0.5">
-                  {dayShifts.map((shift) => {
-                    const statusBorderClass =
-                      shift.responseStatus === "accepted"
-                        ? "border-emerald-500/40 bg-emerald-500/10"
-                        : shift.responseStatus === "declined"
-                          ? "border-rose-500/40 bg-rose-500/10"
-                          : "border-primary/20 bg-primary/10";
+                  {/* Availability entries */}
+                  {dayEntries.map((entry) => (
+                    <div
+                      key={entry._id}
+                      className={cn(
+                        "rounded px-1 py-0.5 text-[9px] mb-0.5 truncate",
+                        entry.status === "available"
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                          : "bg-rose-500/10 text-rose-700 dark:text-rose-400"
+                      )}
+                    >
+                      {entry.allDay === false && entry.startTime && entry.endTime
+                        ? `${entry.startTime}–${entry.endTime}`
+                        : entry.status === "available"
+                          ? "Available"
+                          : "Unavailable"}
+                    </div>
+                  ))}
 
-                    return (
-                      <button
-                        key={shift._id}
-                        type="button"
-                        onClick={(e) => handleShiftTap(shift, e)}
-                        className={cn(
-                          "w-full text-left rounded px-1.5 py-1 border text-[10px] transition-colors active:scale-[0.98]",
-                          statusBorderClass
-                        )}
-                      >
-                        {/* Time + status icon */}
-                        <div className="font-semibold flex items-center gap-1 truncate">
-                          {shift.responseStatus === "accepted" && (
-                            <CheckCircle2 className="size-2.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                          )}
-                          {shift.responseStatus === "declined" && (
-                            <XCircle className="size-2.5 shrink-0 text-rose-600 dark:text-rose-400" />
-                          )}
-                          {shift.responseStatus === "pending" && (
-                            <Clock className="size-2.5 shrink-0 text-primary" />
-                          )}
-                          {format(parseISO(shift.startTime), "HH:mm")} – {format(parseISO(shift.endTime), "HH:mm")}
-                        </div>
+                  {/* Shifts */}
+                  <div className="space-y-0.5">
+                    {dayShifts.map((shift) => {
+                      const statusBorderClass =
+                        shift.responseStatus === "accepted"
+                          ? "border-emerald-500/40 bg-emerald-500/10"
+                          : shift.responseStatus === "declined"
+                            ? "border-rose-500/40 bg-rose-500/10"
+                            : "border-primary/20 bg-primary/10";
 
-                        {/* Desktop: show more detail */}
-                        <div className="hidden md:block">
+                      return (
+                        <button
+                          key={shift._id}
+                          type="button"
+                          onClick={(e) => handleShiftTap(shift, e)}
+                          className={cn(
+                            "w-full text-left rounded px-1.5 py-1 border text-[10px] transition-colors active:scale-[0.98]",
+                            statusBorderClass
+                          )}
+                        >
+                          <div className="font-semibold flex items-center gap-1 truncate">
+                            {shift.responseStatus === "accepted" && (
+                              <CheckCircle2 className="size-2.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                            )}
+                            {shift.responseStatus === "declined" && (
+                              <XCircle className="size-2.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                            )}
+                            {shift.responseStatus === "pending" && (
+                              <Clock className="size-2.5 shrink-0 text-primary" />
+                            )}
+                            {format(parseISO(shift.startTime), "HH:mm")} – {format(parseISO(shift.endTime), "HH:mm")}
+                          </div>
                           <div className="flex items-center gap-1 text-muted-foreground truncate">
                             <Truck className="size-2.5 shrink-0" />
                             <span className="truncate">{shift.vehicle}</span>
@@ -365,32 +571,18 @@ export default function MonthlyCalendar() {
                               <span className="truncate">{shift.members.map((m) => m.name).join(", ")}</span>
                             </div>
                           )}
-                        </div>
-
-                        {/* Mobile: compact indicator */}
-                        <div className="md:hidden flex items-center gap-1 text-muted-foreground truncate">
-                          <span className="truncate">
-                            {shift.callSign ?? shift.vehicle}
-                          </span>
-                        </div>
-
-                        {/* Pending badge on mobile */}
-                        {shift.responseStatus === "pending" && (
-                          <div className="mt-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
-                            Tap to respond
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Context menu */}
+      {/* Context menu (desktop) */}
       {contextMenu && (
         <div
           ref={menuRef}
