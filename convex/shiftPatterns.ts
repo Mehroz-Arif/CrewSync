@@ -53,6 +53,7 @@ export const create = mutation({
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
     position: v.optional(v.string()),
+    positions: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
     crewNumber: v.optional(v.number()),
@@ -101,6 +102,10 @@ export const create = mutation({
       throw new ConvexError({ message: "Effective end date must be after start date", code: "BAD_REQUEST" });
     }
 
+    // Derive crew count from positions array if present
+    const positionsArr = args.positions && args.positions.length > 0 ? args.positions : undefined;
+    const crewNumber = positionsArr ? positionsArr.length : (args.crewNumber ?? 1);
+
     return await ctx.db.insert("shiftPatterns", {
       name: args.name,
       patternType: args.patternType,
@@ -115,10 +120,11 @@ export const create = mutation({
       endTime: args.endTime,
       vehicle: args.vehicle,
       callSign: args.callSign,
-      position: args.position,
+      position: positionsArr ? positionsArr[0] : args.position, // Keep first position for backward compat
+      positions: positionsArr,
       notes: args.notes,
       memberIds: args.memberIds,
-      crewNumber: args.crewNumber ?? 1,
+      crewNumber: crewNumber,
       createdBy: user._id,
       active: true,
     });
@@ -143,6 +149,7 @@ export const update = mutation({
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
     position: v.optional(v.string()),
+    positions: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
     memberIds: v.optional(v.array(v.id("users"))),
     crewNumber: v.optional(v.number()),
@@ -182,6 +189,15 @@ export const update = mutation({
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
     if (fields.callSign !== undefined) patch.callSign = fields.callSign;
     if (fields.position !== undefined) patch.position = fields.position;
+    if (fields.positions !== undefined) {
+      patch.positions = fields.positions;
+      // Keep position in sync with first entry for backward compat
+      if (fields.positions.length > 0) {
+        patch.position = fields.positions[0];
+        // Auto-derive crew count from positions array
+        patch.crewNumber = fields.positions.length;
+      }
+    }
     if (fields.notes !== undefined) patch.notes = fields.notes;
     if (fields.memberIds !== undefined) patch.memberIds = fields.memberIds;
     if (fields.crewNumber !== undefined) patch.crewNumber = fields.crewNumber;
@@ -224,7 +240,10 @@ export const update = mutation({
     });
 
     // Update shift properties to match the updated pattern
-    for (const shift of linkedShifts) {
+    // When positions array exists, assign each shift its slot-specific position
+    const positionsArr = updatedPattern.positions;
+    for (let i = 0; i < linkedShifts.length; i++) {
+      const shift = linkedShifts[i];
       const dateStr = shift.startTime.slice(0, 10);
       const newStartDate = new Date(`${dateStr}T${updatedPattern.startTime}:00`);
       let newEndDate = new Date(`${dateStr}T${updatedPattern.endTime}:00`);
@@ -233,12 +252,17 @@ export const update = mutation({
         newEndDate = new Date(newEndDate.getTime() + 86400000);
       }
 
+      // Assign slot-specific position if positions array exists
+      const slotPosition = positionsArr && positionsArr.length > 0
+        ? positionsArr[i % positionsArr.length]
+        : updatedPattern.position;
+
       await ctx.db.patch(shift._id, {
         startTime: newStartDate.toISOString(),
         endTime: newEndDate.toISOString(),
         vehicle: updatedPattern.vehicle ?? "",
         callSign: updatedPattern.callSign,
-        position: updatedPattern.position,
+        position: slotPosition,
         notes: updatedPattern.notes,
         patternId: patternId, // Backfill link for future syncs
       });
@@ -451,6 +475,10 @@ export const applyToWeek = mutation({
         const endISO = endDate.toISOString();
 
         const crewCount = pattern.crewNumber ?? 1;
+        // Resolve positions array for per-slot assignment
+        const patternPositions = pattern.positions && pattern.positions.length > 0
+          ? pattern.positions
+          : undefined;
 
         // ── 1) Find existing shifts already linked to this pattern on this date ──
         // Scan all shifts on this date and match by patternId
@@ -479,14 +507,19 @@ export const applyToWeek = mutation({
         const allMatching = [...linkedExisting, ...exactMatches];
 
         // ── 3) Update existing linked shifts in place ──
-        for (const existing of linkedExisting) {
-          // Only patch if something actually changed
+        for (let li = 0; li < linkedExisting.length; li++) {
+          const existing = linkedExisting[li];
+          // Assign slot-specific position if positions array exists
+          const slotPos = patternPositions
+            ? patternPositions[li % patternPositions.length]
+            : (pattern.position ?? pattern.staffRole ?? "");
+
           const needsUpdate =
             existing.startTime !== startISO ||
             existing.endTime !== endISO ||
             (existing.vehicle ?? "") !== (pattern.vehicle ?? "") ||
             (existing.callSign ?? "") !== (pattern.callSign ?? "") ||
-            (existing.position ?? "") !== (pattern.position ?? pattern.staffRole ?? "") ||
+            (existing.position ?? "") !== slotPos ||
             (existing.notes ?? "") !== (pattern.notes ?? "");
 
           if (needsUpdate) {
@@ -495,7 +528,7 @@ export const applyToWeek = mutation({
               endTime: endISO,
               vehicle: pattern.vehicle ?? "",
               callSign: pattern.callSign,
-              position: pattern.position ?? pattern.staffRole,
+              position: slotPos || undefined,
               notes: pattern.notes,
             });
           }
@@ -525,12 +558,17 @@ export const applyToWeek = mutation({
         // Create only the additional shifts needed
         for (let si = 0; si < shiftsToCreate; si++) {
           const slotIndex = allMatching.length + si;
+          // Assign slot-specific position
+          const slotPos = patternPositions
+            ? patternPositions[slotIndex % patternPositions.length]
+            : (pattern.position ?? pattern.staffRole); // fallback to legacy
+
           const shiftId = await ctx.db.insert("shifts", {
             startTime: startISO,
             endTime: endISO,
             vehicle: pattern.vehicle ?? "",
             callSign: pattern.callSign,
-            position: pattern.position ?? pattern.staffRole, // fallback to legacy
+            position: slotPos,
             notes: pattern.notes,
             createdBy: user._id,
             patternId: pattern._id,

@@ -75,6 +75,7 @@ type PatternWithMembers = {
   vehicle?: string;
   callSign?: string;
   position?: string;
+  positions?: string[];
   notes?: string;
   memberIds: Id<"users">[];
   crewNumber?: number;
@@ -264,15 +265,21 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
         </Empty>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {patterns.map((pattern) => (
-            <PatternCard
-              key={pattern._id}
-              pattern={pattern}
-              roleColor={pattern.position ? roleColorMap[pattern.position] : undefined}
-              onEdit={() => handleEdit(pattern)}
-              onToggle={() => handleToggle(pattern._id)}
-            />
-          ))}
+          {patterns.map((pattern) => {
+            // Use first position color for border accent
+            const firstPos = pattern.positions?.[0] ?? pattern.position;
+            const borderColor = firstPos ? roleColorMap[firstPos] : undefined;
+            return (
+              <PatternCard
+                key={pattern._id}
+                pattern={pattern}
+                roleColor={borderColor}
+                roleColorMap={roleColorMap}
+                onEdit={() => handleEdit(pattern)}
+                onToggle={() => handleToggle(pattern._id)}
+              />
+            );
+          })}
         </div>
       )}
 
@@ -292,14 +299,23 @@ export default function PatternsTab({ staff }: { staff: StaffMember[] }) {
 function PatternCard({
   pattern,
   roleColor,
+  roleColorMap,
   onEdit,
   onToggle,
 }: {
   pattern: PatternWithMembers;
   roleColor?: string;
+  roleColorMap: Record<string, string>;
   onEdit: () => void;
   onToggle: () => void;
 }) {
+  // Resolve display positions: prefer positions array, fall back to legacy position
+  const displayPositions = pattern.positions && pattern.positions.length > 0
+    ? pattern.positions
+    : pattern.position
+      ? [pattern.position]
+      : [];
+
   return (
     <Card
       className={cn(
@@ -411,15 +427,24 @@ function PatternCard({
               <span className="truncate">{pattern.callSign}</span>
             </div>
           )}
-          {pattern.position && (
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="size-3 shrink-0" />
-              <span
-                className="truncate font-semibold"
-                style={roleColor ? { color: roleColor } : undefined}
-              >
-                {pattern.position}
-              </span>
+          {/* Positions (multi) */}
+          {displayPositions.length > 0 && (
+            <div className="flex items-start gap-2">
+              <ShieldCheck className="size-3 shrink-0 mt-0.5" />
+              <div className="flex flex-wrap gap-1">
+                {displayPositions.map((pos, idx) => {
+                  const posColor = roleColorMap[pos];
+                  return (
+                    <span
+                      key={idx}
+                      className="font-semibold"
+                      style={posColor ? { color: posColor } : undefined}
+                    >
+                      {pos}{idx < displayPositions.length - 1 ? "," : ""}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           )}
           {(pattern.crewNumber ?? 1) > 1 && (

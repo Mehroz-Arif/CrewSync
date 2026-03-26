@@ -24,6 +24,7 @@ import { Spinner } from "@/components/ui/spinner.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import { cn } from "@/lib/utils.ts";
+import { Plus, X } from "lucide-react";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
 const DAYS = [
@@ -59,6 +60,7 @@ type PatternData = {
   vehicle?: string;
   callSign?: string;
   position?: string;
+  positions?: string[];
   notes?: string;
   memberIds: Id<"users">[];
   crewNumber?: number;
@@ -72,6 +74,22 @@ type PatternDialogProps = {
   pattern?: PatternData;
   staff: StaffMember[];
 };
+
+/**
+ * Derive the initial positions list from a pattern.
+ * - If the pattern has a `positions` array, use that.
+ * - Otherwise fall back to the legacy single `position` (if any).
+ * - Default to one empty slot so the user always sees a row.
+ */
+function deriveInitialPositions(pattern?: PatternData): string[] {
+  if (pattern?.positions && pattern.positions.length > 0) {
+    return [...pattern.positions];
+  }
+  if (pattern?.position) {
+    return [pattern.position];
+  }
+  return [""];
+}
 
 export default function PatternDialog({
   open,
@@ -118,12 +136,16 @@ export default function PatternDialog({
   const [endTime, setEndTime] = useState(() => pattern?.endTime ?? "16:00");
   const [vehicle, setVehicle] = useState(() => pattern?.vehicle ?? "");
   const [callSign, setCallSign] = useState(() => pattern?.callSign ?? "");
-  const [position, setPosition] = useState(() => pattern?.position ?? "");
+
+  // Multi-position slots
+  const [positionSlots, setPositionSlots] = useState<string[]>(() =>
+    deriveInitialPositions(pattern)
+  );
+
   const [notes, setNotes] = useState(() => pattern?.notes ?? "");
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(
     () => new Set(pattern?.memberIds ?? [])
   );
-  const [crewNumber, setCrewNumber] = useState(() => pattern?.crewNumber ?? 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
 
@@ -142,6 +164,25 @@ export default function PatternDialog({
       if (next.has(uid)) next.delete(uid);
       else next.add(uid);
       return next;
+    });
+  }
+
+  function updatePositionSlot(index: number, value: string) {
+    setPositionSlots((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }
+
+  function addPositionSlot() {
+    setPositionSlots((prev) => [...prev, ""]);
+  }
+
+  function removePositionSlot(index: number) {
+    setPositionSlots((prev) => {
+      if (prev.length <= 1) return prev; // Keep at least one slot
+      return prev.filter((_, i) => i !== index);
     });
   }
 
@@ -181,6 +222,9 @@ export default function PatternDialog({
       return;
     }
 
+    // Build cleaned positions array (filter out empty slots)
+    const cleanedPositions = positionSlots.filter((p) => p.trim() !== "");
+
     setIsSubmitting(true);
     try {
       const memberIds = [...selectedMembers] as Id<"users">[];
@@ -200,10 +244,11 @@ export default function PatternDialog({
           endTime,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
-          position: position.trim() || undefined,
+          positions: cleanedPositions.length > 0 ? cleanedPositions : undefined,
+          position: cleanedPositions.length > 0 ? cleanedPositions[0] : undefined,
           notes: notes.trim() || undefined,
           memberIds,
-          crewNumber,
+          crewNumber: cleanedPositions.length > 0 ? cleanedPositions.length : 1,
         });
         toast.success("Pattern created");
       } else if (pattern) {
@@ -222,10 +267,11 @@ export default function PatternDialog({
           endTime,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
-          position: position.trim() || undefined,
+          positions: cleanedPositions.length > 0 ? cleanedPositions : undefined,
+          position: cleanedPositions.length > 0 ? cleanedPositions[0] : undefined,
           notes: notes.trim() || undefined,
           memberIds,
-          crewNumber,
+          crewNumber: cleanedPositions.length > 0 ? cleanedPositions.length : 1,
         });
         toast.success("Pattern updated");
       }
@@ -259,6 +305,9 @@ export default function PatternDialog({
     }
   }
 
+  // Total crew slots = number of position slots with a value
+  const filledSlots = positionSlots.filter((p) => p.trim() !== "").length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -279,21 +328,61 @@ export default function PatternDialog({
             />
           </div>
 
-          {/* Position */}
+          {/* Positions (multi-slot) */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Position</Label>
+            <Label className="text-xs font-medium">Positions</Label>
             <p className="text-xs text-muted-foreground -mt-0.5">
-              The position required for this shift pattern.
+              Add a position for each crew slot. Each position creates one shift per day.
             </p>
-            <Select value={position || "none"} onValueChange={(v) => setPosition(v === "none" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No position</SelectItem>
-                {positionOptions?.map((jt) => (
-                  <SelectItem key={jt._id} value={jt.label}>{jt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              {positionSlots.map((slot, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-5 text-center shrink-0">
+                    {index + 1}
+                  </span>
+                  <Select
+                    value={slot || "none"}
+                    onValueChange={(v) => updatePositionSlot(index, v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No position</SelectItem>
+                      {positionOptions?.map((jt) => (
+                        <SelectItem key={jt._id} value={jt.label}>
+                          {jt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {positionSlots.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => removePositionSlot(index)}
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={addPositionSlot}
+                className="w-full"
+              >
+                <Plus className="size-3.5 mr-1.5" />
+                Add Position Slot
+              </Button>
+            </div>
+            {filledSlots > 1 && (
+              <p className="text-xs text-muted-foreground">
+                {filledSlots} shifts will be created per day from this pattern.
+              </p>
+            )}
           </div>
 
           {/* Pattern Type Toggle */}
@@ -467,21 +556,6 @@ export default function PatternDialog({
               value={callSign}
               onChange={(e) => setCallSign(e.target.value)}
               placeholder="Alpha-1"
-            />
-          </div>
-
-          {/* Crew Number */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Crew Number</Label>
-            <p className="text-xs text-muted-foreground -mt-0.5">
-              How many separate shifts to create per day. E.g. 2 = two shift slots on the schedule.
-            </p>
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={crewNumber}
-              onChange={(e) => setCrewNumber(Math.max(1, parseInt(e.target.value) || 1))}
             />
           </div>
 

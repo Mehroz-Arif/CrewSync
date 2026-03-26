@@ -163,11 +163,12 @@ export default defineSchema({
     endTime: v.string(), // "HH:mm"
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
-    position: v.optional(v.string()), // Required position e.g. "Ambulance Care Assistant"
-    staffRole: v.optional(v.string()), // Deprecated: use position instead
+    position: v.optional(v.string()), // Deprecated: use positions array instead
+    positions: v.optional(v.array(v.string())), // Ordered list of positions per crew slot e.g. ["ECA", "ACA"]
+    staffRole: v.optional(v.string()), // Deprecated: use positions instead
     notes: v.optional(v.string()),
     memberIds: v.array(v.id("users")),
-    crewNumber: v.optional(v.number()), // How many shifts to create per day (e.g. 2 = two separate shifts)
+    crewNumber: v.optional(v.number()), // How many shifts to create per day — auto-derived from positions length when set
     createdBy: v.id("users"),
     active: v.boolean(),
   }),
