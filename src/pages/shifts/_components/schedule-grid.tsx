@@ -106,12 +106,12 @@ function UnassignedDropCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "p-0.5 border-r bg-amber-500/[0.02] transition-colors overflow-y-auto",
+        "p-0.5 border-r bg-amber-500/[0.02] transition-colors",
         isCurrentDay && "bg-amber-500/[0.05]",
         isShiftDragging && !isOver && "bg-amber-500/[0.06] ring-1 ring-inset ring-dashed ring-amber-500/20",
         isOver && "bg-amber-500/15 ring-2 ring-inset ring-amber-500/40"
       )}
-      style={maxHeight !== undefined ? { maxHeight } : undefined}
+      style={undefined}
     >
       <div className="space-y-1">
         {children}
@@ -393,56 +393,59 @@ export default function ScheduleGrid({
               {isAdmin && (
                 <>
                   <div
-                    className="grid"
-                    style={{
-                      gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
-                    }}
+                    className="overflow-y-auto"
+                    style={{ maxHeight: effectiveUnassignedHeight }}
                   >
-                    {/* Unassigned label cell */}
                     <div
-                      className={cn(
-                        "px-2 py-1.5 border-r flex items-center gap-2 bg-amber-500/5 overflow-hidden",
-                        isDraggingUnpublishedShift && "bg-amber-500/10"
-                      )}
-                      style={{ maxHeight: effectiveUnassignedHeight }}
+                      className="grid"
+                      style={{
+                        gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
+                      }}
                     >
-                      <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
-                        <Package className="size-3 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
-                          {isDraggingUnpublishedShift ? "Drop to unassign" : "Unassigned"}
-                        </div>
-                        {hasUnassigned && !isDraggingUnpublishedShift && (
-                          <div className="text-[10px] text-muted-foreground">
-                            {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
-                          </div>
+                      {/* Unassigned label cell */}
+                      <div
+                        className={cn(
+                          "px-2 py-1.5 border-r flex items-start gap-2 bg-amber-500/5 sticky left-0",
+                          isDraggingUnpublishedShift && "bg-amber-500/10"
                         )}
+                      >
+                        <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+                          <Package className="size-3 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
+                            {isDraggingUnpublishedShift ? "Drop to unassign" : "Unassigned"}
+                          </div>
+                          {hasUnassigned && !isDraggingUnpublishedShift && (
+                            <div className="text-[10px] text-muted-foreground">
+                              {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      {/* Unassigned day cells */}
+                      {days.map((day) => {
+                        const dateStr = format(day, "yyyy-MM-dd");
+                        const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
+                        return (
+                          <UnassignedDropCell
+                            key={`unassigned-${dateStr}`}
+                            dateStr={dateStr}
+                            isCurrentDay={isToday(day)}
+                            isShiftDragging={isDraggingUnpublishedShift}
+                          >
+                            {dayGroups.map((group) => (
+                              <DraggableUnassignedGroup
+                                key={group.key}
+                                group={group}
+                                roleColor={group.position ? roleColorMap[group.position] : undefined}
+                                onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
+                              />
+                            ))}
+                          </UnassignedDropCell>
+                        );
+                      })}
                     </div>
-                    {/* Unassigned day cells */}
-                    {days.map((day) => {
-                      const dateStr = format(day, "yyyy-MM-dd");
-                      const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
-                      return (
-                        <UnassignedDropCell
-                          key={`unassigned-${dateStr}`}
-                          dateStr={dateStr}
-                          isCurrentDay={isToday(day)}
-                          isShiftDragging={isDraggingUnpublishedShift}
-                          maxHeight={effectiveUnassignedHeight}
-                        >
-                          {dayGroups.map((group) => (
-                            <DraggableUnassignedGroup
-                              key={group.key}
-                              group={group}
-                              roleColor={group.position ? roleColorMap[group.position] : undefined}
-                              onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
-                            />
-                          ))}
-                        </UnassignedDropCell>
-                      );
-                    })}
                   </div>
                   {/* Drag resize handle */}
                   <div
