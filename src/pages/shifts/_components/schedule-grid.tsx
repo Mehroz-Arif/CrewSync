@@ -535,7 +535,7 @@ export default function ScheduleGrid({
                       {cellUnavailNotes.map((u, i) => (
                         <div
                           key={`unavail-${i}`}
-                          className="rounded border border-rose-400/30 bg-rose-500/8 px-1.5 py-0.5 text-[9px] text-rose-600 dark:text-rose-400"
+                          className="rounded border border-muted-foreground/20 bg-muted/60 px-1.5 py-0.5 text-[9px] text-muted-foreground"
                           title={
                             u.allDay
                               ? `Unavailable (all day)${u.notes ? `: ${u.notes}` : ""}`
