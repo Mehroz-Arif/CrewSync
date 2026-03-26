@@ -264,6 +264,8 @@ export const getShiftsByDateRange = query({
               membershipId: m._id,
               userId: m.userId,
               name: user?.name ?? "Unknown",
+              responseStatus: m.responseStatus ?? "pending" as const,
+              declineReason: m.declineReason,
             };
           })
         );
@@ -677,11 +679,57 @@ export const getMyShiftsByDateRange = query({
           ...shift,
           position,
           membershipId: mem._id,
+          responseStatus: mem.responseStatus ?? "pending",
+          declineReason: mem.declineReason,
           members: memberDetails,
         });
       }
     }
     return shifts;
+  },
+});
+
+/** Accept or decline a published shift (team member) */
+export const respondToShift = mutation({
+  args: {
+    membershipId: v.id("shiftMembers"),
+    response: v.union(v.literal("accepted"), v.literal("declined")),
+    declineReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!user) {
+      throw new ConvexError({ message: "User not found", code: "NOT_FOUND" });
+    }
+
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) {
+      throw new ConvexError({ message: "Shift membership not found", code: "NOT_FOUND" });
+    }
+    if (membership.userId !== user._id) {
+      throw new ConvexError({ message: "You can only respond to your own shifts", code: "FORBIDDEN" });
+    }
+
+    const shift = await ctx.db.get(membership.shiftId);
+    if (!shift || !shift.published) {
+      throw new ConvexError({ message: "Shift is not published", code: "BAD_REQUEST" });
+    }
+
+    if (args.response === "declined" && !args.declineReason?.trim()) {
+      throw new ConvexError({ message: "A reason is required when declining a shift", code: "BAD_REQUEST" });
+    }
+
+    await ctx.db.patch(args.membershipId, {
+      responseStatus: args.response,
+      declineReason: args.response === "declined" ? args.declineReason!.trim() : undefined,
+    });
   },
 });
 
@@ -755,6 +803,10 @@ export const setShiftPublished = mutation({
       if (members.length === 0) {
         throw new ConvexError({ message: "Cannot publish a shift with no assigned members", code: "BAD_REQUEST" });
       }
+      // Reset member responses to pending when publishing
+      for (const mem of members) {
+        await ctx.db.patch(mem._id, { responseStatus: "pending", declineReason: undefined });
+      }
     }
 
     if (shift.published !== args.published) {
@@ -799,6 +851,10 @@ export const setPublished = mutation({
           .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
           .collect();
         if (members.length === 0) continue;
+        // Reset member responses to pending when publishing
+        for (const mem of members) {
+          await ctx.db.patch(mem._id, { responseStatus: "pending", declineReason: undefined });
+        }
       }
       if (shift.published !== args.published) {
         await ctx.db.patch(shift._id, { published: args.published });

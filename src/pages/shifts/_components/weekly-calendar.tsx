@@ -20,6 +20,9 @@ import {
   Users,
   Check,
   X as XIcon,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -28,6 +31,15 @@ import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import AvailabilityDialog from "./availability-dialog.tsx";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
+import { Label } from "@/components/ui/label.tsx";
 
 type ContextMenuState = {
   x: number;
@@ -484,30 +496,182 @@ function ShiftCard({
     vehicle: string;
     callSign?: string;
     position?: string;
+    membershipId: string;
+    responseStatus: "pending" | "accepted" | "declined";
+    declineReason?: string;
     members: Array<{ userId: string; name: string }>;
   };
 }) {
+  const respondToShift = useMutation(api.shifts.respondToShift);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAccept = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await respondToShift({
+        membershipId: shift.membershipId as Id<"shiftMembers">,
+        response: "accepted",
+      });
+      toast.success("Shift accepted");
+    } catch (error) {
+      if (error instanceof ConvexError) {
+        toast.error((error.data as { message: string }).message);
+      } else {
+        toast.error("Failed to accept shift");
+      }
+    }
+  };
+
+  const handleDeclineSubmit = async () => {
+    if (!declineReason.trim()) {
+      toast.error("Please provide a reason for declining");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await respondToShift({
+        membershipId: shift.membershipId as Id<"shiftMembers">,
+        response: "declined",
+        declineReason: declineReason.trim(),
+      });
+      toast.success("Shift declined");
+      setDeclineDialogOpen(false);
+      setDeclineReason("");
+    } catch (error) {
+      if (error instanceof ConvexError) {
+        toast.error((error.data as { message: string }).message);
+      } else {
+        toast.error("Failed to decline shift");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const statusBorder =
+    shift.responseStatus === "accepted"
+      ? "border-emerald-500/40 bg-emerald-500/5"
+      : shift.responseStatus === "declined"
+        ? "border-rose-500/40 bg-rose-500/5"
+        : "border-primary/20 bg-primary/10";
+
   return (
-    <div className="rounded-lg px-2.5 py-2 bg-primary/10 border border-primary/20 text-xs space-y-1">
-      <div className="font-semibold flex items-center gap-1.5">
-        <Clock className="size-3 shrink-0 text-primary" />
-        {format(parseISO(shift.startTime), "HH:mm")} –{" "}
-        {format(parseISO(shift.endTime), "HH:mm")}
-      </div>
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Truck className="size-3 shrink-0" />
-        <span className="truncate">
-          {shift.callSign ? `${shift.callSign} · ${shift.vehicle}` : shift.vehicle}{shift.position ? ` · ${shift.position}` : ""}
-        </span>
-      </div>
-      {shift.members.length > 1 && (
+    <>
+      <div
+        className={cn(
+          "rounded-lg px-2.5 py-2 border text-xs space-y-1",
+          statusBorder
+        )}
+      >
+        <div className="font-semibold flex items-center gap-1.5">
+          <Clock className="size-3 shrink-0 text-primary" />
+          {format(parseISO(shift.startTime), "HH:mm")} –{" "}
+          {format(parseISO(shift.endTime), "HH:mm")}
+        </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Users className="size-3 shrink-0" />
+          <Truck className="size-3 shrink-0" />
           <span className="truncate">
-            {shift.members.map((m) => m.name).join(", ")}
+            {shift.callSign ? `${shift.callSign} · ${shift.vehicle}` : shift.vehicle}{shift.position ? ` · ${shift.position}` : ""}
           </span>
         </div>
-      )}
-    </div>
+        {shift.members.length > 1 && (
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Users className="size-3 shrink-0" />
+            <span className="truncate">
+              {shift.members.map((m) => m.name).join(", ")}
+            </span>
+          </div>
+        )}
+
+        {/* Response status / actions */}
+        {shift.responseStatus === "pending" && (
+          <div className="flex items-center gap-1.5 pt-1">
+            <Button
+              size="sm"
+              variant="default"
+              className="h-6 text-[10px] px-2 gap-1"
+              onClick={handleAccept}
+            >
+              <Check className="size-3" />
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-6 text-[10px] px-2 gap-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeclineDialogOpen(true);
+              }}
+            >
+              <XIcon className="size-3" />
+              Decline
+            </Button>
+          </div>
+        )}
+        {shift.responseStatus === "accepted" && (
+          <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 pt-0.5">
+            <CheckCircle2 className="size-3 shrink-0" />
+            <span className="text-[10px] font-medium">Accepted</span>
+          </div>
+        )}
+        {shift.responseStatus === "declined" && (
+          <div className="space-y-0.5 pt-0.5">
+            <div className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+              <XCircle className="size-3 shrink-0" />
+              <span className="text-[10px] font-medium">Declined</span>
+            </div>
+            {shift.declineReason && (
+              <div className="flex items-start gap-1 text-muted-foreground">
+                <MessageSquare className="size-3 shrink-0 mt-0.5" />
+                <span className="text-[10px] italic">{shift.declineReason}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Decline reason dialog */}
+      <Dialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
+        <DialogContent className="sm:max-w-md" onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Decline Shift</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {format(parseISO(shift.startTime), "EEE, MMM d")} · {format(parseISO(shift.startTime), "HH:mm")} – {format(parseISO(shift.endTime), "HH:mm")}
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="decline-reason">Reason for declining *</Label>
+              <Textarea
+                id="decline-reason"
+                placeholder="Please provide a reason..."
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDeclineDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeclineSubmit}
+              disabled={isSubmitting || !declineReason.trim()}
+            >
+              {isSubmitting ? "Declining..." : "Decline Shift"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

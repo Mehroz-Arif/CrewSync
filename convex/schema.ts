@@ -106,6 +106,8 @@ export default defineSchema({
   shiftMembers: defineTable({
     shiftId: v.id("shifts"),
     userId: v.id("users"),
+    responseStatus: v.optional(v.union(v.literal("pending"), v.literal("accepted"), v.literal("declined"))),
+    declineReason: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
     .index("by_shift", ["shiftId"]),

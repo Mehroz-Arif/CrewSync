@@ -46,6 +46,8 @@ export type CellShift = {
   notes?: string;
   published: boolean;
   allocatedVehicle?: string;
+  responseStatus?: "pending" | "accepted" | "declined";
+  declineReason?: string;
 };
 
 type ScheduleGridProps = {
@@ -416,6 +418,8 @@ export default function ScheduleGrid({
                           sourceDate={dateStr}
                           isAdmin={isAdmin}
                           published={shift.published}
+                          responseStatus={shift.responseStatus}
+                          declineReason={shift.declineReason}
                           onClick={() => onShiftClick(shift)}
                           onUnassign={() => handleUnassign(shift.membershipId)}
                           onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}

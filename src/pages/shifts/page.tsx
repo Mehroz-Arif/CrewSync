@@ -303,6 +303,8 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           notes: shift.notes,
           published: shift.published === true,
           allocatedVehicle,
+          responseStatus: member.responseStatus,
+          declineReason: member.declineReason,
         });
         map.set(key, existing);
       }

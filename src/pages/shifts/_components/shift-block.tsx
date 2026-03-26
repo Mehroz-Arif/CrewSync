@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { Truck, Send, UserMinus, Eye, EyeOff } from "lucide-react";
+import { Truck, Send, UserMinus, Eye, EyeOff, CheckCircle2, XCircle, CircleDashed } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { roleColorStyles } from "../_lib/role-colors.ts";
 import {
@@ -24,9 +24,12 @@ type ShiftBlockProps = {
   sourceDate: string;
   isAdmin: boolean;
   published: boolean;
+  responseStatus?: "pending" | "accepted" | "declined";
+  declineReason?: string;
   onClick: () => void;
   onUnassign?: () => void;
   onTogglePublish?: () => void;
+  hasVehicleConflict?: boolean;
 };
 
 export default function ShiftBlock({
@@ -42,6 +45,8 @@ export default function ShiftBlock({
   sourceDate,
   isAdmin,
   published,
+  responseStatus,
+  declineReason,
   onClick,
   onUnassign,
   onTogglePublish,
@@ -87,6 +92,16 @@ export default function ShiftBlock({
 
   const displayVehicle = allocatedVehicle ?? vehicle;
 
+  // Response status icon for admin view on published shifts
+  const responseIcon =
+    published && isAdmin && responseStatus
+      ? responseStatus === "accepted"
+        ? <CheckCircle2 className="size-2.5 shrink-0 text-emerald-500" />
+        : responseStatus === "declined"
+          ? <XCircle className="size-2.5 shrink-0 text-rose-500" />
+          : <CircleDashed className="size-2.5 shrink-0 text-amber-500" />
+      : null;
+
   const blockContent = (
     <>
       <div className="font-semibold truncate leading-tight flex items-center gap-1">
@@ -97,6 +112,7 @@ export default function ShiftBlock({
         {published && isAdmin && (
           <Send className="size-2.5 shrink-0 opacity-60" />
         )}
+        {responseIcon}
       </div>
       <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
@@ -107,6 +123,11 @@ export default function ShiftBlock({
       {!published && isAdmin && (
         <div className="text-[9px] uppercase tracking-wider opacity-50 mt-0.5 font-medium">
           Draft
+        </div>
+      )}
+      {published && isAdmin && responseStatus === "declined" && declineReason && (
+        <div className="text-[9px] text-rose-500 truncate mt-0.5 italic" title={declineReason}>
+          {declineReason}
         </div>
       )}
     </>
