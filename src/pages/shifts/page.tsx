@@ -66,7 +66,7 @@ export default function ShiftsPage() {
 
 /** Staff view with Week/Month toggle */
 function StaffScheduleView() {
-  const [view, setView] = useState<"week" | "month">("week");
+  const [view, setView] = useState<"week" | "month">("month");
 
   return (
     <div className="space-y-2">
