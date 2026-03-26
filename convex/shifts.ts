@@ -75,13 +75,17 @@ export const getNextShift = query({
       .collect();
 
     let nextShift: Doc<"shifts"> | null = null;
+    let nextMembership: Doc<"shiftMembers"> | null = null;
 
     for (const mem of memberships) {
+      // Only show accepted shifts
+      if (mem.responseStatus !== "accepted") continue;
       const shift = await ctx.db.get(mem.shiftId);
       if (!shift) continue;
       if (shift.endTime >= now) {
         if (!nextShift || shift.startTime < nextShift.startTime) {
           nextShift = shift;
+          nextMembership = mem;
         }
       }
     }
