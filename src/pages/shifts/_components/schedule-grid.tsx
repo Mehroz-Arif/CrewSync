@@ -392,59 +392,61 @@ export default function ScheduleGrid({
               {/* Unassigned shifts row (admin only) */}
               {isAdmin && (
                 <>
-                  <div
-                    className="overflow-y-auto"
-                    style={{ maxHeight: effectiveUnassignedHeight }}
-                  >
+                  <div className="flex">
+                    {/* Fixed unassigned label — does not scroll */}
                     <div
-                      className="grid"
-                      style={{
-                        gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
-                      }}
+                      className={cn(
+                        "w-[150px] shrink-0 px-2 py-1.5 border-r flex items-start gap-2 bg-amber-500/5",
+                        isDraggingUnpublishedShift && "bg-amber-500/10"
+                      )}
                     >
-                      {/* Unassigned label cell */}
-                      <div
-                        className={cn(
-                          "px-2 py-1.5 border-r flex items-start gap-2 bg-amber-500/5 sticky left-0",
-                          isDraggingUnpublishedShift && "bg-amber-500/10"
-                        )}
-                      >
-                        <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
-                          <Package className="size-3 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
-                            {isDraggingUnpublishedShift ? "Drop to unassign" : "Unassigned"}
-                          </div>
-                          {hasUnassigned && !isDraggingUnpublishedShift && (
-                            <div className="text-[10px] text-muted-foreground">
-                              {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
-                            </div>
-                          )}
-                        </div>
+                      <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+                        <Package className="size-3 text-amber-600 dark:text-amber-400" />
                       </div>
-                      {/* Unassigned day cells */}
-                      {days.map((day) => {
-                        const dateStr = format(day, "yyyy-MM-dd");
-                        const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
-                        return (
-                          <UnassignedDropCell
-                            key={`unassigned-${dateStr}`}
-                            dateStr={dateStr}
-                            isCurrentDay={isToday(day)}
-                            isShiftDragging={isDraggingUnpublishedShift}
-                          >
-                            {dayGroups.map((group) => (
-                              <DraggableUnassignedGroup
-                                key={group.key}
-                                group={group}
-                                roleColor={group.position ? roleColorMap[group.position] : undefined}
-                                onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
-                              />
-                            ))}
-                          </UnassignedDropCell>
-                        );
-                      })}
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
+                          {isDraggingUnpublishedShift ? "Drop to unassign" : "Unassigned"}
+                        </div>
+                        {hasUnassigned && !isDraggingUnpublishedShift && (
+                          <div className="text-[10px] text-muted-foreground">
+                            {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {/* Scrollable unassigned day cells */}
+                    <div
+                      className="flex-1 overflow-y-auto min-w-0"
+                      style={{ maxHeight: effectiveUnassignedHeight }}
+                    >
+                      <div
+                        className="grid"
+                        style={{
+                          gridTemplateColumns: "repeat(7, minmax(100px, 1fr))",
+                        }}
+                      >
+                        {days.map((day) => {
+                          const dateStr = format(day, "yyyy-MM-dd");
+                          const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
+                          return (
+                            <UnassignedDropCell
+                              key={`unassigned-${dateStr}`}
+                              dateStr={dateStr}
+                              isCurrentDay={isToday(day)}
+                              isShiftDragging={isDraggingUnpublishedShift}
+                            >
+                              {dayGroups.map((group) => (
+                                <DraggableUnassignedGroup
+                                  key={group.key}
+                                  group={group}
+                                  roleColor={group.position ? roleColorMap[group.position] : undefined}
+                                  onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
+                                />
+                              ))}
+                            </UnassignedDropCell>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                   {/* Drag resize handle */}
