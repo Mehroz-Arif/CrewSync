@@ -131,7 +131,18 @@ function StaffScheduleView() {
 
 /** Admin view with Schedule and Patterns tabs */
 function AdminView() {
-  const staff = useQuery(api.users.getAllStaff);
+  const rawStaff = useQuery(api.users.getAllStaff);
+
+  // Sort staff alphabetically by name
+  const staff = useMemo(
+    () =>
+      rawStaff
+        ? [...rawStaff].sort((a, b) =>
+            (a.name ?? "").localeCompare(b.name ?? "")
+          )
+        : undefined,
+    [rawStaff]
+  );
 
   if (staff === undefined) {
     return (
