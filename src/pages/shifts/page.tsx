@@ -241,6 +241,12 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     endDate: format(addDays(weekStart, 6), "yyyy-MM-dd"),
   });
 
+  // Fetch shift declines for the week
+  const declines = useQuery(api.shifts.getDeclinesByDateRange, {
+    startDate: format(weekStart, "yyyy-MM-dd"),
+    endDate: format(addDays(weekStart, 7), "yyyy-MM-dd"),
+  });
+
   const setPublished = useMutation(api.shifts.setPublished);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -326,6 +332,25 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     }
     return map;
   }, [allAvailability]);
+
+  // Build decline notes map: "userId__date" → decline entries
+  type DeclineNote = { reason: string; shiftStartTime: string; shiftEndTime: string; userName: string };
+  const declineData = useMemo(() => {
+    const map = new Map<string, DeclineNote[]>();
+    if (!declines) return map;
+    for (const d of declines) {
+      const key = `${d.userId}__${d.date}`;
+      const existing = map.get(key) ?? [];
+      existing.push({
+        reason: d.reason,
+        shiftStartTime: d.shiftStartTime,
+        shiftEndTime: d.shiftEndTime,
+        userName: d.userName,
+      });
+      map.set(key, existing);
+    }
+    return map;
+  }, [declines]);
 
   // Check if any assigned shifts in this week are unpublished or published
   const { hasUnpublished, hasPublished } = useMemo(() => {
@@ -524,6 +549,10 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           <Send className="size-3 opacity-60" />
           <span>Published</span>
         </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-rose-500/10 border border-rose-400/40" />
+          <span>Declined</span>
+        </div>
       </div>
 
       {/* Grid */}
@@ -534,6 +563,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         isAdmin={true}
         unassignedShifts={unassigned}
         availabilityData={availabilityData}
+        declineData={declineData}
         roleColorMap={roleColorMap}
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}

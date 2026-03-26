@@ -112,6 +112,17 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_shift", ["shiftId"]),
 
+  shiftDeclines: defineTable({
+    shiftId: v.id("shifts"),
+    userId: v.id("users"),
+    date: v.string(), // "YYYY-MM-DD" — the day the shift was on
+    reason: v.string(),
+    shiftStartTime: v.string(), // preserve original shift time for reference
+    shiftEndTime: v.string(),
+  })
+    .index("by_date", ["date"])
+    .index("by_user_and_date", ["userId", "date"]),
+
   availability: defineTable({
     userId: v.id("users"),
     date: v.string(), // "YYYY-MM-DD"

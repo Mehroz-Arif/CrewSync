@@ -50,6 +50,13 @@ export type CellShift = {
   declineReason?: string;
 };
 
+export type DeclineNote = {
+  reason: string;
+  shiftStartTime: string;
+  shiftEndTime: string;
+  userName: string;
+};
+
 type ScheduleGridProps = {
   weekStart: Date;
   staff: StaffMember[];
@@ -57,6 +64,7 @@ type ScheduleGridProps = {
   isAdmin: boolean;
   unassignedShifts: UnassignedShift[];
   availabilityData: Map<string, "available" | "unavailable">;
+  declineData?: Map<string, DeclineNote[]>;
   roleColorMap: Record<string, string>; // position label → hex colour
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
@@ -113,6 +121,7 @@ export default function ScheduleGrid({
   isAdmin,
   unassignedShifts,
   availabilityData,
+  declineData,
   roleColorMap,
   onCellClick,
   onShiftClick,
@@ -391,6 +400,7 @@ export default function ScheduleGrid({
                   const cellShifts = gridData.get(cellId) ?? [];
                   const availKey = `${employee._id}__${dateStr}`;
                   const avail = availabilityData.get(availKey);
+                  const cellDeclines = declineData?.get(availKey) ?? [];
                   return (
                     <DayCell
                       key={cellId}
@@ -424,6 +434,17 @@ export default function ScheduleGrid({
                           onUnassign={() => handleUnassign(shift.membershipId)}
                           onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}
                         />
+                      ))}
+                      {/* Decline notes */}
+                      {cellDeclines.map((d, i) => (
+                        <div
+                          key={`decline-${i}`}
+                          className="rounded border border-rose-400/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-600 dark:text-rose-400"
+                          title={`Declined ${format(parseISO(d.shiftStartTime), "HH:mm")}–${format(parseISO(d.shiftEndTime), "HH:mm")}: ${d.reason}`}
+                        >
+                          <span className="font-medium">Declined</span>{" "}
+                          <span className="opacity-75 truncate">{d.reason}</span>
+                        </div>
                       ))}
                     </DayCell>
                   );

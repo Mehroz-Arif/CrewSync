@@ -227,6 +227,34 @@ function getPatternOverlay(
   };
 }
 
+/** Get shift declines for a date range (admin only) */
+export const getDeclinesByDateRange = query({
+  args: { startDate: v.string(), endDate: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+
+    const declines = await ctx.db
+      .query("shiftDeclines")
+      .withIndex("by_date", (q) =>
+        q.gte("date", args.startDate).lt("date", args.endDate)
+      )
+      .collect();
+
+    return await Promise.all(
+      declines.map(async (d) => {
+        const user = await ctx.db.get(d.userId);
+        return {
+          ...d,
+          userName: user?.name ?? "Unknown",
+        };
+      })
+    );
+  },
+});
+
 /** Get shifts within a date range, enriched with member details */
 export const getShiftsByDateRange = query({
   args: { startDate: v.string(), endDate: v.string() },
@@ -722,14 +750,33 @@ export const respondToShift = mutation({
       throw new ConvexError({ message: "Shift is not published", code: "BAD_REQUEST" });
     }
 
-    if (args.response === "declined" && !args.declineReason?.trim()) {
-      throw new ConvexError({ message: "A reason is required when declining a shift", code: "BAD_REQUEST" });
-    }
+    if (args.response === "accepted") {
+      await ctx.db.patch(args.membershipId, {
+        responseStatus: "accepted",
+        declineReason: undefined,
+      });
+    } else {
+      // Declined — reason required
+      if (!args.declineReason?.trim()) {
+        throw new ConvexError({ message: "A reason is required when declining a shift", code: "BAD_REQUEST" });
+      }
 
-    await ctx.db.patch(args.membershipId, {
-      responseStatus: args.response,
-      declineReason: args.response === "declined" ? args.declineReason!.trim() : undefined,
-    });
+      const reason = args.declineReason.trim();
+      const shiftDate = shift.startTime.slice(0, 10); // "YYYY-MM-DD"
+
+      // Record the decline note on the staff member's day
+      await ctx.db.insert("shiftDeclines", {
+        shiftId: shift._id,
+        userId: user._id,
+        date: shiftDate,
+        reason,
+        shiftStartTime: shift.startTime,
+        shiftEndTime: shift.endTime,
+      });
+
+      // Remove the member from the shift (moves it back to unassigned)
+      await ctx.db.delete(args.membershipId);
+    }
   },
 });
 
