@@ -13,14 +13,26 @@ import {
   parseISO,
   isSameMonth,
   isToday,
-  isSameDay,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, Truck, Radio, Users, Check, X as XIcon } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  Clock,
+  Truck,
+  Radio,
+  Users,
+  Check,
+  X as XIcon,
+  Plus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { cn } from "@/lib/utils.ts";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
+import AvailabilityDialog from "./availability-dialog.tsx";
+import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
 type ContextMenuState = {
   x: number;
@@ -28,10 +40,24 @@ type ContextMenuState = {
   date: string;
 } | null;
 
+type AvailabilityEntry = {
+  _id: Id<"availability">;
+  date: string;
+  status: "available" | "unavailable";
+  allDay?: boolean;
+  startTime?: string;
+  endTime?: string;
+  notes?: string;
+};
+
 export default function MonthlyCalendar() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Availability dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogDate, setDialogDate] = useState("");
 
   // Date range for the calendar grid (includes partial weeks)
   const monthStart = startOfMonth(currentMonth);
@@ -76,15 +102,34 @@ export default function MonthlyCalendar() {
     return map;
   }, [myShifts]);
 
-  // Map availability by date string
+  // Map availability by date string — supports multiple entries per day
   const availabilityByDate = useMemo(() => {
-    const map = new Map<string, "available" | "unavailable">();
+    const map = new Map<string, AvailabilityEntry[]>();
     if (!availability) return map;
     for (const entry of availability) {
-      map.set(entry.date, entry.status);
+      const existing = map.get(entry.date) ?? [];
+      existing.push({
+        _id: entry._id,
+        date: entry.date,
+        status: entry.status,
+        allDay: entry.allDay,
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        notes: entry.notes,
+      });
+      map.set(entry.date, existing);
     }
     return map;
   }, [availability]);
+
+  // Derive dominant status per day (for background color)
+  function getDayStatus(dateStr: string): "available" | "unavailable" | null {
+    const entries = availabilityByDate.get(dateStr);
+    if (!entries || entries.length === 0) return null;
+    const allDayEntry = entries.find((e) => e.allDay !== false);
+    if (allDayEntry) return allDayEntry.status;
+    return entries[0].status;
+  }
 
   const handleContextMenu = useCallback((e: React.MouseEvent, day: Date) => {
     e.preventDefault();
@@ -135,6 +180,12 @@ export default function MonthlyCalendar() {
         toast.error("Failed to clear availability");
       }
     }
+    setContextMenu(null);
+  }
+
+  function openAvailabilityDialog(dateStr: string) {
+    setDialogDate(dateStr);
+    setDialogOpen(true);
     setContextMenu(null);
   }
 
@@ -190,21 +241,22 @@ export default function MonthlyCalendar() {
             const inMonth = isSameMonth(day, currentMonth);
             const today = isToday(day);
             const dayShifts = shiftsByDate.get(dateStr) ?? [];
-            const avail = availabilityByDate.get(dateStr);
+            const dayEntries = availabilityByDate.get(dateStr) ?? [];
+            const dayStatus = getDayStatus(dateStr);
 
             return (
               <div
                 key={dateStr}
                 onContextMenu={(e) => handleContextMenu(e, day)}
                 className={cn(
-                  "min-h-[90px] md:min-h-[110px] p-1.5 border-b border-r relative transition-colors",
+                  "min-h-[90px] md:min-h-[110px] p-1.5 border-b border-r relative transition-colors group",
                   !inMonth && "opacity-40",
                   today && "bg-primary/[0.04]",
-                  avail === "available" && "bg-emerald-500/[0.06]",
-                  avail === "unavailable" && "bg-rose-500/[0.06]"
+                  dayStatus === "available" && "bg-emerald-500/[0.06]",
+                  dayStatus === "unavailable" && "bg-rose-500/[0.06]"
                 )}
               >
-                {/* Day number */}
+                {/* Day number + availability dots */}
                 <div className="flex items-center justify-between mb-1">
                   <span
                     className={cn(
@@ -215,13 +267,37 @@ export default function MonthlyCalendar() {
                   >
                     {format(day, "d")}
                   </span>
-                  {avail && (
-                    <span className={cn(
-                      "size-2 rounded-full",
-                      avail === "available" ? "bg-emerald-500" : "bg-rose-500"
-                    )} />
-                  )}
+                  <div className="flex items-center gap-0.5">
+                    {dayEntries.map((entry) => (
+                      <span
+                        key={entry._id}
+                        className={cn(
+                          "size-2 rounded-full",
+                          entry.status === "available" ? "bg-emerald-500" : "bg-rose-500"
+                        )}
+                      />
+                    ))}
+                  </div>
                 </div>
+
+                {/* Availability entries */}
+                {dayEntries.map((entry) => (
+                  <div
+                    key={entry._id}
+                    className={cn(
+                      "rounded px-1 py-0.5 text-[9px] mb-0.5 truncate",
+                      entry.status === "available"
+                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                        : "bg-rose-500/10 text-rose-700 dark:text-rose-400"
+                    )}
+                  >
+                    {entry.allDay === false && entry.startTime && entry.endTime
+                      ? `${entry.startTime}–${entry.endTime}`
+                      : entry.status === "available"
+                        ? "Available"
+                        : "Unavailable"}
+                  </div>
+                ))}
 
                 {/* Shifts */}
                 <div className="space-y-0.5">
@@ -253,6 +329,16 @@ export default function MonthlyCalendar() {
                     </div>
                   ))}
                 </div>
+
+                {/* Quick add availability button (on hover) */}
+                <button
+                  type="button"
+                  onClick={() => openAvailabilityDialog(dateStr)}
+                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 hover:bg-muted"
+                  title="Add availability"
+                >
+                  <Plus className="size-3 text-muted-foreground" />
+                </button>
               </div>
             );
           })}
@@ -274,25 +360,40 @@ export default function MonthlyCalendar() {
             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
           >
             <Check className="size-4 text-emerald-500" />
-            Set Available
+            Set Available (all day)
           </button>
           <button
             onClick={() => handleSetAvailability("unavailable")}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
           >
             <XIcon className="size-4 text-rose-500" />
-            Set Unavailable
+            Set Unavailable (all day)
           </button>
-          {availabilityByDate.get(contextMenu.date) && (
+          <button
+            onClick={() => openAvailabilityDialog(contextMenu.date)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
+          >
+            <Clock className="size-4 text-primary" />
+            Set specific times...
+          </button>
+          {(availabilityByDate.get(contextMenu.date)?.length ?? 0) > 0 && (
             <button
               onClick={handleClearAvailability}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-muted-foreground border-t mt-1"
             >
-              Clear Availability
+              Clear All Availability
             </button>
           )}
         </div>
       )}
+
+      {/* Availability Dialog */}
+      <AvailabilityDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        date={dialogDate}
+        entries={availabilityByDate.get(dialogDate) ?? []}
+      />
     </div>
   );
 }

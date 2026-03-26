@@ -20,12 +20,15 @@ import {
   Users,
   Check,
   X as XIcon,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { cn } from "@/lib/utils.ts";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
+import AvailabilityDialog from "./availability-dialog.tsx";
+import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
 type ContextMenuState = {
   x: number;
@@ -33,12 +36,26 @@ type ContextMenuState = {
   date: string;
 } | null;
 
+type AvailabilityEntry = {
+  _id: Id<"availability">;
+  date: string;
+  status: "available" | "unavailable";
+  allDay?: boolean;
+  startTime?: string;
+  endTime?: string;
+  notes?: string;
+};
+
 export default function WeeklyCalendar() {
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Availability dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogDate, setDialogDate] = useState("");
 
   const weekEnd = addDays(weekStart, 7);
 
@@ -77,15 +94,36 @@ export default function WeeklyCalendar() {
     return map;
   }, [myShifts]);
 
-  // Map availability by date string
+  // Map availability by date string — now supports multiple entries per day
   const availabilityByDate = useMemo(() => {
-    const map = new Map<string, "available" | "unavailable">();
+    const map = new Map<string, AvailabilityEntry[]>();
     if (!availability) return map;
     for (const entry of availability) {
-      map.set(entry.date, entry.status);
+      const existing = map.get(entry.date) ?? [];
+      existing.push({
+        _id: entry._id,
+        date: entry.date,
+        status: entry.status,
+        allDay: entry.allDay,
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        notes: entry.notes,
+      });
+      map.set(entry.date, existing);
     }
     return map;
   }, [availability]);
+
+  // Derive dominant status per day (for background color)
+  function getDayStatus(dateStr: string): "available" | "unavailable" | null {
+    const entries = availabilityByDate.get(dateStr);
+    if (!entries || entries.length === 0) return null;
+    // If any all-day entry exists, use its status
+    const allDayEntry = entries.find((e) => e.allDay !== false);
+    if (allDayEntry) return allDayEntry.status;
+    // Otherwise use the first entry's status
+    return entries[0].status;
+  }
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, day: Date) => {
@@ -139,6 +177,12 @@ export default function WeeklyCalendar() {
         toast.error("Failed to clear availability");
       }
     }
+    setContextMenu(null);
+  }
+
+  function openAvailabilityDialog(dateStr: string) {
+    setDialogDate(dateStr);
+    setDialogOpen(true);
     setContextMenu(null);
   }
 
@@ -198,7 +242,8 @@ export default function WeeklyCalendar() {
             const dateStr = format(day, "yyyy-MM-dd");
             const today = isToday(day);
             const dayShifts = shiftsByDate.get(dateStr) ?? [];
-            const avail = availabilityByDate.get(dateStr);
+            const dayEntries = availabilityByDate.get(dateStr) ?? [];
+            const dayStatus = getDayStatus(dateStr);
 
             return (
               <div
@@ -207,8 +252,8 @@ export default function WeeklyCalendar() {
                 className={cn(
                   "min-h-[200px] border-r last:border-r-0 flex flex-col transition-colors",
                   today && "bg-primary/[0.04]",
-                  avail === "available" && "bg-emerald-500/[0.06]",
-                  avail === "unavailable" && "bg-rose-500/[0.06]"
+                  dayStatus === "available" && "bg-emerald-500/[0.06]",
+                  dayStatus === "unavailable" && "bg-rose-500/[0.06]"
                 )}
               >
                 {/* Day header */}
@@ -230,21 +275,31 @@ export default function WeeklyCalendar() {
                   >
                     {format(day, "d")}
                   </div>
-                  {avail && (
-                    <span
-                      className={cn(
-                        "inline-block size-2 rounded-full mt-1",
-                        avail === "available"
-                          ? "bg-emerald-500"
-                          : "bg-rose-500"
-                      )}
-                    />
+                  {dayEntries.length > 0 && (
+                    <div className="flex items-center justify-center gap-1 mt-1">
+                      {dayEntries.map((entry) => (
+                        <span
+                          key={entry._id}
+                          className={cn(
+                            "size-2 rounded-full",
+                            entry.status === "available"
+                              ? "bg-emerald-500"
+                              : "bg-rose-500"
+                          )}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
 
                 {/* Shifts */}
                 <div className="flex-1 p-2 space-y-2">
-                  {dayShifts.length === 0 && (
+                  {/* Availability entries */}
+                  {dayEntries.map((entry) => (
+                    <AvailabilityPill key={entry._id} entry={entry} />
+                  ))}
+
+                  {dayShifts.length === 0 && dayEntries.length === 0 && (
                     <p className="text-[10px] text-muted-foreground text-center mt-4">
                       No shifts
                     </p>
@@ -252,6 +307,18 @@ export default function WeeklyCalendar() {
                   {dayShifts.map((shift) => (
                     <ShiftCard key={shift._id} shift={shift} />
                   ))}
+                </div>
+
+                {/* Quick add button */}
+                <div className="px-2 pb-2">
+                  <button
+                    type="button"
+                    onClick={() => openAvailabilityDialog(dateStr)}
+                    className="w-full flex items-center justify-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <Plus className="size-3" />
+                    Availability
+                  </button>
                 </div>
               </div>
             );
@@ -264,7 +331,8 @@ export default function WeeklyCalendar() {
             const dateStr = format(day, "yyyy-MM-dd");
             const today = isToday(day);
             const dayShifts = shiftsByDate.get(dateStr) ?? [];
-            const avail = availabilityByDate.get(dateStr);
+            const dayEntries = availabilityByDate.get(dateStr) ?? [];
+            const dayStatus = getDayStatus(dateStr);
 
             return (
               <div
@@ -273,8 +341,8 @@ export default function WeeklyCalendar() {
                 className={cn(
                   "p-3 transition-colors",
                   today && "bg-primary/[0.04]",
-                  avail === "available" && "bg-emerald-500/[0.06]",
-                  avail === "unavailable" && "bg-rose-500/[0.06]"
+                  dayStatus === "available" && "bg-emerald-500/[0.06]",
+                  dayStatus === "unavailable" && "bg-rose-500/[0.06]"
                 )}
               >
                 {/* Day header */}
@@ -291,20 +359,34 @@ export default function WeeklyCalendar() {
                   <span className="text-sm text-muted-foreground">
                     {format(day, "EEEE")}
                   </span>
-                  {avail && (
-                    <span
-                      className={cn(
-                        "size-2 rounded-full ml-auto",
-                        avail === "available"
-                          ? "bg-emerald-500"
-                          : "bg-rose-500"
-                      )}
-                    />
+                  {dayEntries.length > 0 && (
+                    <div className="flex items-center gap-1 ml-auto">
+                      {dayEntries.map((entry) => (
+                        <span
+                          key={entry._id}
+                          className={cn(
+                            "size-2 rounded-full",
+                            entry.status === "available"
+                              ? "bg-emerald-500"
+                              : "bg-rose-500"
+                          )}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
 
+                {/* Availability entries */}
+                {dayEntries.length > 0 && (
+                  <div className="space-y-1 pl-9 mb-2">
+                    {dayEntries.map((entry) => (
+                      <AvailabilityPill key={entry._id} entry={entry} />
+                    ))}
+                  </div>
+                )}
+
                 {/* Shifts */}
-                {dayShifts.length === 0 ? (
+                {dayShifts.length === 0 && dayEntries.length === 0 ? (
                   <p className="text-xs text-muted-foreground pl-9">
                     No shifts
                   </p>
@@ -315,6 +397,18 @@ export default function WeeklyCalendar() {
                     ))}
                   </div>
                 )}
+
+                {/* Quick add */}
+                <div className="pl-9 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => openAvailabilityDialog(dateStr)}
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <Plus className="size-3" />
+                    Add availability
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -336,25 +430,68 @@ export default function WeeklyCalendar() {
             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
           >
             <Check className="size-4 text-emerald-500" />
-            Set Available
+            Set Available (all day)
           </button>
           <button
             onClick={() => handleSetAvailability("unavailable")}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
           >
             <XIcon className="size-4 text-rose-500" />
-            Set Unavailable
+            Set Unavailable (all day)
           </button>
-          {availabilityByDate.get(contextMenu.date) && (
+          <button
+            onClick={() => openAvailabilityDialog(contextMenu.date)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
+          >
+            <Clock className="size-4 text-primary" />
+            Set specific times...
+          </button>
+          {(availabilityByDate.get(contextMenu.date)?.length ?? 0) > 0 && (
             <button
               onClick={handleClearAvailability}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-muted-foreground border-t mt-1"
             >
-              Clear Availability
+              Clear All Availability
             </button>
           )}
         </div>
       )}
+
+      {/* Availability Dialog */}
+      <AvailabilityDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        date={dialogDate}
+        entries={availabilityByDate.get(dialogDate) ?? []}
+      />
+    </div>
+  );
+}
+
+/** Small pill showing an availability entry */
+function AvailabilityPill({ entry }: { entry: AvailabilityEntry }) {
+  return (
+    <div
+      className={cn(
+        "rounded px-2 py-1 text-[10px] flex items-center gap-1.5",
+        entry.status === "available"
+          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+          : "bg-rose-500/10 text-rose-700 dark:text-rose-400"
+      )}
+    >
+      {entry.status === "available" ? (
+        <Check className="size-2.5 shrink-0" />
+      ) : (
+        <XIcon className="size-2.5 shrink-0" />
+      )}
+      <span className="truncate">
+        {entry.allDay === false && entry.startTime && entry.endTime
+          ? `${entry.status === "available" ? "Avail" : "Unavail"} ${entry.startTime}–${entry.endTime}`
+          : entry.status === "available"
+            ? "Available all day"
+            : "Unavailable all day"}
+        {entry.notes ? ` · ${entry.notes}` : ""}
+      </span>
     </div>
   );
 }

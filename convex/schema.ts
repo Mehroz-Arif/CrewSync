@@ -112,8 +112,11 @@ export default defineSchema({
 
   availability: defineTable({
     userId: v.id("users"),
-    date: v.string(),
+    date: v.string(), // "YYYY-MM-DD"
     status: v.union(v.literal("available"), v.literal("unavailable")),
+    allDay: v.optional(v.boolean()), // true or undefined = whole day, false = specific time range
+    startTime: v.optional(v.string()), // "HH:mm" — only when allDay is false
+    endTime: v.optional(v.string()), // "HH:mm" — only when allDay is false
     notes: v.optional(v.string()),
   })
     .index("by_user_and_date", ["userId", "date"])

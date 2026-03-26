@@ -19,6 +19,7 @@ import {
   Undo2,
   Calendar,
   CalendarRange,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -77,7 +78,7 @@ function StaffScheduleView() {
             My Schedule
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            View your shifts and right-click any day to set your availability
+            View your shifts and set your availability for each day and time
           </p>
         </div>
         <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1">
@@ -115,6 +116,10 @@ function StaffScheduleView() {
         <div className="flex items-center gap-1.5">
           <div className="size-3 rounded-sm bg-primary/15 border border-primary/30" />
           <span>Shift assigned</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Clock className="size-3 text-muted-foreground" />
+          <span>Timed entry</span>
         </div>
       </div>
 
@@ -294,12 +299,17 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     return map;
   }, [shifts, vehicleAllocationMap]);
 
-  // Build availability map
+  // Build availability map — for cells with multiple entries, "unavailable" takes priority
   const availabilityData = useMemo(() => {
     const map = new Map<string, "available" | "unavailable">();
     if (!allAvailability) return map;
     for (const entry of allAvailability) {
-      map.set(`${entry.userId}__${entry.date}`, entry.status);
+      const key = `${entry.userId}__${entry.date}`;
+      const existing = map.get(key);
+      // "unavailable" always wins over "available"
+      if (!existing || entry.status === "unavailable") {
+        map.set(key, entry.status);
+      }
     }
     return map;
   }, [allAvailability]);
