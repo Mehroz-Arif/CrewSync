@@ -24,7 +24,6 @@ import {
   Users,
   Check,
   X as XIcon,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -247,9 +246,10 @@ export default function MonthlyCalendar() {
             return (
               <div
                 key={dateStr}
+                onClick={() => openAvailabilityDialog(dateStr)}
                 onContextMenu={(e) => handleContextMenu(e, day)}
                 className={cn(
-                  "min-h-[90px] md:min-h-[110px] p-1.5 border-b border-r relative transition-colors group",
+                  "min-h-[90px] md:min-h-[110px] p-1.5 border-b border-r relative transition-colors cursor-pointer hover:bg-muted/30",
                   !inMonth && "opacity-40",
                   today && "bg-primary/[0.04]",
                   dayStatus === "available" && "bg-emerald-500/[0.06]",
@@ -329,16 +329,6 @@ export default function MonthlyCalendar() {
                     </div>
                   ))}
                 </div>
-
-                {/* Quick add availability button (on hover) */}
-                <button
-                  type="button"
-                  onClick={() => openAvailabilityDialog(dateStr)}
-                  className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity rounded p-0.5 hover:bg-muted"
-                  title="Add availability"
-                >
-                  <Plus className="size-3 text-muted-foreground" />
-                </button>
               </div>
             );
           })}

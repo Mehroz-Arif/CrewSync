@@ -20,7 +20,6 @@ import {
   Users,
   Check,
   X as XIcon,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -248,9 +247,10 @@ export default function WeeklyCalendar() {
             return (
               <div
                 key={dateStr}
+                onClick={() => openAvailabilityDialog(dateStr)}
                 onContextMenu={(e) => handleContextMenu(e, day)}
                 className={cn(
-                  "min-h-[200px] border-r last:border-r-0 flex flex-col transition-colors",
+                  "min-h-[200px] border-r last:border-r-0 flex flex-col transition-colors cursor-pointer hover:bg-muted/30",
                   today && "bg-primary/[0.04]",
                   dayStatus === "available" && "bg-emerald-500/[0.06]",
                   dayStatus === "unavailable" && "bg-rose-500/[0.06]"
@@ -308,18 +308,6 @@ export default function WeeklyCalendar() {
                     <ShiftCard key={shift._id} shift={shift} />
                   ))}
                 </div>
-
-                {/* Quick add button */}
-                <div className="px-2 pb-2">
-                  <button
-                    type="button"
-                    onClick={() => openAvailabilityDialog(dateStr)}
-                    className="w-full flex items-center justify-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted/60 transition-colors"
-                  >
-                    <Plus className="size-3" />
-                    Availability
-                  </button>
-                </div>
               </div>
             );
           })}
@@ -337,9 +325,10 @@ export default function WeeklyCalendar() {
             return (
               <div
                 key={dateStr}
+                onClick={() => openAvailabilityDialog(dateStr)}
                 onContextMenu={(e) => handleContextMenu(e, day)}
                 className={cn(
-                  "p-3 transition-colors",
+                  "p-3 transition-colors cursor-pointer hover:bg-muted/30",
                   today && "bg-primary/[0.04]",
                   dayStatus === "available" && "bg-emerald-500/[0.06]",
                   dayStatus === "unavailable" && "bg-rose-500/[0.06]"
@@ -397,18 +386,6 @@ export default function WeeklyCalendar() {
                     ))}
                   </div>
                 )}
-
-                {/* Quick add */}
-                <div className="pl-9 mt-2">
-                  <button
-                    type="button"
-                    onClick={() => openAvailabilityDialog(dateStr)}
-                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted/60 transition-colors"
-                  >
-                    <Plus className="size-3" />
-                    Add availability
-                  </button>
-                </div>
               </div>
             );
           })}
