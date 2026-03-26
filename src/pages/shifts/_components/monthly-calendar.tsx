@@ -24,6 +24,8 @@ import {
   Users,
   Check,
   X as XIcon,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -31,6 +33,8 @@ import { cn } from "@/lib/utils.ts";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import AvailabilityDialog from "./availability-dialog.tsx";
+import ShiftResponseDialog from "./shift-response-dialog.tsx";
+import type { ShiftForResponse } from "./shift-response-dialog.tsx";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
 type ContextMenuState = {
@@ -57,6 +61,10 @@ export default function MonthlyCalendar() {
   // Availability dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDate, setDialogDate] = useState("");
+
+  // Shift response dialog state
+  const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
+  const [selectedShift, setSelectedShift] = useState<ShiftForResponse | null>(null);
 
   // Date range for the calendar grid (includes partial weeks)
   const monthStart = startOfMonth(currentMonth);
@@ -188,6 +196,12 @@ export default function MonthlyCalendar() {
     setContextMenu(null);
   }
 
+  function handleShiftTap(shift: ShiftForResponse, e: React.MouseEvent) {
+    e.stopPropagation(); // Prevent opening availability dialog
+    setSelectedShift(shift);
+    setShiftDialogOpen(true);
+  }
+
   if (myShifts === undefined || availability === undefined) {
     return (
       <div className="space-y-4">
@@ -301,33 +315,74 @@ export default function MonthlyCalendar() {
 
                 {/* Shifts */}
                 <div className="space-y-0.5">
-                  {dayShifts.map((shift) => (
-                    <div
-                      key={shift._id}
-                      className="rounded px-1.5 py-1 bg-primary/10 border border-primary/20 text-[10px]"
-                    >
-                      <div className="font-semibold flex items-center gap-1 truncate">
-                        <Clock className="size-2.5 shrink-0" />
-                        {format(parseISO(shift.startTime), "HH:mm")} – {format(parseISO(shift.endTime), "HH:mm")}
-                      </div>
-                      <div className="flex items-center gap-1 text-muted-foreground truncate">
-                        <Truck className="size-2.5 shrink-0" />
-                        <span className="truncate">{shift.vehicle}</span>
-                      </div>
-                      {shift.callSign && (
-                        <div className="flex items-center gap-1 text-muted-foreground truncate">
-                          <Radio className="size-2.5 shrink-0" />
-                          <span className="truncate">{shift.callSign}</span>
+                  {dayShifts.map((shift) => {
+                    const statusBorderClass =
+                      shift.responseStatus === "accepted"
+                        ? "border-emerald-500/40 bg-emerald-500/10"
+                        : shift.responseStatus === "declined"
+                          ? "border-rose-500/40 bg-rose-500/10"
+                          : "border-primary/20 bg-primary/10";
+
+                    return (
+                      <button
+                        key={shift._id}
+                        type="button"
+                        onClick={(e) => handleShiftTap(shift, e)}
+                        className={cn(
+                          "w-full text-left rounded px-1.5 py-1 border text-[10px] transition-colors active:scale-[0.98]",
+                          statusBorderClass
+                        )}
+                      >
+                        {/* Time + status icon */}
+                        <div className="font-semibold flex items-center gap-1 truncate">
+                          {shift.responseStatus === "accepted" && (
+                            <CheckCircle2 className="size-2.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          )}
+                          {shift.responseStatus === "declined" && (
+                            <XCircle className="size-2.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                          )}
+                          {shift.responseStatus === "pending" && (
+                            <Clock className="size-2.5 shrink-0 text-primary" />
+                          )}
+                          {format(parseISO(shift.startTime), "HH:mm")} – {format(parseISO(shift.endTime), "HH:mm")}
                         </div>
-                      )}
-                      {shift.members.length > 1 && (
-                        <div className="flex items-center gap-1 text-muted-foreground truncate">
-                          <Users className="size-2.5 shrink-0" />
-                          <span className="truncate">{shift.members.map((m) => m.name).join(", ")}</span>
+
+                        {/* Desktop: show more detail */}
+                        <div className="hidden md:block">
+                          <div className="flex items-center gap-1 text-muted-foreground truncate">
+                            <Truck className="size-2.5 shrink-0" />
+                            <span className="truncate">{shift.vehicle}</span>
+                          </div>
+                          {shift.callSign && (
+                            <div className="flex items-center gap-1 text-muted-foreground truncate">
+                              <Radio className="size-2.5 shrink-0" />
+                              <span className="truncate">{shift.callSign}</span>
+                            </div>
+                          )}
+                          {shift.members.length > 1 && (
+                            <div className="flex items-center gap-1 text-muted-foreground truncate">
+                              <Users className="size-2.5 shrink-0" />
+                              <span className="truncate">{shift.members.map((m) => m.name).join(", ")}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* Mobile: compact indicator */}
+                        <div className="md:hidden flex items-center gap-1 text-muted-foreground truncate">
+                          <span className="truncate">
+                            {shift.callSign ?? shift.vehicle}
+                          </span>
+                        </div>
+
+                        {/* Pending badge on mobile */}
+                        {shift.responseStatus === "pending" && (
+                          <div className="mt-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                            Tap to respond
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -383,6 +438,13 @@ export default function MonthlyCalendar() {
         onOpenChange={setDialogOpen}
         date={dialogDate}
         entries={availabilityByDate.get(dialogDate) ?? []}
+      />
+
+      {/* Shift Response Dialog */}
+      <ShiftResponseDialog
+        open={shiftDialogOpen}
+        onOpenChange={setShiftDialogOpen}
+        shift={selectedShift}
       />
     </div>
   );

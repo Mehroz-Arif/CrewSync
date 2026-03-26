@@ -115,7 +115,15 @@ function StaffScheduleView() {
         </div>
         <div className="flex items-center gap-1.5">
           <div className="size-3 rounded-sm bg-primary/15 border border-primary/30" />
-          <span>Shift assigned</span>
+          <span>Pending response</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-emerald-500/10 border border-emerald-500/40" />
+          <span>Accepted</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-3 rounded-sm bg-rose-500/10 border border-rose-500/40" />
+          <span>Declined</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Clock className="size-3 text-muted-foreground" />
