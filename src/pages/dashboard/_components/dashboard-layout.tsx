@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   CalendarClock,
   CalendarDays,
+  Clock,
   MessageCircle,
   Trophy,
   FolderOpen,
@@ -43,6 +44,12 @@ const NAV_ITEMS = [
     label: "Shifts",
     icon: CalendarClock,
     path: "/shifts",
+    enabled: true,
+  },
+  {
+    label: "Timesheets",
+    icon: Clock,
+    path: "/timesheets",
     enabled: true,
   },
   {

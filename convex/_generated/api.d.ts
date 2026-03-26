@@ -23,6 +23,7 @@ import type * as rewards from "../rewards.js";
 import type * as shiftPatterns from "../shiftPatterns.js";
 import type * as shifts from "../shifts.js";
 import type * as superAdmin from "../superAdmin.js";
+import type * as timeTracking from "../timeTracking.js";
 import type * as users from "../users.js";
 import type * as vehicleAllocations from "../vehicleAllocations.js";
 import type * as vehicles from "../vehicles.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   shiftPatterns: typeof shiftPatterns;
   shifts: typeof shifts;
   superAdmin: typeof superAdmin;
+  timeTracking: typeof timeTracking;
   users: typeof users;
   vehicleAllocations: typeof vehicleAllocations;
   vehicles: typeof vehicles;

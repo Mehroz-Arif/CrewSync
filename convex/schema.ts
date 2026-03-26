@@ -290,4 +290,44 @@ export default defineSchema({
     active: v.boolean(),
     sortOrder: v.number(),
   }).index("by_registration", ["registration"]),
+
+  // Time tracking entries (individual clock in/out records)
+  timeEntries: defineTable({
+    userId: v.id("users"),
+    shiftId: v.optional(v.id("shifts")), // linked shift (if any)
+    date: v.string(), // "YYYY-MM-DD"
+    clockIn: v.string(), // ISO 8601
+    clockOut: v.optional(v.string()), // ISO 8601 (null = still clocked in)
+    breakMinutes: v.number(), // default 0
+    notes: v.optional(v.string()),
+    status: v.union(
+      v.literal("active"), // currently clocked in
+      v.literal("completed"), // clocked out normally
+      v.literal("edited") // manually edited by admin
+    ),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_date", ["userId", "date"])
+    .index("by_date", ["date"]),
+
+  // Weekly timesheet summaries for approval
+  timesheets: defineTable({
+    userId: v.id("users"),
+    periodStart: v.string(), // "YYYY-MM-DD" (Monday)
+    periodEnd: v.string(), // "YYYY-MM-DD" (Sunday)
+    totalMinutes: v.number(), // computed total worked minutes for the period
+    status: v.union(
+      v.literal("draft"),
+      v.literal("submitted"),
+      v.literal("approved"),
+      v.literal("rejected")
+    ),
+    submittedAt: v.optional(v.string()), // ISO 8601
+    reviewedBy: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.string()), // ISO 8601
+    reviewNotes: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_period", ["userId", "periodStart"])
+    .index("by_status", ["status"]),
 });

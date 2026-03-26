@@ -13,6 +13,7 @@ import DocumentsPage from "./pages/documents/page.tsx";
 import FeedbackPage from "./pages/feedback/page.tsx";
 import CalendarPage from "./pages/calendar/page.tsx";
 import ReportsPage from "./pages/reports/page.tsx";
+import TimesheetsPage from "./pages/timesheets/page.tsx";
 import TeamPage from "./pages/team/page.tsx";
 import ProfilePage from "./pages/team/profile.tsx";
 import SuperAdminPage from "./pages/admin/page.tsx";
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/shifts" element={<ShiftsPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:conversationId" element={<MessagesPage />} />
+            <Route path="/timesheets" element={<TimesheetsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/rewards" element={<RewardsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
