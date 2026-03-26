@@ -14,6 +14,7 @@ import FeedbackPage from "./pages/feedback/page.tsx";
 import CalendarPage from "./pages/calendar/page.tsx";
 import ReportsPage from "./pages/reports/page.tsx";
 import TimesheetsPage from "./pages/timesheets/page.tsx";
+import LeavePage from "./pages/leave/page.tsx";
 import TeamPage from "./pages/team/page.tsx";
 import ProfilePage from "./pages/team/profile.tsx";
 import SuperAdminPage from "./pages/admin/page.tsx";
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:conversationId" element={<MessagesPage />} />
             <Route path="/timesheets" element={<TimesheetsPage />} />
+            <Route path="/leave" element={<LeavePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/rewards" element={<RewardsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />

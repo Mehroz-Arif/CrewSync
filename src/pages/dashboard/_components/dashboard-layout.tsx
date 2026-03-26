@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarDays,
   Clock,
+  CalendarOff,
   MessageCircle,
   Trophy,
   FolderOpen,
@@ -50,6 +51,12 @@ const NAV_ITEMS = [
     label: "Timesheets",
     icon: Clock,
     path: "/timesheets",
+    enabled: true,
+  },
+  {
+    label: "Leave",
+    icon: CalendarOff,
+    path: "/leave",
     enabled: true,
   },
   {

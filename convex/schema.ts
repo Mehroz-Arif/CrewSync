@@ -330,4 +330,32 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_and_period", ["userId", "periodStart"])
     .index("by_status", ["status"]),
+
+  // Leave / time-off requests
+  leaveRequests: defineTable({
+    userId: v.id("users"),
+    leaveType: v.union(
+      v.literal("annual"),
+      v.literal("sick"),
+      v.literal("compassionate"),
+      v.literal("training"),
+      v.literal("unpaid"),
+      v.literal("other")
+    ),
+    startDate: v.string(), // "YYYY-MM-DD"
+    endDate: v.string(), // "YYYY-MM-DD"
+    reason: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("cancelled")
+    ),
+    reviewedBy: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.string()), // ISO 8601
+    reviewNotes: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_user_and_status", ["userId", "status"]),
 });
