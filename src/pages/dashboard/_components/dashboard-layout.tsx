@@ -202,6 +202,11 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           return true;
         }).map((item) => {
           const isActive = location.pathname === item.path;
+          // Show "My Schedule" instead of "Shifts" for team members
+          const displayLabel =
+            item.path === "/shifts" && (!isRealAdmin || isPreviewingAsStaff)
+              ? "My Schedule"
+              : item.label;
           return (
             <button
               key={item.path}
@@ -210,7 +215,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                   navigate(item.path);
                 } else {
                   toast.info(
-                    `${item.label} is coming soon in a future milestone!`
+                    `${displayLabel} is coming soon in a future milestone!`
                   );
                 }
                 onItemClick?.();
@@ -224,7 +229,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               )}
             >
               <item.icon className="size-5 shrink-0" />
-              <span>{item.label}</span>
+              <span>{displayLabel}</span>
               {!item.enabled && (
                 <span className="ml-auto text-[10px] uppercase tracking-wider opacity-70">
                   Soon
