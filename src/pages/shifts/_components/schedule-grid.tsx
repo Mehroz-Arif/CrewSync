@@ -351,102 +351,120 @@ export default function ScheduleGrid({
     >
       <div className="border rounded-xl overflow-hidden bg-card">
         <div className="overflow-auto max-h-[calc(100vh-100px)]">
-          <div
-            className="grid min-w-[900px]"
-            style={{
-              gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
-            }}
-          >
-            {/* Header row — sticky */}
-            <div className="px-2 py-1.5 border-b border-r bg-card flex items-end sticky top-0 z-10">
-              <span className="font-heading font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
-                Crew
-              </span>
-            </div>
-            {days.map((day) => (
+          <div className="min-w-[900px]">
+            {/* Sticky pinned section: header + unassigned + resize handle */}
+            <div className="sticky top-0 z-10 bg-card">
+              {/* Header row */}
               <div
-                key={day.toISOString()}
-                className={cn(
-                  "px-1.5 py-1.5 border-b text-center sticky top-0 z-10 bg-card",
-                  isToday(day) && "[background:color-mix(in_oklab,var(--color-primary)_8%,var(--color-card))]"
-                )}
+                className="grid"
+                style={{
+                  gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
+                }}
               >
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  {format(day, "EEE")}
+                <div className="px-2 py-1.5 border-b border-r bg-card flex items-end">
+                  <span className="font-heading font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
+                    Crew
+                  </span>
                 </div>
-                <div
-                  className={cn(
-                    "text-sm font-heading font-bold",
-                    isToday(day) && "text-primary"
-                  )}
-                >
-                  {format(day, "d")}
-                </div>
-              </div>
-            ))}
-
-            {/* Unassigned shifts row (admin only) */}
-            {isAdmin && (
-              <>
-                {/* Unassigned label cell */}
-                <div
-                  className={cn(
-                    "px-2 py-1.5 border-r flex items-center gap-2 bg-amber-500/5 overflow-hidden",
-                    isDraggingUnpublishedShift && "bg-amber-500/10"
-                  )}
-                  style={{ maxHeight: effectiveUnassignedHeight }}
-                >
-                  <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
-                    <Package className="size-3 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
-                      {isDraggingUnpublishedShift ? "Drop to unassign" : "Unassigned"}
-                    </div>
-                    {hasUnassigned && !isDraggingUnpublishedShift && (
-                      <div className="text-[10px] text-muted-foreground">
-                        {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
-                      </div>
+                {days.map((day) => (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      "px-1.5 py-1.5 border-b text-center bg-card",
+                      isToday(day) && "[background:color-mix(in_oklab,var(--color-primary)_8%,var(--color-card))]"
                     )}
-                  </div>
-                </div>
-                {/* Unassigned day cells */}
-                {days.map((day) => {
-                  const dateStr = format(day, "yyyy-MM-dd");
-                  const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
-                  return (
-                    <UnassignedDropCell
-                      key={`unassigned-${dateStr}`}
-                      dateStr={dateStr}
-                      isCurrentDay={isToday(day)}
-                      isShiftDragging={isDraggingUnpublishedShift}
-                      maxHeight={effectiveUnassignedHeight}
+                  >
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                      {format(day, "EEE")}
+                    </div>
+                    <div
+                      className={cn(
+                        "text-sm font-heading font-bold",
+                        isToday(day) && "text-primary"
+                      )}
                     >
-                      {dayGroups.map((group) => (
-                        <DraggableUnassignedGroup
-                          key={group.key}
-                          group={group}
-                          roleColor={group.position ? roleColorMap[group.position] : undefined}
-                          onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
-                        />
-                      ))}
-                    </UnassignedDropCell>
-                  );
-                })}
-                {/* Drag resize handle */}
-                <div
-                  className="border-b flex items-center justify-center group hover:bg-muted/40 transition-colors cursor-row-resize select-none"
-                  style={{ gridColumn: "1 / -1", height: 10 }}
-                  onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
-                  onTouchStart={(e) => { handleResizeStart(e.touches[0].clientY); }}
-                >
-                  <div className="w-8 h-0.5 rounded-full bg-muted-foreground/30 group-hover:bg-muted-foreground/60 transition-colors" />
-                </div>
-              </>
-            )}
+                      {format(day, "d")}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-            {/* Employee rows */}
-            {staff.map((employee) => (
+              {/* Unassigned shifts row (admin only) */}
+              {isAdmin && (
+                <>
+                  <div
+                    className="grid"
+                    style={{
+                      gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
+                    }}
+                  >
+                    {/* Unassigned label cell */}
+                    <div
+                      className={cn(
+                        "px-2 py-1.5 border-r flex items-center gap-2 bg-amber-500/5 overflow-hidden",
+                        isDraggingUnpublishedShift && "bg-amber-500/10"
+                      )}
+                      style={{ maxHeight: effectiveUnassignedHeight }}
+                    >
+                      <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+                        <Package className="size-3 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold truncate text-amber-700 dark:text-amber-300">
+                          {isDraggingUnpublishedShift ? "Drop to unassign" : "Unassigned"}
+                        </div>
+                        {hasUnassigned && !isDraggingUnpublishedShift && (
+                          <div className="text-[10px] text-muted-foreground">
+                            {unassignedShifts.length} shift{unassignedShifts.length !== 1 ? "s" : ""}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {/* Unassigned day cells */}
+                    {days.map((day) => {
+                      const dateStr = format(day, "yyyy-MM-dd");
+                      const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
+                      return (
+                        <UnassignedDropCell
+                          key={`unassigned-${dateStr}`}
+                          dateStr={dateStr}
+                          isCurrentDay={isToday(day)}
+                          isShiftDragging={isDraggingUnpublishedShift}
+                          maxHeight={effectiveUnassignedHeight}
+                        >
+                          {dayGroups.map((group) => (
+                            <DraggableUnassignedGroup
+                              key={group.key}
+                              group={group}
+                              roleColor={group.position ? roleColorMap[group.position] : undefined}
+                              onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
+                            />
+                          ))}
+                        </UnassignedDropCell>
+                      );
+                    })}
+                  </div>
+                  {/* Drag resize handle */}
+                  <div
+                    className="border-b flex items-center justify-center group hover:bg-muted/40 transition-colors cursor-row-resize select-none bg-card"
+                    style={{ height: 10 }}
+                    onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
+                    onTouchStart={(e) => { handleResizeStart(e.touches[0].clientY); }}
+                  >
+                    <div className="w-8 h-0.5 rounded-full bg-muted-foreground/30 group-hover:bg-muted-foreground/60 transition-colors" />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Employee rows — scrollable */}
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
+              }}
+            >
+              {staff.map((employee) => (
               <Fragment key={employee._id}>
                 {/* Name cell */}
                 <div className="px-2 py-1.5 border-b border-r flex items-center gap-2 bg-muted/20">
@@ -543,6 +561,7 @@ export default function ScheduleGrid({
                 })}
               </Fragment>
             ))}
+            </div>
           </div>
         </div>
       </div>
