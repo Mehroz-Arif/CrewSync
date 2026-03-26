@@ -419,15 +419,15 @@ function AllocationCell({
         <SelectContent>
           {vehicles.map((v) => {
             const assignedTo = takenVehicles?.get(v);
-            const isTaken = assignedTo !== undefined && assignedTo !== currentCallSign;
+            const isUsedElsewhere = assignedTo !== undefined && assignedTo !== currentCallSign;
             return (
-              <SelectItem key={v} value={v} disabled={isTaken}>
+              <SelectItem key={v} value={v}>
                 <div className="flex items-center gap-1.5">
-                  <Truck className={cn("size-3", isTaken && "text-muted-foreground/50")} />
-                  <span className={cn(isTaken && "text-muted-foreground/50")}>{v}</span>
-                  {isTaken && (
-                    <span className="text-[10px] text-muted-foreground/50 ml-1">
-                      ({assignedTo})
+                  <Truck className="size-3" />
+                  <span>{v}</span>
+                  {isUsedElsewhere && (
+                    <span className="text-[10px] text-muted-foreground/60 ml-1">
+                      (also {assignedTo})
                     </span>
                   )}
                 </div>
