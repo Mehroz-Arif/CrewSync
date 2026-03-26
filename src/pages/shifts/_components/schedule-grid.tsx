@@ -1,4 +1,4 @@
-import { Fragment, useState, useCallback, useMemo } from "react";
+import { Fragment, useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -26,7 +26,7 @@ import ShiftBlock from "./shift-block.tsx";
 import { ShiftBlockOverlay } from "./shift-block.tsx";
 import type { UnassignedShift } from "./unassigned-pool.tsx";
 import { UnassignedShiftOverlay, DraggableUnassignedGroup, groupUnassignedShifts } from "./unassigned-pool.tsx";
-import { Package, ChevronDown, ChevronRight } from "lucide-react";
+import { Package } from "lucide-react";
 
 type StaffMember = {
   _id: Id<"users">;
@@ -88,11 +88,13 @@ function UnassignedDropCell({
   dateStr,
   isCurrentDay,
   isShiftDragging,
+  maxHeight,
   children,
 }: {
   dateStr: string;
   isCurrentDay: boolean;
   isShiftDragging: boolean;
+  maxHeight?: number;
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -104,11 +106,12 @@ function UnassignedDropCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[56px] p-0.5 border-b border-r bg-amber-500/[0.02] transition-colors",
+        "p-0.5 border-r bg-amber-500/[0.02] transition-colors overflow-y-auto",
         isCurrentDay && "bg-amber-500/[0.05]",
         isShiftDragging && !isOver && "bg-amber-500/[0.06] ring-1 ring-inset ring-dashed ring-amber-500/20",
         isOver && "bg-amber-500/15 ring-2 ring-inset ring-amber-500/40"
       )}
+      style={maxHeight !== undefined ? { maxHeight } : undefined}
     >
       <div className="space-y-1">
         {children}
@@ -141,7 +144,48 @@ export default function ScheduleGrid({
   const unassignFromShift = useMutation(api.shifts.unassignFromShift);
   const setShiftPublished = useMutation(api.shifts.setShiftPublished);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
-  const [unassignedExpanded, setUnassignedExpanded] = useState(true);
+
+  // Drag-resize state for unassigned section
+  const [unassignedHeight, setUnassignedHeight] = useState(120);
+  const resizeDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  const handleResizeStart = useCallback(
+    (clientY: number) => {
+      resizeDragRef.current = { startY: clientY, startHeight: unassignedHeight };
+      document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+    },
+    [unassignedHeight]
+  );
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!resizeDragRef.current) return;
+      if ("touches" in e) e.preventDefault(); // prevent scroll during resize
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+      const delta = clientY - resizeDragRef.current.startY;
+      setUnassignedHeight(
+        Math.max(40, Math.min(400, resizeDragRef.current.startHeight + delta))
+      );
+    };
+    const onEnd = () => {
+      if (resizeDragRef.current) {
+        resizeDragRef.current = null;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onEnd);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onEnd);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, []);
 
   const handleTogglePublish = useCallback(
     async (shiftId: Id<"shifts">, currentlyPublished: boolean) => {
@@ -295,7 +339,9 @@ export default function ScheduleGrid({
     activeDrag?.type === "shift" && !activeDrag.published;
 
   // Auto-expand when dragging so the drop zone is visible
-  const showUnassignedCells = unassignedExpanded || isDraggingUnpublishedShift;
+  const effectiveUnassignedHeight = isDraggingUnpublishedShift
+    ? Math.max(unassignedHeight, 80)
+    : unassignedHeight;
 
   return (
     <DndContext
@@ -341,23 +387,17 @@ export default function ScheduleGrid({
               </div>
             ))}
 
-            {/* Unassigned shifts row (admin only, always shown) */}
+            {/* Unassigned shifts row (admin only) */}
             {isAdmin && (
               <>
+                {/* Unassigned label cell */}
                 <div
                   className={cn(
-                    "px-2 py-1.5 border-b border-r flex items-center gap-2 bg-amber-500/5 transition-colors cursor-pointer select-none hover:bg-amber-500/10",
+                    "px-2 py-1.5 border-r flex items-center gap-2 bg-amber-500/5 overflow-hidden",
                     isDraggingUnpublishedShift && "bg-amber-500/10"
                   )}
-                  onClick={() => setUnassignedExpanded((prev) => !prev)}
+                  style={{ maxHeight: effectiveUnassignedHeight }}
                 >
-                  <div className="size-5 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
-                    {showUnassignedCells ? (
-                      <ChevronDown className="size-3.5" />
-                    ) : (
-                      <ChevronRight className="size-3.5" />
-                    )}
-                  </div>
                   <div className="size-6 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
                     <Package className="size-3 text-amber-600 dark:text-amber-400" />
                   </div>
@@ -372,39 +412,38 @@ export default function ScheduleGrid({
                     )}
                   </div>
                 </div>
-                {showUnassignedCells ? (
-                  days.map((day) => {
-                    const dateStr = format(day, "yyyy-MM-dd");
-                    const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
-                    return (
-                      <UnassignedDropCell
-                        key={`unassigned-${dateStr}`}
-                        dateStr={dateStr}
-                        isCurrentDay={isToday(day)}
-                        isShiftDragging={isDraggingUnpublishedShift}
-                      >
-                        {dayGroups.map((group) => (
-                          <DraggableUnassignedGroup
-                            key={group.key}
-                            group={group}
-                            roleColor={group.position ? roleColorMap[group.position] : undefined}
-                            onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
-                          />
-                        ))}
-                      </UnassignedDropCell>
-                    );
-                  })
-                ) : (
-                  /* Collapsed: single merged cell spanning all 7 days */
-                  <div
-                    className="border-b bg-amber-500/[0.02] col-span-7 flex items-center px-3 py-1 text-[10px] text-muted-foreground cursor-pointer hover:bg-amber-500/[0.05] transition-colors"
-                    onClick={() => setUnassignedExpanded(true)}
-                  >
-                    {hasUnassigned
-                      ? `${unassignedShifts.length} unassigned shift${unassignedShifts.length !== 1 ? "s" : ""} — click to expand`
-                      : "No unassigned shifts"}
-                  </div>
-                )}
+                {/* Unassigned day cells */}
+                {days.map((day) => {
+                  const dateStr = format(day, "yyyy-MM-dd");
+                  const dayGroups = unassignedGroupsByDate.get(dateStr) ?? [];
+                  return (
+                    <UnassignedDropCell
+                      key={`unassigned-${dateStr}`}
+                      dateStr={dateStr}
+                      isCurrentDay={isToday(day)}
+                      isShiftDragging={isDraggingUnpublishedShift}
+                      maxHeight={effectiveUnassignedHeight}
+                    >
+                      {dayGroups.map((group) => (
+                        <DraggableUnassignedGroup
+                          key={group.key}
+                          group={group}
+                          roleColor={group.position ? roleColorMap[group.position] : undefined}
+                          onClick={() => onUnassignedShiftClick?.(group.shifts[0])}
+                        />
+                      ))}
+                    </UnassignedDropCell>
+                  );
+                })}
+                {/* Drag resize handle */}
+                <div
+                  className="border-b flex items-center justify-center group hover:bg-muted/40 transition-colors cursor-row-resize select-none"
+                  style={{ gridColumn: "1 / -1", height: 10 }}
+                  onMouseDown={(e) => { e.preventDefault(); handleResizeStart(e.clientY); }}
+                  onTouchStart={(e) => { handleResizeStart(e.touches[0].clientY); }}
+                >
+                  <div className="w-8 h-0.5 rounded-full bg-muted-foreground/30 group-hover:bg-muted-foreground/60 transition-colors" />
+                </div>
               </>
             )}
 
