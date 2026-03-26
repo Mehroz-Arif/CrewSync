@@ -350,15 +350,15 @@ export default function ScheduleGrid({
       onDragEnd={handleDragEnd}
     >
       <div className="border rounded-xl overflow-hidden bg-card">
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[calc(100vh-100px)]">
           <div
             className="grid min-w-[900px]"
             style={{
               gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
             }}
           >
-            {/* Header row */}
-            <div className="px-2 py-1.5 border-b border-r bg-muted/40 flex items-end">
+            {/* Header row — sticky */}
+            <div className="px-2 py-1.5 border-b border-r bg-card flex items-end sticky top-0 z-10">
               <span className="font-heading font-semibold text-[10px] text-muted-foreground uppercase tracking-widest">
                 Crew
               </span>
@@ -367,10 +367,8 @@ export default function ScheduleGrid({
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "px-1.5 py-1.5 border-b text-center",
-                  isToday(day)
-                    ? "bg-primary/8"
-                    : "bg-muted/40"
+                  "px-1.5 py-1.5 border-b text-center sticky top-0 z-10 bg-card",
+                  isToday(day) && "[background:color-mix(in_oklab,var(--color-primary)_8%,var(--color-card))]"
                 )}
               >
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
