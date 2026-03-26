@@ -119,7 +119,24 @@ export default function ScheduleGrid({
   const moveAssignment = useMutation(api.shifts.moveShiftAssignment);
   const assignToShift = useMutation(api.shifts.assignToShift);
   const unassignFromShift = useMutation(api.shifts.unassignFromShift);
+  const setShiftPublished = useMutation(api.shifts.setShiftPublished);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
+
+  const handleTogglePublish = useCallback(
+    async (shiftId: Id<"shifts">, currentlyPublished: boolean) => {
+      try {
+        await setShiftPublished({ shiftId, published: !currentlyPublished });
+        toast.success(currentlyPublished ? "Shift unpublished" : "Shift published");
+      } catch (error) {
+        if (error instanceof ConvexError) {
+          toast.error((error.data as { message: string }).message);
+        } else {
+          toast.error("Failed to update shift");
+        }
+      }
+    },
+    [setShiftPublished]
+  );
 
   const handleUnassign = useCallback(
     async (membershipId: Id<"shiftMembers">) => {
@@ -401,6 +418,7 @@ export default function ScheduleGrid({
                           published={shift.published}
                           onClick={() => onShiftClick(shift)}
                           onUnassign={() => handleUnassign(shift.membershipId)}
+                          onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}
                         />
                       ))}
                     </DayCell>

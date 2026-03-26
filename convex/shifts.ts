@@ -722,6 +722,47 @@ export const unassignFromShift = mutation({
   },
 });
 
+/** Publish or unpublish a single shift by ID (admin only) */
+export const setShiftPublished = mutation({
+  args: {
+    shiftId: v.id("shifts"),
+    published: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can publish shifts", code: "FORBIDDEN" });
+    }
+
+    const shift = await ctx.db.get(args.shiftId);
+    if (!shift) {
+      throw new ConvexError({ message: "Shift not found", code: "NOT_FOUND" });
+    }
+
+    // Only publish if the shift has assigned members
+    if (args.published) {
+      const members = await ctx.db
+        .query("shiftMembers")
+        .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
+        .collect();
+      if (members.length === 0) {
+        throw new ConvexError({ message: "Cannot publish a shift with no assigned members", code: "BAD_REQUEST" });
+      }
+    }
+
+    if (shift.published !== args.published) {
+      await ctx.db.patch(shift._id, { published: args.published });
+    }
+  },
+});
+
 /** Publish or unpublish shifts for a date range (admin only) */
 export const setPublished = mutation({
   args: {

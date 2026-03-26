@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { Truck, Send, UserMinus } from "lucide-react";
+import { Truck, Send, UserMinus, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { roleColorStyles } from "../_lib/role-colors.ts";
 import {
@@ -26,6 +26,7 @@ type ShiftBlockProps = {
   published: boolean;
   onClick: () => void;
   onUnassign?: () => void;
+  onTogglePublish?: () => void;
 };
 
 export default function ShiftBlock({
@@ -43,6 +44,7 @@ export default function ShiftBlock({
   published,
   onClick,
   onUnassign,
+  onTogglePublish,
 }: ShiftBlockProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -127,6 +129,24 @@ export default function ShiftBlock({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
+          <ContextMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onTogglePublish?.();
+            }}
+          >
+            {published ? (
+              <>
+                <EyeOff className="size-3.5" />
+                Unpublish shift
+              </>
+            ) : (
+              <>
+                <Eye className="size-3.5" />
+                Publish shift
+              </>
+            )}
+          </ContextMenuItem>
           <ContextMenuItem
             onClick={(e) => {
               e.stopPropagation();
