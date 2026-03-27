@@ -784,6 +784,42 @@ export const respondToShift = mutation({
   },
 });
 
+/** Admin: accept a shift on behalf of a team member */
+export const adminAcceptShift = mutation({
+  args: { membershipId: v.id("shiftMembers") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can accept shifts for team members", code: "FORBIDDEN" });
+    }
+
+    const membership = await ctx.db.get(args.membershipId);
+    if (!membership) {
+      throw new ConvexError({ message: "Shift assignment not found", code: "NOT_FOUND" });
+    }
+
+    const shift = await ctx.db.get(membership.shiftId);
+    if (!shift) {
+      throw new ConvexError({ message: "Shift not found", code: "NOT_FOUND" });
+    }
+    if (!shift.published) {
+      throw new ConvexError({ message: "Shift must be published before it can be accepted", code: "BAD_REQUEST" });
+    }
+
+    await ctx.db.patch(args.membershipId, {
+      responseStatus: "accepted",
+      declineReason: undefined,
+    });
+  },
+});
+
 /** Unassign a user from a shift — only if the shift is not published (admin only) */
 export const unassignFromShift = mutation({
   args: { membershipId: v.id("shiftMembers") },

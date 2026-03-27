@@ -143,6 +143,7 @@ export default function ScheduleGrid({
   const assignToShift = useMutation(api.shifts.assignToShift);
   const unassignFromShift = useMutation(api.shifts.unassignFromShift);
   const setShiftPublished = useMutation(api.shifts.setShiftPublished);
+  const adminAcceptShift = useMutation(api.shifts.adminAcceptShift);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
 
   // Drag-resize state for unassigned section
@@ -217,6 +218,22 @@ export default function ScheduleGrid({
       }
     },
     [unassignFromShift]
+  );
+
+  const handleAdminAccept = useCallback(
+    async (membershipId: Id<"shiftMembers">) => {
+      try {
+        await adminAcceptShift({ membershipId });
+        toast.success("Shift accepted on behalf of team member");
+      } catch (error) {
+        if (error instanceof ConvexError) {
+          toast.error((error.data as { message: string }).message);
+        } else {
+          toast.error("Failed to accept shift");
+        }
+      }
+    },
+    [adminAcceptShift]
   );
 
   const sensors = useSensors(
@@ -529,6 +546,7 @@ export default function ScheduleGrid({
                           onClick={() => onShiftClick(shift)}
                           onUnassign={() => handleUnassign(shift.membershipId)}
                           onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}
+                          onAdminAccept={() => handleAdminAccept(shift.membershipId)}
                         />
                       ))}
                       {/* Unavailability notes (admin only) */}

@@ -29,6 +29,7 @@ type ShiftBlockProps = {
   onClick: () => void;
   onUnassign?: () => void;
   onTogglePublish?: () => void;
+  onAdminAccept?: () => void;
   hasVehicleConflict?: boolean;
 };
 
@@ -50,6 +51,7 @@ export default function ShiftBlock({
   onClick,
   onUnassign,
   onTogglePublish,
+  onAdminAccept,
 }: ShiftBlockProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -150,6 +152,17 @@ export default function ShiftBlock({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
+          {published && responseStatus !== "accepted" && onAdminAccept && (
+            <ContextMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdminAccept();
+              }}
+            >
+              <CheckCircle2 className="size-3.5" />
+              Accept for member
+            </ContextMenuItem>
+          )}
           <ContextMenuItem
             onClick={(e) => {
               e.stopPropagation();
