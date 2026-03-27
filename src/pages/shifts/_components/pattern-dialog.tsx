@@ -57,6 +57,7 @@ type PatternData = {
   effectiveEndDate?: string;
   startTime: string;
   endTime: string;
+  breakMinutes?: number;
   vehicle?: string;
   callSign?: string;
   position?: string;
@@ -134,6 +135,7 @@ export default function PatternDialog({
   // Shared fields
   const [startTime, setStartTime] = useState(() => pattern?.startTime ?? "08:00");
   const [endTime, setEndTime] = useState(() => pattern?.endTime ?? "16:00");
+  const [breakMins, setBreakMins] = useState(() => pattern?.breakMinutes ?? 0);
   const [vehicle, setVehicle] = useState(() => pattern?.vehicle ?? "");
   const [callSign, setCallSign] = useState(() => pattern?.callSign ?? "");
 
@@ -242,6 +244,7 @@ export default function PatternDialog({
           effectiveEndDate: effectiveEndDate || undefined,
           startTime,
           endTime,
+          breakMinutes: breakMins > 0 ? breakMins : undefined,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
           positions: cleanedPositions.length > 0 ? cleanedPositions : undefined,
@@ -265,6 +268,7 @@ export default function PatternDialog({
           effectiveEndDate: effectiveEndDate || undefined,
           startTime,
           endTime,
+          breakMinutes: breakMins > 0 ? breakMins : undefined,
           vehicle: vehicle.trim() || undefined,
           callSign: callSign.trim() || undefined,
           positions: cleanedPositions.length > 0 ? cleanedPositions : undefined,
@@ -533,6 +537,30 @@ export default function PatternDialog({
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Break Time */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">
+              Unpaid Break
+              <span className="text-muted-foreground font-normal ml-1">(minutes)</span>
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={480}
+                value={breakMins}
+                onChange={(e) => setBreakMins(Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-24"
+                placeholder="0"
+              />
+              <span className="text-xs text-muted-foreground">
+                {breakMins > 0
+                  ? `${breakMins} min deducted from each shift`
+                  : "No break deducted"}
+              </span>
             </div>
           </div>
 

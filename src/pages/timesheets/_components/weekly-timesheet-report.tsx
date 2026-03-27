@@ -278,6 +278,10 @@ export default function WeeklyTimesheetReport() {
           <span className="inline-block size-2.5 bg-rose-500" />
           Rejected
         </div>
+        <div className="flex items-center gap-1">
+          <span className="text-amber-600 dark:text-amber-400 font-bold">*</span>
+          Break deducted
+        </div>
       </div>
 
       {/* Report table */}
@@ -468,6 +472,7 @@ function DayCells({
     start: string;
     end: string | null;
     hours: number;
+    breakMinutes: number;
     status: string;
   }>;
 }) {
@@ -486,6 +491,7 @@ function DayCells({
   // Show first entry; if multiple, show total hours
   const primary = entries[0];
   const totalHrs = entries.reduce((s, e) => s + e.hours, 0);
+  const totalBreak = entries.reduce((s, e) => s + e.breakMinutes, 0);
   const hasMultiple = entries.length > 1;
 
   return (
@@ -509,12 +515,19 @@ function DayCells({
           <span
             className={cn(hasMultiple && "underline decoration-dotted")}
             title={
-              hasMultiple
-                ? `${entries.length} entries totalling ${totalHrs.toFixed(2)} hrs`
-                : undefined
+              totalBreak > 0
+                ? `${hasMultiple ? `${entries.length} entries, ` : ""}${totalHrs.toFixed(2)} hrs (${totalBreak} min break deducted)`
+                : hasMultiple
+                  ? `${entries.length} entries totalling ${totalHrs.toFixed(2)} hrs`
+                  : undefined
             }
           >
             {totalHrs.toFixed(2)}
+            {totalBreak > 0 && (
+              <span className="text-[8px] text-amber-600 dark:text-amber-400 ml-0.5">
+                *
+              </span>
+            )}
           </span>
         ) : (
           ""

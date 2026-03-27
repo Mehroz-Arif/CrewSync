@@ -22,6 +22,7 @@ import {
   Hash,
   Radio,
   ShieldCheck,
+  Coffee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -72,6 +73,7 @@ type PatternWithMembers = {
   effectiveEndDate?: string;
   startTime: string;
   endTime: string;
+  breakMinutes?: number;
   vehicle?: string;
   callSign?: string;
   position?: string;
@@ -414,6 +416,11 @@ function PatternCard({
             <span>
               {pattern.startTime} – {pattern.endTime}
             </span>
+            {pattern.breakMinutes && pattern.breakMinutes > 0 && (
+              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                ({pattern.breakMinutes} min break)
+              </span>
+            )}
           </div>
           {pattern.vehicle && (
             <div className="flex items-center gap-2">

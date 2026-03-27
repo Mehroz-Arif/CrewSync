@@ -285,10 +285,10 @@ export const deleteEntry = mutation({
 
 // ─── Timesheet Summary ─────────────────────────────────────
 
-/** Compute scheduled minutes from shift start/end times */
-function computeScheduledMinutes(startTime: string, endTime: string): number {
+/** Compute scheduled minutes from shift start/end times minus break */
+function computeScheduledMinutes(startTime: string, endTime: string, breakMins?: number): number {
   const diff = new Date(endTime).getTime() - new Date(startTime).getTime();
-  return Math.max(0, Math.round(diff / 60000));
+  return Math.max(0, Math.round(diff / 60000) - (breakMins ?? 0));
 }
 
 /** Admin: get timesheet summary for all staff in a date range */
@@ -341,7 +341,7 @@ export const getTimesheetSummary = query({
         if (shiftDate < args.startDate || shiftDate > args.endDate) continue;
 
         shiftCount++;
-        scheduledMinutes += computeScheduledMinutes(shift.startTime, shift.endTime);
+        scheduledMinutes += computeScheduledMinutes(shift.startTime, shift.endTime, shift.breakMinutes);
 
         if (!earliestDate || shiftDate < earliestDate) earliestDate = shiftDate;
         if (!latestDate || shiftDate > latestDate) latestDate = shiftDate;
@@ -433,6 +433,14 @@ export const getWeeklyTimesheetReport = query({
       )
       .collect();
 
+    // Pre-fetch shifts linked to time entries (for break minutes lookup)
+    const shiftIds = new Set(allEntries.filter((e) => e.shiftId).map((e) => e.shiftId!));
+    const shiftMap = new Map<string, { breakMinutes?: number }>();
+    for (const sid of shiftIds) {
+      const shift = await ctx.db.get(sid);
+      if (shift) shiftMap.set(sid, { breakMinutes: shift.breakMinutes });
+    }
+
     // Get all timesheets for the period
     const allTimesheets = await ctx.db.query("timesheets").collect();
     const periodTimesheets = allTimesheets.filter(
@@ -445,6 +453,7 @@ export const getWeeklyTimesheetReport = query({
       start: string; // "HH:mm"
       end: string | null; // "HH:mm" or null if still active
       hours: number;
+      breakMinutes: number; // break deducted for this entry
       status: "active" | "completed" | "edited";
     };
 
@@ -474,10 +483,21 @@ export const getWeeklyTimesheetReport = query({
         let endStr: string | null = null;
         let hours = 0;
 
+        // Resolve effective break: use entry's own breakMinutes, or fall back
+        // to the linked shift's breakMinutes (from the pattern) when the
+        // entry has no break set
+        let effectiveBreak = entry.breakMinutes;
+        if (effectiveBreak === 0 && entry.shiftId) {
+          const linkedShift = shiftMap.get(entry.shiftId);
+          if (linkedShift?.breakMinutes) {
+            effectiveBreak = linkedShift.breakMinutes;
+          }
+        }
+
         if (entry.clockOut) {
           const clockOutDate = new Date(entry.clockOut);
           endStr = `${String(clockOutDate.getHours()).padStart(2, "0")}:${String(clockOutDate.getMinutes()).padStart(2, "0")}`;
-          const workedMins = computeWorkedMinutes(entry.clockIn, entry.clockOut, entry.breakMinutes);
+          const workedMins = computeWorkedMinutes(entry.clockIn, entry.clockOut, effectiveBreak);
           hours = Math.round((workedMins / 60) * 100) / 100;
           totalMinutes += workedMins;
         }
@@ -487,6 +507,7 @@ export const getWeeklyTimesheetReport = query({
           start: startStr,
           end: endStr,
           hours,
+          breakMinutes: effectiveBreak,
           status: entry.status,
         });
       }

@@ -50,6 +50,7 @@ export const create = mutation({
     // Shared
     startTime: v.string(),
     endTime: v.string(),
+    breakMinutes: v.optional(v.number()),
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
     position: v.optional(v.string()),
@@ -118,6 +119,7 @@ export const create = mutation({
       effectiveEndDate: args.effectiveEndDate,
       startTime: args.startTime,
       endTime: args.endTime,
+      breakMinutes: args.breakMinutes,
       vehicle: args.vehicle,
       callSign: args.callSign,
       position: positionsArr ? positionsArr[0] : args.position, // Keep first position for backward compat
@@ -146,6 +148,7 @@ export const update = mutation({
     effectiveEndDate: v.optional(v.string()),
     startTime: v.optional(v.string()),
     endTime: v.optional(v.string()),
+    breakMinutes: v.optional(v.number()),
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
     position: v.optional(v.string()),
@@ -186,6 +189,7 @@ export const update = mutation({
     if (fields.effectiveEndDate !== undefined) patch.effectiveEndDate = fields.effectiveEndDate;
     if (fields.startTime !== undefined) patch.startTime = fields.startTime;
     if (fields.endTime !== undefined) patch.endTime = fields.endTime;
+    if (fields.breakMinutes !== undefined) patch.breakMinutes = fields.breakMinutes;
     if (fields.vehicle !== undefined) patch.vehicle = fields.vehicle;
     if (fields.callSign !== undefined) patch.callSign = fields.callSign;
     if (fields.position !== undefined) patch.position = fields.position;
@@ -260,6 +264,7 @@ export const update = mutation({
       await ctx.db.patch(shift._id, {
         startTime: newStartDate.toISOString(),
         endTime: newEndDate.toISOString(),
+        breakMinutes: updatedPattern.breakMinutes,
         vehicle: updatedPattern.vehicle ?? "",
         callSign: updatedPattern.callSign,
         position: slotPosition,
@@ -520,12 +525,14 @@ export const applyToWeek = mutation({
             (existing.vehicle ?? "") !== (pattern.vehicle ?? "") ||
             (existing.callSign ?? "") !== (pattern.callSign ?? "") ||
             (existing.position ?? "") !== slotPos ||
-            (existing.notes ?? "") !== (pattern.notes ?? "");
+            (existing.notes ?? "") !== (pattern.notes ?? "") ||
+            (existing.breakMinutes ?? 0) !== (pattern.breakMinutes ?? 0);
 
           if (needsUpdate) {
             await ctx.db.patch(existing._id, {
               startTime: startISO,
               endTime: endISO,
+              breakMinutes: pattern.breakMinutes,
               vehicle: pattern.vehicle ?? "",
               callSign: pattern.callSign,
               position: slotPos || undefined,
@@ -566,6 +573,7 @@ export const applyToWeek = mutation({
           const shiftId = await ctx.db.insert("shifts", {
             startTime: startISO,
             endTime: endISO,
+            breakMinutes: pattern.breakMinutes,
             vehicle: pattern.vehicle ?? "",
             callSign: pattern.callSign,
             position: slotPos,

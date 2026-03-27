@@ -93,6 +93,7 @@ export default defineSchema({
   shifts: defineTable({
     startTime: v.string(),
     endTime: v.string(),
+    breakMinutes: v.optional(v.number()), // Unpaid break duration in minutes (inherited from pattern)
     vehicle: v.string(),
     callSign: v.optional(v.string()),
     position: v.optional(v.string()), // Required position e.g. "Ambulance Care Assistant"
@@ -161,6 +162,7 @@ export default defineSchema({
     // Shared fields
     startTime: v.string(), // "HH:mm"
     endTime: v.string(), // "HH:mm"
+    breakMinutes: v.optional(v.number()), // Unpaid break duration in minutes (auto-deducted from timesheets)
     vehicle: v.optional(v.string()),
     callSign: v.optional(v.string()),
     position: v.optional(v.string()), // Deprecated: use positions array instead
