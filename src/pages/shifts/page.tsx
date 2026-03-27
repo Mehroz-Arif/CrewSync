@@ -16,7 +16,7 @@ import {
   CalendarDays,
   Plus,
   Send,
-  Undo2,
+
   Calendar,
   CalendarRange,
 } from "lucide-react";
@@ -592,17 +592,6 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
 
         {/* Action buttons + tab switcher */}
         <div className="flex items-center gap-2">
-          {hasPublished && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => handlePublish(false)}
-              disabled={isPublishing}
-            >
-              {isPublishing ? <Spinner /> : <Undo2 className="size-4 mr-1.5" />}
-              Unpublish Week
-            </Button>
-          )}
           {hasUnpublished && (
             <Button
               size="sm"
