@@ -890,9 +890,12 @@ export const setShiftPublished = mutation({
       if (members.length === 0) {
         throw new ConvexError({ message: "Cannot publish a shift with no assigned members", code: "BAD_REQUEST" });
       }
-      // Reset member responses to pending when publishing
-      for (const mem of members) {
-        await ctx.db.patch(mem._id, { responseStatus: "pending", declineReason: undefined });
+      // Only reset member responses when the shift is newly being published
+      // (not already published) — preserve existing accepted/declined statuses
+      if (!shift.published) {
+        for (const mem of members) {
+          await ctx.db.patch(mem._id, { responseStatus: "pending", declineReason: undefined });
+        }
       }
     }
 
@@ -938,9 +941,12 @@ export const setPublished = mutation({
           .withIndex("by_shift", (q) => q.eq("shiftId", shift._id))
           .collect();
         if (members.length === 0) continue;
-        // Reset member responses to pending when publishing
-        for (const mem of members) {
-          await ctx.db.patch(mem._id, { responseStatus: "pending", declineReason: undefined });
+        // Only reset member responses for shifts that are newly being published
+        // — preserve existing accepted/declined statuses on already-published shifts
+        if (!shift.published) {
+          for (const mem of members) {
+            await ctx.db.patch(mem._id, { responseStatus: "pending", declineReason: undefined });
+          }
         }
       }
       if (shift.published !== args.published) {
