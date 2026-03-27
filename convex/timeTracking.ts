@@ -283,6 +283,120 @@ export const deleteEntry = mutation({
   },
 });
 
+// ─── Timesheet Summary ─────────────────────────────────────
+
+/** Compute scheduled minutes from shift start/end times */
+function computeScheduledMinutes(startTime: string, endTime: string): number {
+  const diff = new Date(endTime).getTime() - new Date(startTime).getTime();
+  return Math.max(0, Math.round(diff / 60000));
+}
+
+/** Admin: get timesheet summary for all staff in a date range */
+export const getTimesheetSummary = query({
+  args: {
+    startDate: v.string(),
+    endDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") return [];
+
+    // Get all staff in same org
+    const allUsers = await ctx.db.query("users").collect();
+    const orgUsers = allUsers.filter((u) =>
+      u.organizationId === currentUser.organizationId && !u.isSuperAdmin && !u.suspended
+    );
+
+    const summaries = [];
+
+    for (const user of orgUsers) {
+      // Get shifts assigned to this user in the date range
+      const memberships = await ctx.db
+        .query("shiftMembers")
+        .withIndex("by_user", (q) => q.eq("userId", user._id))
+        .collect();
+
+      let shiftCount = 0;
+      let scheduledMinutes = 0;
+      let earliestDate: string | null = null;
+      let latestDate: string | null = null;
+      const positionSet = new Set<string>();
+      const locationSet = new Set<string>();
+
+      for (const mem of memberships) {
+        const shift = await ctx.db.get(mem.shiftId);
+        if (!shift) continue;
+
+        // Check if shift falls within date range
+        const shiftDate = shift.startTime.slice(0, 10);
+        if (shiftDate < args.startDate || shiftDate > args.endDate) continue;
+
+        shiftCount++;
+        scheduledMinutes += computeScheduledMinutes(shift.startTime, shift.endTime);
+
+        if (!earliestDate || shiftDate < earliestDate) earliestDate = shiftDate;
+        if (!latestDate || shiftDate > latestDate) latestDate = shiftDate;
+
+        if (shift.position) positionSet.add(shift.position);
+        if (shift.callSign) locationSet.add(shift.callSign);
+        else if (shift.vehicle) locationSet.add(shift.vehicle);
+      }
+
+      // Get time entries for this user in date range
+      const entries = await ctx.db
+        .query("timeEntries")
+        .withIndex("by_user_and_date", (q) =>
+          q.eq("userId", user._id).gte("date", args.startDate).lte("date", args.endDate)
+        )
+        .collect();
+
+      let actualMinutes = 0;
+      for (const entry of entries) {
+        if (entry.clockOut) {
+          actualMinutes += computeWorkedMinutes(entry.clockIn, entry.clockOut, entry.breakMinutes);
+        }
+      }
+
+      // Skip users with no shifts and no time entries in the range
+      if (shiftCount === 0 && entries.length === 0) continue;
+
+      // Fallback positions from user profile
+      if (positionSet.size === 0 && user.positions && user.positions.length > 0) {
+        for (const p of user.positions) positionSet.add(p);
+      }
+
+      const hourlyRate = user.hourlyRate ?? 0;
+      const scheduledHours = scheduledMinutes / 60;
+      const actualHours = actualMinutes / 60;
+
+      summaries.push({
+        userId: user._id,
+        userName: user.name ?? "Unknown",
+        employmentType: user.employmentType ?? "employee",
+        shiftCount,
+        positions: [...positionSet],
+        locations: [...locationSet],
+        dateFrom: earliestDate,
+        dateTo: latestDate,
+        scheduledHours: Math.round(scheduledHours * 100) / 100,
+        actualHours: Math.round(actualHours * 100) / 100,
+        hourlyRate,
+        scheduledPay: Math.round(hourlyRate * scheduledHours * 100) / 100,
+        actualPay: Math.round(hourlyRate * actualHours * 100) / 100,
+      });
+    }
+
+    // Sort by name
+    summaries.sort((a, b) => a.userName.localeCompare(b.userName));
+    return summaries;
+  },
+});
+
 // ─── Timesheet Queries ──────────────────────────────────────
 
 /** Get the user's timesheet for a specific week */

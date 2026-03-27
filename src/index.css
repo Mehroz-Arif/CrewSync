@@ -138,3 +138,37 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Print styles for timesheet summary report */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10px !important;
+  }
+  /* Hide sidebar, navbar, and non-printable elements */
+  nav, aside, header, [data-sidebar], .print\\:hidden {
+    display: none !important;
+  }
+  /* Make the main content full width */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  /* Table styling for print */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9px !important;
+  }
+  th, td {
+    padding: 4px 6px !important;
+    border: 1px solid #ddd !important;
+  }
+  th {
+    background: #f3f4f6 !important;
+    font-weight: 600 !important;
+  }
+}
