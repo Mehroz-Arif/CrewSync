@@ -75,8 +75,12 @@ export type UnavailNote = {
 };
 
 export type LeaveNote = {
+  leaveRequestId: string;
   leaveType: string;
+  startDate: string;
+  endDate: string;
   reason?: string;
+  userName?: string;
 };
 
 type ScheduleGridProps = {
@@ -93,6 +97,7 @@ type ScheduleGridProps = {
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
   onUnassignedShiftClick?: (shift: UnassignedShift) => void;
+  onLeaveClick?: (leave: LeaveNote) => void;
 };
 
 type ActiveDrag =
@@ -155,6 +160,7 @@ export default function ScheduleGrid({
   onCellClick,
   onShiftClick,
   onUnassignedShiftClick,
+  onLeaveClick,
 }: ScheduleGridProps) {
   const moveAssignment = useMutation(api.shifts.moveShiftAssignment);
   const assignToShift = useMutation(api.shifts.assignToShift);
@@ -581,16 +587,21 @@ export default function ScheduleGrid({
                       ))}
                       {/* Leave badges */}
                       {cellLeave.map((l, i) => (
-                        <div
+                        <button
                           key={`leave-${i}`}
-                          className="rounded border border-sky-400/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-700 dark:text-sky-300"
-                          title={`${LEAVE_LABELS[l.leaveType] ?? l.leaveType}${l.reason ? `: ${l.reason}` : ""}`}
+                          type="button"
+                          className="w-full text-left rounded border border-sky-400/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-700 dark:text-sky-300 hover:bg-sky-500/20 hover:border-sky-400/60 transition-colors cursor-pointer"
+                          title={`${LEAVE_LABELS[l.leaveType] ?? l.leaveType}${l.reason ? `: ${l.reason}` : ""} — Click to edit`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onLeaveClick?.(l);
+                          }}
                         >
                           <span className="font-medium">{LEAVE_LABELS[l.leaveType] ?? l.leaveType}</span>
                           {l.reason && (
                             <span className="opacity-75 truncate"> {l.reason}</span>
                           )}
-                        </div>
+                        </button>
                       ))}
                       {/* Unavailability notes (admin only) */}
                       {cellUnavailNotes.map((u, i) => (

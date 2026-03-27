@@ -29,8 +29,10 @@ import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import ScheduleGrid from "./_components/schedule-grid.tsx";
 import type { CellShift } from "./_components/schedule-grid.tsx";
+import type { LeaveNote as LeaveNoteType } from "./_components/schedule-grid.tsx";
 import type { UnassignedShift } from "./_components/unassigned-pool.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
+import EditLeaveDialog from "./_components/edit-leave-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 import WeeklyCalendar from "./_components/weekly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
@@ -253,6 +255,10 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     | undefined
   >();
 
+  // Edit leave dialog state
+  const [editLeaveOpen, setEditLeaveOpen] = useState(false);
+  const [editLeaveData, setEditLeaveData] = useState<LeaveNoteType | null>(null);
+
   // Build vehicle allocation lookup: "date__callSign" → vehicle
   const vehicleAllocationMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -358,7 +364,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   }, [declines]);
 
   // Build leave data map: "userId__date" → leave entries (expand multi-day ranges)
-  type LeaveNote = { leaveType: string; reason?: string };
+  type LeaveNote = { leaveRequestId: string; leaveType: string; startDate: string; endDate: string; reason?: string; userName?: string };
   const leaveData = useMemo(() => {
     const map = new Map<string, LeaveNote[]>();
     if (!approvedLeave) return map;
@@ -376,8 +382,12 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         const key = `${lr.userId}__${dateStr}`;
         const existing = map.get(key) ?? [];
         existing.push({
+          leaveRequestId: lr._id,
           leaveType: lr.leaveType,
+          startDate: lr.startDate,
+          endDate: lr.endDate,
           reason: lr.reason,
+          userName: lr.userName,
         });
         map.set(key, existing);
         cursor = addDays(cursor, 1);
@@ -442,6 +452,11 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     setDialogDate("");
     setDialogUserId(undefined);
     setDialogOpen(true);
+  }
+
+  function handleLeaveClick(leave: LeaveNoteType) {
+    setEditLeaveData(leave);
+    setEditLeaveOpen(true);
   }
 
   async function handlePublish(publish: boolean) {
@@ -583,6 +598,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}
         onUnassignedShiftClick={handleUnassignedShiftClick}
+        onLeaveClick={handleLeaveClick}
       />
 
       {/* Shift dialog */}
@@ -602,6 +618,24 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         shift={dialogShift}
         staff={staff}
       />
+
+      {/* Edit leave dialog */}
+      {editLeaveData && (
+        <EditLeaveDialog
+          key={editLeaveData.leaveRequestId}
+          open={editLeaveOpen}
+          onOpenChange={(open) => {
+            setEditLeaveOpen(open);
+            if (!open) setEditLeaveData(null);
+          }}
+          leaveRequestId={editLeaveData.leaveRequestId as Id<"leaveRequests">}
+          userName={editLeaveData.userName ?? "Team member"}
+          initialLeaveType={editLeaveData.leaveType as "annual" | "sick" | "compassionate" | "training" | "unpaid" | "other"}
+          initialStartDate={editLeaveData.startDate}
+          initialEndDate={editLeaveData.endDate}
+          initialReason={editLeaveData.reason}
+        />
+      )}
     </div>
   );
 }

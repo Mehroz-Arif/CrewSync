@@ -282,6 +282,92 @@ export const adminCreateAbsence = mutation({
   },
 });
 
+/** Admin: update an existing absence / leave request */
+export const adminUpdateAbsence = mutation({
+  args: {
+    requestId: v.id("leaveRequests"),
+    leaveType: LEAVE_TYPE_VALIDATOR,
+    startDate: v.string(),
+    endDate: v.string(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "Not authenticated", code: "UNAUTHENTICATED" });
+    }
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin || admin.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can update absences", code: "FORBIDDEN" });
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new ConvexError({ message: "Leave request not found", code: "NOT_FOUND" });
+    }
+
+    if (args.startDate > args.endDate) {
+      throw new ConvexError({ message: "Start date must be before or equal to end date", code: "BAD_REQUEST" });
+    }
+
+    // Check for overlapping pending/approved requests (excluding this one)
+    const existing = await ctx.db
+      .query("leaveRequests")
+      .withIndex("by_user", (q) => q.eq("userId", request.userId))
+      .collect();
+
+    const overlap = existing.find(
+      (lr) =>
+        lr._id !== args.requestId &&
+        (lr.status === "pending" || lr.status === "approved") &&
+        lr.startDate <= args.endDate &&
+        lr.endDate >= args.startDate
+    );
+
+    if (overlap) {
+      throw new ConvexError({
+        message: "This person already has a leave request for these dates",
+        code: "CONFLICT",
+      });
+    }
+
+    await ctx.db.patch(args.requestId, {
+      leaveType: args.leaveType,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      reason: args.reason,
+    });
+  },
+});
+
+/** Admin: delete an absence / leave request */
+export const adminDeleteAbsence = mutation({
+  args: { requestId: v.id("leaveRequests") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "Not authenticated", code: "UNAUTHENTICATED" });
+    }
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin || admin.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can delete absences", code: "FORBIDDEN" });
+    }
+
+    const request = await ctx.db.get(args.requestId);
+    if (!request) {
+      throw new ConvexError({ message: "Leave request not found", code: "NOT_FOUND" });
+    }
+
+    await ctx.db.delete(args.requestId);
+  },
+});
+
 /** Admin: approve or reject a leave request */
 export const review = mutation({
   args: {
