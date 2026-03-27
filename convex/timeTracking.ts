@@ -401,6 +401,115 @@ export const getTimesheetSummary = query({
   },
 });
 
+// ─── Weekly Timesheet Report ──────────────────────────────
+
+/** Admin: get detailed weekly timesheet report with per-day start/end/hours */
+export const getWeeklyTimesheetReport = query({
+  args: {
+    startDate: v.string(), // "YYYY-MM-DD" (Monday)
+    endDate: v.string(), // "YYYY-MM-DD" (Sunday)
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") return [];
+
+    // Get all non-suspended users
+    const allUsers = await ctx.db.query("users").collect();
+    const orgUsers = allUsers.filter((u) => {
+      if (u.suspended) return false;
+      return u.organizationId === currentUser.organizationId || !u.organizationId;
+    });
+
+    // Get all time entries for the period
+    const allEntries = await ctx.db
+      .query("timeEntries")
+      .withIndex("by_date", (q) =>
+        q.gte("date", args.startDate).lte("date", args.endDate)
+      )
+      .collect();
+
+    // Get all timesheets for the period
+    const allTimesheets = await ctx.db.query("timesheets").collect();
+    const periodTimesheets = allTimesheets.filter(
+      (ts) => ts.periodStart === args.startDate
+    );
+
+    // Build report rows
+    type DayEntry = {
+      entryId: Id<"timeEntries">;
+      start: string; // "HH:mm"
+      end: string | null; // "HH:mm" or null if still active
+      hours: number;
+      status: "active" | "completed" | "edited";
+    };
+
+    const rows: Array<{
+      userId: Id<"users">;
+      userName: string;
+      positions: string[];
+      days: Record<string, DayEntry[]>; // "YYYY-MM-DD" → entries
+      totalHours: number;
+      timesheetStatus: "none" | "draft" | "submitted" | "approved" | "rejected";
+      timesheetId: Id<"timesheets"> | null;
+    }> = [];
+
+    for (const user of orgUsers) {
+      const userEntries = allEntries.filter((e) => e.userId === user._id);
+      if (userEntries.length === 0) continue; // Skip users with no entries
+
+      const days: Record<string, DayEntry[]> = {};
+      let totalMinutes = 0;
+
+      for (const entry of userEntries) {
+        if (!days[entry.date]) days[entry.date] = [];
+
+        const clockInDate = new Date(entry.clockIn);
+        const startStr = `${String(clockInDate.getHours()).padStart(2, "0")}:${String(clockInDate.getMinutes()).padStart(2, "0")}`;
+
+        let endStr: string | null = null;
+        let hours = 0;
+
+        if (entry.clockOut) {
+          const clockOutDate = new Date(entry.clockOut);
+          endStr = `${String(clockOutDate.getHours()).padStart(2, "0")}:${String(clockOutDate.getMinutes()).padStart(2, "0")}`;
+          const workedMins = computeWorkedMinutes(entry.clockIn, entry.clockOut, entry.breakMinutes);
+          hours = Math.round((workedMins / 60) * 100) / 100;
+          totalMinutes += workedMins;
+        }
+
+        days[entry.date].push({
+          entryId: entry._id,
+          start: startStr,
+          end: endStr,
+          hours,
+          status: entry.status,
+        });
+      }
+
+      // Find timesheet for this user in this period
+      const ts = periodTimesheets.find((t) => t.userId === user._id);
+
+      rows.push({
+        userId: user._id,
+        userName: user.name ?? "Unknown",
+        positions: user.positions ?? [],
+        days,
+        totalHours: Math.round((totalMinutes / 60) * 100) / 100,
+        timesheetStatus: ts ? ts.status : "none",
+        timesheetId: ts ? ts._id : null,
+      });
+    }
+
+    rows.sort((a, b) => a.userName.localeCompare(b.userName));
+    return rows;
+  },
+});
+
 // ─── Timesheet Queries ──────────────────────────────────────
 
 /** Get the user's timesheet for a specific week */

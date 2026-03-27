@@ -7,14 +7,15 @@ import ClockInOut from "./_components/clock-in-out.tsx";
 import MyTimesheet from "./_components/my-timesheet.tsx";
 import AdminTimesheets from "./_components/admin-timesheets.tsx";
 import TimesheetSummary from "./_components/timesheet-summary.tsx";
+import WeeklyTimesheetReport from "./_components/weekly-timesheet-report.tsx";
 import { cn } from "@/lib/utils.ts";
 
-type AdminTab = "summary" | "approvals";
+type AdminTab = "report" | "summary" | "approvals";
 
 export default function TimesheetsPage() {
   const currentUser = useQuery(api.users.getCurrentUser);
   const { isPreviewingAsStaff } = useStaffPreview();
-  const [adminTab, setAdminTab] = useState<AdminTab>("summary");
+  const [adminTab, setAdminTab] = useState<AdminTab>("report");
 
   if (currentUser === undefined) {
     return (
@@ -44,6 +45,17 @@ export default function TimesheetsPage() {
         <div className="print:hidden">
           <div className="flex items-center gap-1 border-b">
             <button
+              onClick={() => setAdminTab("report")}
+              className={cn(
+                "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
+                adminTab === "report"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Weekly Report
+            </button>
+            <button
               onClick={() => setAdminTab("summary")}
               className={cn(
                 "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
@@ -70,7 +82,9 @@ export default function TimesheetsPage() {
       )}
 
       {/* Tab content */}
-      {isAdmin && adminTab === "summary" ? (
+      {isAdmin && adminTab === "report" ? (
+        <WeeklyTimesheetReport />
+      ) : isAdmin && adminTab === "summary" ? (
         <TimesheetSummary />
       ) : (
         <>
