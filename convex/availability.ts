@@ -220,6 +220,84 @@ export const remove = mutation({
   },
 });
 
+/** Admin: update an existing availability entry */
+export const adminUpdate = mutation({
+  args: {
+    id: v.id("availability"),
+    status: v.union(v.literal("available"), v.literal("unavailable")),
+    allDay: v.boolean(),
+    startTime: v.optional(v.string()),
+    endTime: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "Not authenticated", code: "UNAUTHENTICATED" });
+    }
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin || admin.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can update availability", code: "FORBIDDEN" });
+    }
+
+    const entry = await ctx.db.get(args.id);
+    if (!entry) {
+      throw new ConvexError({ message: "Entry not found", code: "NOT_FOUND" });
+    }
+
+    if (!args.allDay) {
+      if (!args.startTime || !args.endTime) {
+        throw new ConvexError({
+          message: "Start time and end time are required for timed availability",
+          code: "BAD_REQUEST",
+        });
+      }
+      if (args.startTime >= args.endTime) {
+        throw new ConvexError({
+          message: "Start time must be before end time",
+          code: "BAD_REQUEST",
+        });
+      }
+    }
+
+    await ctx.db.patch(args.id, {
+      status: args.status,
+      allDay: args.allDay,
+      startTime: args.allDay ? undefined : args.startTime,
+      endTime: args.allDay ? undefined : args.endTime,
+      notes: args.notes,
+    });
+  },
+});
+
+/** Admin: delete an availability entry */
+export const adminDelete = mutation({
+  args: { id: v.id("availability") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "Not authenticated", code: "UNAUTHENTICATED" });
+    }
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin || admin.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can delete availability", code: "FORBIDDEN" });
+    }
+
+    const entry = await ctx.db.get(args.id);
+    if (!entry) {
+      throw new ConvexError({ message: "Entry not found", code: "NOT_FOUND" });
+    }
+
+    await ctx.db.delete(args.id);
+  },
+});
+
 /** Clear all availability entries for a specific date */
 export const clear = mutation({
   args: { date: v.string() },

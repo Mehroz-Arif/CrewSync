@@ -68,10 +68,14 @@ export type DeclineNote = {
 };
 
 export type UnavailNote = {
+  availabilityId: string;
   notes: string;
   allDay: boolean;
   startTime?: string;
   endTime?: string;
+  status: "available" | "unavailable";
+  date: string;
+  userName?: string;
 };
 
 export type LeaveNote = {
@@ -91,6 +95,7 @@ type ScheduleGridProps = {
   unassignedShifts: UnassignedShift[];
   availabilityData: Map<string, "available" | "unavailable">;
   unavailabilityNotes?: Map<string, UnavailNote[]>;
+  availableNotes?: Map<string, UnavailNote[]>;
   declineData?: Map<string, DeclineNote[]>;
   leaveData?: Map<string, LeaveNote[]>;
   roleColorMap: Record<string, string>; // position label → hex colour
@@ -98,6 +103,7 @@ type ScheduleGridProps = {
   onShiftClick: (shift: CellShift) => void;
   onUnassignedShiftClick?: (shift: UnassignedShift) => void;
   onLeaveClick?: (leave: LeaveNote) => void;
+  onAvailabilityClick?: (entry: UnavailNote) => void;
 };
 
 type ActiveDrag =
@@ -154,6 +160,7 @@ export default function ScheduleGrid({
   unassignedShifts,
   availabilityData,
   unavailabilityNotes,
+  availableNotes,
   declineData,
   leaveData,
   roleColorMap,
@@ -161,6 +168,7 @@ export default function ScheduleGrid({
   onShiftClick,
   onUnassignedShiftClick,
   onLeaveClick,
+  onAvailabilityClick,
 }: ScheduleGridProps) {
   const moveAssignment = useMutation(api.shifts.moveShiftAssignment);
   const assignToShift = useMutation(api.shifts.assignToShift);
@@ -544,6 +552,7 @@ export default function ScheduleGrid({
                   const avail = availabilityData.get(availKey);
                   const cellDeclines = declineData?.get(availKey) ?? [];
                   const cellUnavailNotes = isAdmin ? (unavailabilityNotes?.get(availKey) ?? []) : [];
+                  const cellAvailNotes = isAdmin ? (availableNotes?.get(availKey) ?? []) : [];
                   const cellLeave = leaveData?.get(availKey) ?? [];
                   return (
                     <DayCell
@@ -605,14 +614,19 @@ export default function ScheduleGrid({
                       ))}
                       {/* Unavailability notes (admin only) */}
                       {cellUnavailNotes.map((u, i) => (
-                        <div
+                        <button
                           key={`unavail-${i}`}
-                          className="rounded border border-muted-foreground/20 bg-muted/60 px-1.5 py-0.5 text-[9px] text-muted-foreground"
+                          type="button"
+                          className="w-full text-left rounded border border-muted-foreground/20 bg-muted/60 px-1.5 py-0.5 text-[9px] text-muted-foreground hover:bg-muted hover:border-muted-foreground/40 transition-colors cursor-pointer"
                           title={
                             u.allDay
-                              ? `Unavailable (all day)${u.notes ? `: ${u.notes}` : ""}`
-                              : `Unavailable ${u.startTime ?? ""}–${u.endTime ?? ""}${u.notes ? `: ${u.notes}` : ""}`
+                              ? `Unavailable (all day)${u.notes ? `: ${u.notes}` : ""} — Click to edit`
+                              : `Unavailable ${u.startTime ?? ""}–${u.endTime ?? ""}${u.notes ? `: ${u.notes}` : ""} — Click to edit`
                           }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAvailabilityClick?.(u);
+                          }}
                         >
                           <span className="font-medium">
                             {u.allDay ? "Unavailable" : `Unavail ${u.startTime}–${u.endTime}`}
@@ -620,7 +634,31 @@ export default function ScheduleGrid({
                           {u.notes && (
                             <span className="opacity-75 truncate"> {u.notes}</span>
                           )}
-                        </div>
+                        </button>
+                      ))}
+                      {/* Available notes (admin only) */}
+                      {cellAvailNotes.map((a, i) => (
+                        <button
+                          key={`avail-${i}`}
+                          type="button"
+                          className="w-full text-left rounded border border-emerald-400/40 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400/60 transition-colors cursor-pointer"
+                          title={
+                            a.allDay
+                              ? `Available (all day)${a.notes ? `: ${a.notes}` : ""} — Click to edit`
+                              : `Available ${a.startTime ?? ""}–${a.endTime ?? ""}${a.notes ? `: ${a.notes}` : ""} — Click to edit`
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAvailabilityClick?.(a);
+                          }}
+                        >
+                          <span className="font-medium">
+                            {a.allDay ? "Available" : `Avail ${a.startTime}–${a.endTime}`}
+                          </span>
+                          {a.notes && (
+                            <span className="opacity-75 truncate"> {a.notes}</span>
+                          )}
+                        </button>
                       ))}
                       {/* Decline notes */}
                       {cellDeclines.map((d, i) => (

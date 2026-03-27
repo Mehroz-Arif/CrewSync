@@ -30,9 +30,11 @@ import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import ScheduleGrid from "./_components/schedule-grid.tsx";
 import type { CellShift } from "./_components/schedule-grid.tsx";
 import type { LeaveNote as LeaveNoteType } from "./_components/schedule-grid.tsx";
+import type { UnavailNote as UnavailNoteType } from "./_components/schedule-grid.tsx";
 import type { UnassignedShift } from "./_components/unassigned-pool.tsx";
 import ShiftDialog from "./_components/shift-dialog.tsx";
 import EditLeaveDialog from "./_components/edit-leave-dialog.tsx";
+import EditAvailabilityDialog from "./_components/edit-availability-dialog.tsx";
 import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 import WeeklyCalendar from "./_components/weekly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
@@ -259,6 +261,10 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   const [editLeaveOpen, setEditLeaveOpen] = useState(false);
   const [editLeaveData, setEditLeaveData] = useState<LeaveNoteType | null>(null);
 
+  // Edit availability dialog state
+  const [editAvailOpen, setEditAvailOpen] = useState(false);
+  const [editAvailData, setEditAvailData] = useState<UnavailNoteType | null>(null);
+
   // Build vehicle allocation lookup: "date__callSign" → vehicle
   const vehicleAllocationMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -321,11 +327,25 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
 
   // Build unavailability notes map: "userId__date" → notes[]
   type UnavailNote = {
+    availabilityId: string;
     notes: string;
     allDay: boolean;
     startTime?: string;
     endTime?: string;
+    status: "available" | "unavailable";
+    date: string;
+    userName?: string;
   };
+
+  // Helper to look up staff name by userId
+  const staffNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of staff) {
+      map.set(s._id, s.name ?? "Unknown");
+    }
+    return map;
+  }, [staff]);
+
   const unavailabilityNotes = useMemo(() => {
     const map = new Map<string, UnavailNote[]>();
     if (!allAvailability) return map;
@@ -334,15 +354,42 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       const key = `${entry.userId}__${entry.date}`;
       const existing = map.get(key) ?? [];
       existing.push({
+        availabilityId: entry._id,
         notes: entry.notes ?? "",
         allDay: entry.allDay ?? true,
         startTime: entry.startTime,
         endTime: entry.endTime,
+        status: "unavailable",
+        date: entry.date,
+        userName: staffNameMap.get(entry.userId),
       });
       map.set(key, existing);
     }
     return map;
-  }, [allAvailability]);
+  }, [allAvailability, staffNameMap]);
+
+  // Build available notes map: "userId__date" → available entries
+  const availableNotes = useMemo(() => {
+    const map = new Map<string, UnavailNote[]>();
+    if (!allAvailability) return map;
+    for (const entry of allAvailability) {
+      if (entry.status !== "available") continue;
+      const key = `${entry.userId}__${entry.date}`;
+      const existing = map.get(key) ?? [];
+      existing.push({
+        availabilityId: entry._id,
+        notes: entry.notes ?? "",
+        allDay: entry.allDay ?? true,
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        status: "available",
+        date: entry.date,
+        userName: staffNameMap.get(entry.userId),
+      });
+      map.set(key, existing);
+    }
+    return map;
+  }, [allAvailability, staffNameMap]);
 
   // Build decline notes map: "userId__date" → decline entries
   type DeclineNote = { reason: string; shiftStartTime: string; shiftEndTime: string; userName: string };
@@ -457,6 +504,11 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   function handleLeaveClick(leave: LeaveNoteType) {
     setEditLeaveData(leave);
     setEditLeaveOpen(true);
+  }
+
+  function handleAvailabilityClick(entry: UnavailNoteType) {
+    setEditAvailData(entry);
+    setEditAvailOpen(true);
   }
 
   async function handlePublish(publish: boolean) {
@@ -592,6 +644,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         unassignedShifts={unassigned}
         availabilityData={availabilityData}
         unavailabilityNotes={unavailabilityNotes}
+        availableNotes={availableNotes}
         declineData={declineData}
         leaveData={leaveData}
         roleColorMap={roleColorMap}
@@ -599,6 +652,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         onShiftClick={handleShiftClick}
         onUnassignedShiftClick={handleUnassignedShiftClick}
         onLeaveClick={handleLeaveClick}
+        onAvailabilityClick={handleAvailabilityClick}
       />
 
       {/* Shift dialog */}
@@ -634,6 +688,26 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           initialStartDate={editLeaveData.startDate}
           initialEndDate={editLeaveData.endDate}
           initialReason={editLeaveData.reason}
+        />
+      )}
+
+      {/* Edit availability dialog */}
+      {editAvailData && (
+        <EditAvailabilityDialog
+          key={editAvailData.availabilityId}
+          open={editAvailOpen}
+          onOpenChange={(open) => {
+            setEditAvailOpen(open);
+            if (!open) setEditAvailData(null);
+          }}
+          availabilityId={editAvailData.availabilityId as Id<"availability">}
+          userName={editAvailData.userName ?? "Team member"}
+          date={editAvailData.date}
+          initialStatus={editAvailData.status}
+          initialAllDay={editAvailData.allDay}
+          initialStartTime={editAvailData.startTime}
+          initialEndTime={editAvailData.endTime}
+          initialNotes={editAvailData.notes || undefined}
         />
       )}
     </div>
