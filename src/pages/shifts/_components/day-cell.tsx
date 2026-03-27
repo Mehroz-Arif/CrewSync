@@ -1,7 +1,13 @@
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils.ts";
-import { Plus } from "lucide-react";
+import { Plus, CalendarOff } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+  ContextMenuItem,
+} from "@/components/ui/context-menu.tsx";
 
 type DayCellProps = {
   cellId: string;
@@ -12,6 +18,7 @@ type DayCellProps = {
   hasShifts: boolean;
   availability?: "available" | "unavailable";
   onCellClick: () => void;
+  onAddAbsence?: () => void;
   children: ReactNode;
 };
 
@@ -24,6 +31,7 @@ export default function DayCell({
   hasShifts,
   availability,
   onCellClick,
+  onAddAbsence,
   children,
 }: DayCellProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -31,7 +39,7 @@ export default function DayCell({
     data: { type: "cell", userId, date: dateStr },
   });
 
-  return (
+  const cellContent = (
     <div
       ref={setNodeRef}
       onClick={isAdmin ? onCellClick : undefined}
@@ -67,4 +75,25 @@ export default function DayCell({
       )}
     </div>
   );
+
+  if (isAdmin && onAddAbsence) {
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{cellContent}</ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddAbsence();
+            }}
+          >
+            <CalendarOff className="size-3.5" />
+            Add absence
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  }
+
+  return cellContent;
 }

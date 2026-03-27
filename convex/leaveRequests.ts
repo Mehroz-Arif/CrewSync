@@ -218,6 +218,70 @@ export const cancel = mutation({
   },
 });
 
+/** Admin: create an absence on behalf of a team member (auto-approved) */
+export const adminCreateAbsence = mutation({
+  args: {
+    userId: v.id("users"),
+    leaveType: LEAVE_TYPE_VALIDATOR,
+    startDate: v.string(),
+    endDate: v.string(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "Not authenticated", code: "UNAUTHENTICATED" });
+    }
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin || admin.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can create absences", code: "FORBIDDEN" });
+    }
+
+    const target = await ctx.db.get(args.userId);
+    if (!target) {
+      throw new ConvexError({ message: "User not found", code: "NOT_FOUND" });
+    }
+
+    if (args.startDate > args.endDate) {
+      throw new ConvexError({ message: "Start date must be before or equal to end date", code: "BAD_REQUEST" });
+    }
+
+    // Check for overlapping pending/approved requests
+    const existing = await ctx.db
+      .query("leaveRequests")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    const overlap = existing.find(
+      (lr) =>
+        (lr.status === "pending" || lr.status === "approved") &&
+        lr.startDate <= args.endDate &&
+        lr.endDate >= args.startDate
+    );
+
+    if (overlap) {
+      throw new ConvexError({
+        message: "This person already has a leave request for these dates",
+        code: "CONFLICT",
+      });
+    }
+
+    return await ctx.db.insert("leaveRequests", {
+      userId: args.userId,
+      leaveType: args.leaveType,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      reason: args.reason,
+      status: "approved",
+      reviewedBy: admin._id,
+      reviewedAt: new Date().toISOString(),
+    });
+  },
+});
+
 /** Admin: approve or reject a leave request */
 export const review = mutation({
   args: {

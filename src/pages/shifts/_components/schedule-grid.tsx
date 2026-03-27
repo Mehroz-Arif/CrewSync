@@ -27,6 +27,7 @@ import { ShiftBlockOverlay } from "./shift-block.tsx";
 import type { UnassignedShift } from "./unassigned-pool.tsx";
 import { UnassignedShiftOverlay, DraggableUnassignedGroup, groupUnassignedShifts } from "./unassigned-pool.tsx";
 import { Package } from "lucide-react";
+import AddAbsenceDialog from "./add-absence-dialog.tsx";
 
 type StaffMember = {
   _id: Id<"users">;
@@ -145,6 +146,13 @@ export default function ScheduleGrid({
   const setShiftPublished = useMutation(api.shifts.setShiftPublished);
   const adminAcceptShift = useMutation(api.shifts.adminAcceptShift);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
+
+  // Absence dialog state
+  const [absenceTarget, setAbsenceTarget] = useState<{
+    userId: Id<"users">;
+    userName: string;
+    date: string;
+  } | null>(null);
 
   // Drag-resize state for unassigned section
   const [unassignedHeight, setUnassignedHeight] = useState(120);
@@ -525,6 +533,11 @@ export default function ScheduleGrid({
                       hasShifts={cellShifts.length > 0}
                       availability={avail}
                       onCellClick={() => onCellClick(employee._id, day)}
+                      onAddAbsence={isAdmin ? () => setAbsenceTarget({
+                        userId: employee._id,
+                        userName: employee.name ?? "Unknown",
+                        date: dateStr,
+                      }) : undefined}
                     >
                       {cellShifts.map((shift) => (
                         <ShiftBlock
@@ -606,6 +619,17 @@ export default function ScheduleGrid({
           />
         ) : null}
       </DragOverlay>
+
+      {/* Add absence dialog */}
+      {absenceTarget && (
+        <AddAbsenceDialog
+          open={!!absenceTarget}
+          onOpenChange={(open) => { if (!open) setAbsenceTarget(null); }}
+          userId={absenceTarget.userId}
+          userName={absenceTarget.userName}
+          date={absenceTarget.date}
+        />
+      )}
     </DndContext>
   );
 }
