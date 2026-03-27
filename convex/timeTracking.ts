@@ -306,11 +306,15 @@ export const getTimesheetSummary = query({
       .unique();
     if (!currentUser || currentUser.role !== "admin") return [];
 
-    // Get all staff in same org
+    // Get all staff in same org (include users without an org set, as they
+    // may simply not have been assigned one yet but still work shifts)
     const allUsers = await ctx.db.query("users").collect();
-    const orgUsers = allUsers.filter((u) =>
-      u.organizationId === currentUser.organizationId && !u.isSuperAdmin && !u.suspended
-    );
+    const orgUsers = allUsers.filter((u) => {
+      if (u.suspended) return false;
+      return (
+        u.organizationId === currentUser.organizationId || !u.organizationId
+      );
+    });
 
     const summaries = [];
 
