@@ -403,7 +403,10 @@ export const getTimesheetSummary = query({
 
 // ─── Weekly Timesheet Report ──────────────────────────────
 
-/** Admin: get detailed weekly timesheet report with per-day start/end/hours */
+/** Admin: get detailed weekly timesheet report with per-day start/end/hours.
+ *  Merges data from both timeEntries (actual clock in/out) AND shifts
+ *  (scheduled). Scheduled shift data appears when no time entry exists for
+ *  that user/day. */
 export const getWeeklyTimesheetReport = query({
   args: {
     startDate: v.string(), // "YYYY-MM-DD" (Monday)
@@ -424,8 +427,30 @@ export const getWeeklyTimesheetReport = query({
       if (u.suspended) return false;
       return u.organizationId === currentUser.organizationId || !u.organizationId;
     });
+    const orgUserIds = new Set(orgUsers.map((u) => u._id));
 
-    // Get all time entries for the period
+    // ── Scheduled shifts ───────────────────────────────────────
+    // Get shifts that overlap with the date range
+    const allShifts = await ctx.db
+      .query("shifts")
+      .withIndex("by_start_time", (q) =>
+        q.gte("startTime", args.startDate).lte("startTime", args.endDate + "T23:59:59.999Z")
+      )
+      .collect();
+
+    // Build a map: userId → array of shifts for that user
+    const allShiftMembers = await ctx.db.query("shiftMembers").collect();
+    const userShiftsMap = new Map<string, Array<typeof allShifts[number]>>();
+    for (const mem of allShiftMembers) {
+      if (!orgUserIds.has(mem.userId)) continue;
+      const shift = allShifts.find((s) => s._id === mem.shiftId);
+      if (!shift) continue;
+      const arr = userShiftsMap.get(mem.userId) ?? [];
+      arr.push(shift);
+      userShiftsMap.set(mem.userId, arr);
+    }
+
+    // ── Time entries ───────────────────────────────────────────
     const allEntries = await ctx.db
       .query("timeEntries")
       .withIndex("by_date", (q) =>
@@ -434,34 +459,34 @@ export const getWeeklyTimesheetReport = query({
       .collect();
 
     // Pre-fetch shifts linked to time entries (for break minutes lookup)
-    const shiftIds = new Set(allEntries.filter((e) => e.shiftId).map((e) => e.shiftId!));
-    const shiftMap = new Map<string, { breakMinutes?: number }>();
-    for (const sid of shiftIds) {
-      const shift = await ctx.db.get(sid);
-      if (shift) shiftMap.set(sid, { breakMinutes: shift.breakMinutes });
+    const linkedShiftIds = new Set(allEntries.filter((e) => e.shiftId).map((e) => e.shiftId!));
+    const shiftBreakMap = new Map<string, number>();
+    for (const sid of linkedShiftIds) {
+      const shift = allShifts.find((s) => s._id === sid) ?? await ctx.db.get(sid);
+      if (shift?.breakMinutes) shiftBreakMap.set(sid, shift.breakMinutes);
     }
 
-    // Get all timesheets for the period
+    // ── Timesheets ─────────────────────────────────────────────
     const allTimesheets = await ctx.db.query("timesheets").collect();
     const periodTimesheets = allTimesheets.filter(
       (ts) => ts.periodStart === args.startDate
     );
 
-    // Build report rows
+    // ── Build report rows ──────────────────────────────────────
     type DayEntry = {
-      entryId: Id<"timeEntries">;
+      entryId: string; // timeEntry id or "shift-<shiftId>" for schedule-only
       start: string; // "HH:mm"
       end: string | null; // "HH:mm" or null if still active
       hours: number;
-      breakMinutes: number; // break deducted for this entry
-      status: "active" | "completed" | "edited";
+      breakMinutes: number;
+      status: string; // "active" | "completed" | "edited" | "scheduled"
     };
 
     const rows: Array<{
       userId: Id<"users">;
       userName: string;
       positions: string[];
-      days: Record<string, DayEntry[]>; // "YYYY-MM-DD" → entries
+      days: Record<string, DayEntry[]>;
       totalHours: number;
       timesheetStatus: "none" | "draft" | "submitted" | "approved" | "rejected";
       timesheetId: Id<"timesheets"> | null;
@@ -469,13 +494,22 @@ export const getWeeklyTimesheetReport = query({
 
     for (const user of orgUsers) {
       const userEntries = allEntries.filter((e) => e.userId === user._id);
-      if (userEntries.length === 0) continue; // Skip users with no entries
+      const userShifts = userShiftsMap.get(user._id) ?? [];
+
+      // Skip users with nothing in the range
+      if (userEntries.length === 0 && userShifts.length === 0) continue;
 
       const days: Record<string, DayEntry[]> = {};
       let totalMinutes = 0;
 
+      // Set of dates that already have time entries (to avoid duplicating
+      // schedule data when an entry exists)
+      const datesWithEntries = new Set<string>();
+
+      // 1. Process actual time entries first
       for (const entry of userEntries) {
         if (!days[entry.date]) days[entry.date] = [];
+        datesWithEntries.add(entry.date);
 
         const clockInDate = new Date(entry.clockIn);
         const startStr = `${String(clockInDate.getHours()).padStart(2, "0")}:${String(clockInDate.getMinutes()).padStart(2, "0")}`;
@@ -483,15 +517,10 @@ export const getWeeklyTimesheetReport = query({
         let endStr: string | null = null;
         let hours = 0;
 
-        // Resolve effective break: use entry's own breakMinutes, or fall back
-        // to the linked shift's breakMinutes (from the pattern) when the
-        // entry has no break set
         let effectiveBreak = entry.breakMinutes;
         if (effectiveBreak === 0 && entry.shiftId) {
-          const linkedShift = shiftMap.get(entry.shiftId);
-          if (linkedShift?.breakMinutes) {
-            effectiveBreak = linkedShift.breakMinutes;
-          }
+          const linkedBreak = shiftBreakMap.get(entry.shiftId);
+          if (linkedBreak) effectiveBreak = linkedBreak;
         }
 
         if (entry.clockOut) {
@@ -512,7 +541,31 @@ export const getWeeklyTimesheetReport = query({
         });
       }
 
-      // Find timesheet for this user in this period
+      // 2. Fill in scheduled shifts for days without time entries
+      for (const shift of userShifts) {
+        const shiftDate = shift.startTime.slice(0, 10);
+        if (datesWithEntries.has(shiftDate)) continue; // already have actual data
+
+        if (!days[shiftDate]) days[shiftDate] = [];
+
+        const sDate = new Date(shift.startTime);
+        const eDate = new Date(shift.endTime);
+        const startStr = `${String(sDate.getUTCHours()).padStart(2, "0")}:${String(sDate.getUTCMinutes()).padStart(2, "0")}`;
+        const endStr = `${String(eDate.getUTCHours()).padStart(2, "0")}:${String(eDate.getUTCMinutes()).padStart(2, "0")}`;
+        const scheduledMins = computeScheduledMinutes(shift.startTime, shift.endTime, shift.breakMinutes);
+        const hours = Math.round((scheduledMins / 60) * 100) / 100;
+        totalMinutes += scheduledMins;
+
+        days[shiftDate].push({
+          entryId: `shift-${shift._id}`,
+          start: startStr,
+          end: endStr,
+          hours,
+          breakMinutes: shift.breakMinutes ?? 0,
+          status: "scheduled",
+        });
+      }
+
       const ts = periodTimesheets.find((t) => t.userId === user._id);
 
       rows.push({

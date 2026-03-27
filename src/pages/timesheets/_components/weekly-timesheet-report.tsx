@@ -282,6 +282,10 @@ export default function WeeklyTimesheetReport() {
           <span className="text-amber-600 dark:text-amber-400 font-bold">*</span>
           Break deducted
         </div>
+        <div className="flex items-center gap-1">
+          <span className="inline-block size-2.5 rounded-sm bg-sky-200 dark:bg-sky-800 border border-sky-400 dark:border-sky-600" />
+          Scheduled (from shift)
+        </div>
       </div>
 
       {/* Report table */}
@@ -493,33 +497,47 @@ function DayCells({
   const totalHrs = entries.reduce((s, e) => s + e.hours, 0);
   const totalBreak = entries.reduce((s, e) => s + e.breakMinutes, 0);
   const hasMultiple = entries.length > 1;
+  const isScheduled = primary.status === "scheduled";
+
+  // Scheduled entries get a subtle background tint to differentiate them
+  const scheduledBg = isScheduled ? "bg-sky-50 dark:bg-sky-950/30" : "";
 
   return (
     <>
-      <td className="px-1 py-1.5 text-center whitespace-nowrap">
-        <span className={cn(primary.status === "active" && "text-emerald-600 dark:text-emerald-400 animate-pulse")}>
+      <td className={cn("px-1 py-1.5 text-center whitespace-nowrap", scheduledBg)}>
+        <span className={cn(
+          primary.status === "active" && "text-emerald-600 dark:text-emerald-400 animate-pulse",
+          isScheduled && "text-sky-600 dark:text-sky-400",
+        )}>
           {primary.start}
         </span>
       </td>
-      <td className="px-1 py-1.5 text-center whitespace-nowrap">
+      <td className={cn("px-1 py-1.5 text-center whitespace-nowrap", scheduledBg)}>
         {primary.end ? (
-          primary.end
+          <span className={cn(isScheduled && "text-sky-600 dark:text-sky-400")}>
+            {primary.end}
+          </span>
         ) : (
           <span className="text-emerald-600 dark:text-emerald-400 text-[9px] animate-pulse">
             Active
           </span>
         )}
       </td>
-      <td className="border-r px-1 py-1.5 text-center font-medium whitespace-nowrap">
+      <td className={cn("border-r px-1 py-1.5 text-center font-medium whitespace-nowrap", scheduledBg)}>
         {totalHrs > 0 ? (
           <span
-            className={cn(hasMultiple && "underline decoration-dotted")}
+            className={cn(
+              hasMultiple && "underline decoration-dotted",
+              isScheduled && "text-sky-600 dark:text-sky-400",
+            )}
             title={
-              totalBreak > 0
-                ? `${hasMultiple ? `${entries.length} entries, ` : ""}${totalHrs.toFixed(2)} hrs (${totalBreak} min break deducted)`
-                : hasMultiple
-                  ? `${entries.length} entries totalling ${totalHrs.toFixed(2)} hrs`
-                  : undefined
+              isScheduled
+                ? `Scheduled${totalBreak > 0 ? ` (${totalBreak} min break deducted)` : ""}`
+                : totalBreak > 0
+                  ? `${hasMultiple ? `${entries.length} entries, ` : ""}${totalHrs.toFixed(2)} hrs (${totalBreak} min break deducted)`
+                  : hasMultiple
+                    ? `${entries.length} entries totalling ${totalHrs.toFixed(2)} hrs`
+                    : undefined
             }
           >
             {totalHrs.toFixed(2)}
