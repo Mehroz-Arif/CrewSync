@@ -29,6 +29,15 @@ import { UnassignedShiftOverlay, DraggableUnassignedGroup, groupUnassignedShifts
 import { Package } from "lucide-react";
 import AddAbsenceDialog from "./add-absence-dialog.tsx";
 
+const LEAVE_LABELS: Record<string, string> = {
+  annual: "Annual Leave",
+  sick: "Sick Leave",
+  compassionate: "Compassionate",
+  training: "Training",
+  unpaid: "Unpaid Leave",
+  other: "Leave",
+};
+
 type StaffMember = {
   _id: Id<"users">;
   name?: string;
@@ -65,6 +74,11 @@ export type UnavailNote = {
   endTime?: string;
 };
 
+export type LeaveNote = {
+  leaveType: string;
+  reason?: string;
+};
+
 type ScheduleGridProps = {
   weekStart: Date;
   staff: StaffMember[];
@@ -74,6 +88,7 @@ type ScheduleGridProps = {
   availabilityData: Map<string, "available" | "unavailable">;
   unavailabilityNotes?: Map<string, UnavailNote[]>;
   declineData?: Map<string, DeclineNote[]>;
+  leaveData?: Map<string, LeaveNote[]>;
   roleColorMap: Record<string, string>; // position label → hex colour
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
@@ -135,6 +150,7 @@ export default function ScheduleGrid({
   availabilityData,
   unavailabilityNotes,
   declineData,
+  leaveData,
   roleColorMap,
   onCellClick,
   onShiftClick,
@@ -522,6 +538,7 @@ export default function ScheduleGrid({
                   const avail = availabilityData.get(availKey);
                   const cellDeclines = declineData?.get(availKey) ?? [];
                   const cellUnavailNotes = isAdmin ? (unavailabilityNotes?.get(availKey) ?? []) : [];
+                  const cellLeave = leaveData?.get(availKey) ?? [];
                   return (
                     <DayCell
                       key={cellId}
@@ -561,6 +578,19 @@ export default function ScheduleGrid({
                           onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}
                           onAdminAccept={() => handleAdminAccept(shift.membershipId)}
                         />
+                      ))}
+                      {/* Leave badges */}
+                      {cellLeave.map((l, i) => (
+                        <div
+                          key={`leave-${i}`}
+                          className="rounded border border-sky-400/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-700 dark:text-sky-300"
+                          title={`${LEAVE_LABELS[l.leaveType] ?? l.leaveType}${l.reason ? `: ${l.reason}` : ""}`}
+                        >
+                          <span className="font-medium">{LEAVE_LABELS[l.leaveType] ?? l.leaveType}</span>
+                          {l.reason && (
+                            <span className="opacity-75 truncate"> {l.reason}</span>
+                          )}
+                        </div>
                       ))}
                       {/* Unavailability notes (admin only) */}
                       {cellUnavailNotes.map((u, i) => (

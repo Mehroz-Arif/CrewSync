@@ -221,6 +221,12 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     endDate: format(addDays(weekStart, 7), "yyyy-MM-dd"),
   });
 
+  // Fetch approved leave for the week
+  const approvedLeave = useQuery(api.leaveRequests.getApprovedByDateRange, {
+    startDate: format(weekStart, "yyyy-MM-dd"),
+    endDate: format(addDays(weekStart, 6), "yyyy-MM-dd"),
+  });
+
   const setPublished = useMutation(api.shifts.setPublished);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -350,6 +356,35 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     }
     return map;
   }, [declines]);
+
+  // Build leave data map: "userId__date" → leave entries (expand multi-day ranges)
+  type LeaveNote = { leaveType: string; reason?: string };
+  const leaveData = useMemo(() => {
+    const map = new Map<string, LeaveNote[]>();
+    if (!approvedLeave) return map;
+    for (const lr of approvedLeave) {
+      // Walk each day in the leave range that overlaps with the displayed week
+      const rangeStart = format(weekStart, "yyyy-MM-dd");
+      const rangeEnd = format(addDays(weekStart, 6), "yyyy-MM-dd");
+      const effectiveStart = lr.startDate > rangeStart ? lr.startDate : rangeStart;
+      const effectiveEnd = lr.endDate < rangeEnd ? lr.endDate : rangeEnd;
+
+      let cursor = parseISO(effectiveStart);
+      const end = parseISO(effectiveEnd);
+      while (cursor <= end) {
+        const dateStr = format(cursor, "yyyy-MM-dd");
+        const key = `${lr.userId}__${dateStr}`;
+        const existing = map.get(key) ?? [];
+        existing.push({
+          leaveType: lr.leaveType,
+          reason: lr.reason,
+        });
+        map.set(key, existing);
+        cursor = addDays(cursor, 1);
+      }
+    }
+    return map;
+  }, [approvedLeave, weekStart]);
 
   // Check if any assigned shifts in this week are unpublished or published
   const { hasUnpublished, hasPublished } = useMemo(() => {
@@ -543,6 +578,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         availabilityData={availabilityData}
         unavailabilityNotes={unavailabilityNotes}
         declineData={declineData}
+        leaveData={leaveData}
         roleColorMap={roleColorMap}
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}
