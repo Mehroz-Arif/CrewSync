@@ -52,12 +52,14 @@ const NAV_ITEMS = [
     icon: Clock,
     path: "/timesheets",
     enabled: true,
+    adminOnly: true,
   },
   {
     label: "Leave",
     icon: CalendarOff,
     path: "/leave",
     enabled: true,
+    hideFromSubcontractors: true,
   },
   {
     label: "Calendar",
@@ -212,6 +214,12 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           }
           if ("adminOnly" in item && item.adminOnly) {
             return isRealAdmin && !isPreviewingAsStaff;
+          }
+          if ("hideFromSubcontractors" in item && item.hideFromSubcontractors) {
+            // Hide from non-admin subcontractors
+            if (!isRealAdmin && user?.employmentType === "subcontractor") {
+              return false;
+            }
           }
           return true;
         }).map((item) => {
