@@ -12,6 +12,7 @@ import {
   Pin,
   MessageCircle,
   Cake,
+  Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -101,6 +102,7 @@ function PostCard({
   const commentCount = post.commentsCount ?? 0;
   const commentsOn = post.commentsEnabled !== false;
   const isBirthday = post.category === "birthday";
+  const isSystemPost = post.category === "birthday" || post.category === "feedback";
 
   const handleLike = async () => {
     try {
@@ -133,9 +135,20 @@ function PostCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-xs shrink-0">
-            {post.authorName.charAt(0).toUpperCase()}
-          </div>
+          {isSystemPost ? (
+            <div className={cn(
+              "size-9 rounded-full flex items-center justify-center font-heading font-bold text-xs shrink-0",
+              isBirthday
+                ? "bg-pink-500/15 text-pink-600 dark:text-pink-400"
+                : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+            )}>
+              <Hash className="size-4" />
+            </div>
+          ) : (
+            <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-xs shrink-0">
+              {post.authorName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">{post.authorName}</p>
             <p className="text-xs text-muted-foreground">

@@ -87,11 +87,26 @@ export const list = query({
         const imageUrl = post.imageStorageId
           ? await ctx.storage.getUrl(post.imageStorageId)
           : null;
+
+        // For system posts (birthday, feedback), use #team[orgName] as author
+        let displayName = author?.name ?? "Unknown";
+        let isSystemPost = false;
+        if (post.category === "birthday" || post.category === "feedback") {
+          isSystemPost = true;
+          if (author?.organizationId) {
+            const org = await ctx.db.get(author.organizationId);
+            if (org?.name) {
+              const orgFirstWord = org.name.split(" ")[0] ?? org.name;
+              displayName = `#team${orgFirstWord}`;
+            }
+          }
+        }
+
         return {
           ...post,
-          authorName: author?.name ?? "Unknown",
-          authorAvatarUrl: author?.avatarUrl,
-          authorDepartment: author?.department,
+          authorName: displayName,
+          authorAvatarUrl: isSystemPost ? undefined : author?.avatarUrl,
+          authorDepartment: isSystemPost ? undefined : author?.department,
           imageUrl,
         };
       })
