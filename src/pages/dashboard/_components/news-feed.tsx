@@ -86,6 +86,7 @@ function PostCard({
     authorDepartment?: string;
     authorId: Id<"users">;
     imageUrl?: string | null;
+    birthdayUserName?: string;
   };
   isLiked: boolean;
   currentUserId: Id<"users"> | undefined;
@@ -133,8 +134,15 @@ function PostCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-xs shrink-0">
-            {post.authorName.charAt(0).toUpperCase()}
+          <div className={cn(
+            "size-9 rounded-full flex items-center justify-center font-heading font-bold text-xs shrink-0",
+            isBirthday
+              ? "bg-pink-500/15 text-pink-600 dark:text-pink-400"
+              : "bg-primary/10 text-primary"
+          )}>
+            {isBirthday && post.birthdayUserName
+              ? (post.birthdayUserName.split(" ").pop()?.charAt(0) ?? "?").toUpperCase()
+              : post.authorName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium truncate">{post.authorName}</p>
