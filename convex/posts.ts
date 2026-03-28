@@ -87,19 +87,12 @@ export const list = query({
         const imageUrl = post.imageStorageId
           ? await ctx.storage.getUrl(post.imageStorageId)
           : null;
-        // For birthday posts, resolve the birthday user's name
-        let birthdayUserName: string | undefined;
-        if (post.category === "birthday" && post.birthdayUserId) {
-          const birthdayUser = await ctx.db.get(post.birthdayUserId);
-          birthdayUserName = birthdayUser?.name ?? undefined;
-        }
         return {
           ...post,
           authorName: author?.name ?? "Unknown",
           authorAvatarUrl: author?.avatarUrl,
           authorDepartment: author?.department,
           imageUrl,
-          birthdayUserName,
         };
       })
     );
