@@ -382,13 +382,15 @@ export const checkBirthdays = mutation({
     for (const user of birthdayUsers) {
       if (existingBirthdayUserIds.has(user._id)) continue;
 
-      const firstName = user.name?.split(" ")[0] ?? "team member";
+      const nameParts = user.name?.split(" ") ?? [];
+      const firstName = nameParts[0] ?? "team member";
+      const surnameInitial = nameParts.length > 1 ? ` ${nameParts[nameParts.length - 1].charAt(0)}` : "";
       const message =
         BIRTHDAY_MESSAGES[Math.floor(Math.random() * BIRTHDAY_MESSAGES.length)];
 
       await ctx.db.insert("posts", {
         authorId: caller._id,
-        title: `Happy Birthday, ${firstName}! 🎂`,
+        title: `Happy Birthday, ${firstName}${surnameInitial}! 🎂`,
         body: message,
         category: "birthday",
         pinned: false,
