@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import NewsFeed from "./_components/news-feed.tsx";
 import CreatePostForm from "./_components/create-post-form.tsx";
 import PinnedPosts from "./_components/pinned-posts.tsx";
 import NextShiftCard from "./_components/next-shift-card.tsx";
 import RecognitionWall from "./_components/recognition-wall.tsx";
 import GiveRecognitionDialog from "./_components/give-recognition-dialog.tsx";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { Button } from "@/components/ui/button.tsx";
 import { Award } from "lucide-react";
@@ -17,6 +17,16 @@ export default function DashboardPage() {
   const [recognitionOpen, setRecognitionOpen] = useState(false);
 
   const isAdmin = (user?.role === "admin" || user?.isSuperAdmin) && !isPreviewingAsStaff;
+
+  // Auto-check for birthdays once per dashboard visit
+  const checkBirthdays = useMutation(api.posts.checkBirthdays);
+  const birthdayChecked = useRef(false);
+  useEffect(() => {
+    if (user && !birthdayChecked.current) {
+      birthdayChecked.current = true;
+      checkBirthdays().catch(() => { /* ignore */ });
+    }
+  }, [user, checkBirthdays]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">

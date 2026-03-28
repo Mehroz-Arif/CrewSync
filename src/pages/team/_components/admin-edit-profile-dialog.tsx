@@ -43,6 +43,7 @@ type ProfileData = {
   certifications?: string[];
   hourlyRate?: number;
   notes?: string;
+  dateOfBirth?: string;
 };
 
 type Props = {
@@ -66,6 +67,7 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
     emergencyContactPhone: profile.emergencyContactPhone ?? "",
     hourlyRate: profile.hourlyRate?.toString() ?? "",
     notes: profile.notes ?? "",
+    dateOfBirth: profile.dateOfBirth ?? "",
   });
   const [selectedPositions, setSelectedPositions] = useState<string[]>(profile.positions ?? []);
   const [skills, setSkills] = useState<string[]>(profile.skills ?? []);
@@ -115,6 +117,7 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
         emergencyContactPhone: form.emergencyContactPhone || undefined,
         hourlyRate: form.hourlyRate ? parseFloat(form.hourlyRate) : undefined,
         notes: form.notes || undefined,
+        dateOfBirth: form.dateOfBirth || undefined,
         skills: skills.length > 0 ? skills : undefined,
         certifications: certifications.length > 0 ? certifications : undefined,
       });
@@ -214,6 +217,10 @@ export default function AdminEditProfileDialog({ open, onOpenChange, profile }: 
               <div className="space-y-2">
                 <Label>Start Date</Label>
                 <Input type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Date of Birth</Label>
+                <Input type="date" value={form.dateOfBirth} onChange={(e) => set("dateOfBirth", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Hourly Rate</Label>

@@ -23,7 +23,8 @@ export const create = mutation({
       v.literal("update"),
       v.literal("shoutout"),
       v.literal("general"),
-      v.literal("feedback")
+      v.literal("feedback"),
+      v.literal("birthday")
     ),
     pinned: v.optional(v.boolean()),
     commentsEnabled: v.optional(v.boolean()),
@@ -319,5 +320,85 @@ export const getStats = query({
       announcements,
       shoutouts,
     };
+  },
+});
+
+const BIRTHDAY_MESSAGES = [
+  "Wishing you a fantastic birthday filled with joy and laughter! Have an amazing day!",
+  "Hope your special day brings you all the happiness and smiles in the world!",
+  "Another year of being awesome! Enjoy every moment of your special day!",
+  "May this birthday bring you nothing but wonderful surprises and great memories!",
+  "Sending you warm birthday wishes and lots of love from the whole team!",
+];
+
+/** Check for staff birthdays today and auto-post celebrations */
+export const checkBirthdays = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    }
+
+    const caller = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!caller) {
+      throw new ConvexError({ message: "User not found", code: "NOT_FOUND" });
+    }
+
+    // Get today's month-day (MM-DD) in UTC
+    const now = new Date();
+    const todayMD = `${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+
+    // Find users whose dateOfBirth matches today
+    const allUsers = await ctx.db.query("users").collect();
+    const birthdayUsers = allUsers.filter((u) => {
+      if (!u.dateOfBirth) return false;
+      // dateOfBirth is "YYYY-MM-DD", extract MM-DD
+      const parts = u.dateOfBirth.split("-");
+      if (parts.length < 3) return false;
+      return `${parts[1]}-${parts[2]}` === todayMD;
+    });
+
+    if (birthdayUsers.length === 0) return 0;
+
+    // Check which birthday posts already exist today by looking at recent posts
+    const todayStart = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()).getTime();
+    const recentPosts = await ctx.db.query("posts").order("desc").take(200);
+    const existingBirthdayUserIds = new Set(
+      recentPosts
+        .filter(
+          (p) =>
+            p.category === "birthday" &&
+            p.birthdayUserId &&
+            p._creationTime >= todayStart
+        )
+        .map((p) => p.birthdayUserId)
+    );
+
+    let created = 0;
+    for (const user of birthdayUsers) {
+      if (existingBirthdayUserIds.has(user._id)) continue;
+
+      const firstName = user.name?.split(" ")[0] ?? "team member";
+      const message =
+        BIRTHDAY_MESSAGES[Math.floor(Math.random() * BIRTHDAY_MESSAGES.length)];
+
+      await ctx.db.insert("posts", {
+        authorId: caller._id,
+        title: `Happy Birthday, ${firstName}! 🎂`,
+        body: message,
+        category: "birthday",
+        pinned: false,
+        likesCount: 0,
+        commentsEnabled: true,
+        birthdayUserId: user._id,
+      });
+      created++;
+    }
+
+    return created;
   },
 });

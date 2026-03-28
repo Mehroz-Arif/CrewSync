@@ -42,6 +42,7 @@ export const getProfile = query({
       emergencyContactPhone: isAdmin || isSelf ? target.emergencyContactPhone : undefined,
       hourlyRate: isAdmin ? target.hourlyRate : undefined,
       notes: isAdmin ? target.notes : undefined,
+      dateOfBirth: isAdmin || isSelf ? target.dateOfBirth : undefined,
       suspended: target.suspended,
       isSuperAdmin: target.isSuperAdmin,
     };
@@ -101,6 +102,7 @@ export const updateProfileAsAdmin = mutation({
     certifications: v.optional(v.array(v.string())),
     hourlyRate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    dateOfBirth: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();

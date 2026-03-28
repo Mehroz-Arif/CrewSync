@@ -11,6 +11,7 @@ import {
   Trash2,
   Pin,
   MessageCircle,
+  Cake,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -57,6 +58,11 @@ const CATEGORY_CONFIG: Record<
     icon: MessageSquareQuote,
     color: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10",
   },
+  birthday: {
+    label: "Birthday",
+    icon: Cake,
+    color: "text-pink-600 dark:text-pink-400 bg-pink-500/10",
+  },
 };
 
 function PostCard({
@@ -94,6 +100,7 @@ function PostCard({
   const [showComments, setShowComments] = useState(false);
   const commentCount = post.commentsCount ?? 0;
   const commentsOn = post.commentsEnabled !== false;
+  const isBirthday = post.category === "birthday";
 
   const handleLike = async () => {
     try {
@@ -119,7 +126,10 @@ function PostCard({
   };
 
   return (
-    <article className="bg-card border rounded-xl p-5 space-y-3 transition-shadow hover:shadow-sm">
+    <article className={cn(
+      "bg-card border rounded-xl p-5 space-y-3 transition-shadow hover:shadow-sm",
+      isBirthday && "border-pink-300 dark:border-pink-500/40 bg-gradient-to-br from-pink-50/60 to-card dark:from-pink-950/20 dark:to-card"
+    )}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">

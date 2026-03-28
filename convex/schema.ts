@@ -26,6 +26,7 @@ export default defineSchema({
     certifications: v.optional(v.array(v.string())),
     hourlyRate: v.optional(v.number()),
     notes: v.optional(v.string()), // admin-only notes
+    dateOfBirth: v.optional(v.string()), // "YYYY-MM-DD"
   }).index("by_token", ["tokenIdentifier"]),
 
   organizations: defineTable({
@@ -55,12 +56,14 @@ export default defineSchema({
       v.literal("update"),
       v.literal("shoutout"),
       v.literal("general"),
-      v.literal("feedback")
+      v.literal("feedback"),
+      v.literal("birthday")
     ),
     pinned: v.boolean(),
     likesCount: v.number(),
     commentsCount: v.optional(v.number()),
     commentsEnabled: v.optional(v.boolean()), // false = comments turned off
+    birthdayUserId: v.optional(v.id("users")), // links birthday posts to the birthday person
     imageStorageId: v.optional(v.id("_storage")),
   }).index("by_author", ["authorId"]),
 
