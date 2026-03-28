@@ -59,6 +59,7 @@ export default defineSchema({
     ),
     pinned: v.boolean(),
     likesCount: v.number(),
+    commentsCount: v.optional(v.number()),
     imageStorageId: v.optional(v.id("_storage")),
   }).index("by_author", ["authorId"]),
 
@@ -68,6 +69,23 @@ export default defineSchema({
   })
     .index("by_post", ["postId"])
     .index("by_user_and_post", ["userId", "postId"]),
+
+  postComments: defineTable({
+    postId: v.id("posts"),
+    authorId: v.id("users"),
+    body: v.string(),
+    parentId: v.optional(v.id("postComments")), // for replies
+    likesCount: v.number(),
+  })
+    .index("by_post", ["postId"])
+    .index("by_parent", ["parentId"]),
+
+  postCommentLikes: defineTable({
+    commentId: v.id("postComments"),
+    userId: v.id("users"),
+  })
+    .index("by_comment", ["commentId"])
+    .index("by_user_and_comment", ["userId", "commentId"]),
 
   conversations: defineTable({
     name: v.optional(v.string()),

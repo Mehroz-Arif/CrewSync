@@ -10,6 +10,7 @@ import {
   MessageSquareQuote,
   Trash2,
   Pin,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -24,6 +25,8 @@ import {
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
+import { useState } from "react";
+import PostComments from "./post-comments.tsx";
 
 const CATEGORY_CONFIG: Record<
   string,
@@ -69,6 +72,7 @@ function PostCard({
     category: string;
     pinned: boolean;
     likesCount: number;
+    commentsCount?: number;
     authorName: string;
     authorAvatarUrl?: string;
     authorDepartment?: string;
@@ -83,6 +87,8 @@ function PostCard({
   const categoryInfo = CATEGORY_CONFIG[post.category] ?? CATEGORY_CONFIG.general;
   const CategoryIcon = categoryInfo.icon;
   const isOwner = currentUserId === post.authorId;
+  const [showComments, setShowComments] = useState(false);
+  const commentCount = post.commentsCount ?? 0;
 
   const handleLike = async () => {
     try {
@@ -165,22 +171,39 @@ function PostCard({
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-1">
-        <button
-          onClick={handleLike}
-          className={cn(
-            "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-md px-2 py-1 -ml-2",
-            isLiked
-              ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
-              : "text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
-          )}
-        >
-          <Heart
-            className={cn("size-4", isLiked && "fill-current")}
-          />
-          {post.likesCount > 0 && (
-            <span className="tabular-nums">{post.likesCount}</span>
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleLike}
+            className={cn(
+              "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-md px-2 py-1 -ml-2",
+              isLiked
+                ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                : "text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+            )}
+          >
+            <Heart
+              className={cn("size-4", isLiked && "fill-current")}
+            />
+            {post.likesCount > 0 && (
+              <span className="tabular-nums">{post.likesCount}</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowComments((prev) => !prev)}
+            className={cn(
+              "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-md px-2 py-1",
+              showComments
+                ? "text-primary hover:bg-primary/10"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+            )}
+          >
+            <MessageCircle className="size-4" />
+            {commentCount > 0 && (
+              <span className="tabular-nums">{commentCount}</span>
+            )}
+          </button>
+        </div>
 
         {isOwner && (
           <button
@@ -191,6 +214,11 @@ function PostCard({
           </button>
         )}
       </div>
+
+      {/* Comments section */}
+      {showComments && (
+        <PostComments postId={post._id} currentUserId={currentUserId} />
+      )}
     </article>
   );
 }

@@ -17,6 +17,7 @@ import type * as leaveRequests from "../leaveRequests.js";
 import type * as messaging from "../messaging.js";
 import type * as organizations from "../organizations.js";
 import type * as positions from "../positions.js";
+import type * as postComments from "../postComments.js";
 import type * as posts from "../posts.js";
 import type * as profiles from "../profiles.js";
 import type * as recognitions from "../recognitions.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   messaging: typeof messaging;
   organizations: typeof organizations;
   positions: typeof positions;
+  postComments: typeof postComments;
   posts: typeof posts;
   profiles: typeof profiles;
   recognitions: typeof recognitions;

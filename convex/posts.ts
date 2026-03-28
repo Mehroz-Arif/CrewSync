@@ -266,6 +266,22 @@ export const deletePost = mutation({
       await ctx.db.delete(like._id);
     }
 
+    // Delete associated comments and their likes
+    const comments = await ctx.db
+      .query("postComments")
+      .withIndex("by_post", (q) => q.eq("postId", args.postId))
+      .collect();
+    for (const comment of comments) {
+      const commentLikes = await ctx.db
+        .query("postCommentLikes")
+        .withIndex("by_comment", (q) => q.eq("commentId", comment._id))
+        .collect();
+      for (const cl of commentLikes) {
+        await ctx.db.delete(cl._id);
+      }
+      await ctx.db.delete(comment._id);
+    }
+
     // Delete stored image if present
     if (post.imageStorageId) {
       await ctx.storage.delete(post.imageStorageId);
