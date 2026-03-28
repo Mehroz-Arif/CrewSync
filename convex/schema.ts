@@ -60,6 +60,7 @@ export default defineSchema({
     pinned: v.boolean(),
     likesCount: v.number(),
     commentsCount: v.optional(v.number()),
+    commentsEnabled: v.optional(v.boolean()), // false = comments turned off
     imageStorageId: v.optional(v.id("_storage")),
   }).index("by_author", ["authorId"]),
 

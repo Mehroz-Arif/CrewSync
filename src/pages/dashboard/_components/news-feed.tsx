@@ -63,6 +63,7 @@ function PostCard({
   post,
   isLiked,
   currentUserId,
+  isAdmin,
 }: {
   post: {
     _id: Id<"posts">;
@@ -73,6 +74,7 @@ function PostCard({
     pinned: boolean;
     likesCount: number;
     commentsCount?: number;
+    commentsEnabled?: boolean;
     authorName: string;
     authorAvatarUrl?: string;
     authorDepartment?: string;
@@ -81,14 +83,17 @@ function PostCard({
   };
   isLiked: boolean;
   currentUserId: Id<"users"> | undefined;
+  isAdmin: boolean;
 }) {
   const toggleLike = useMutation(api.posts.toggleLike);
   const deletePost = useMutation(api.posts.deletePost);
   const categoryInfo = CATEGORY_CONFIG[post.category] ?? CATEGORY_CONFIG.general;
   const CategoryIcon = categoryInfo.icon;
   const isOwner = currentUserId === post.authorId;
+  const canDelete = isOwner || isAdmin;
   const [showComments, setShowComments] = useState(false);
   const commentCount = post.commentsCount ?? 0;
+  const commentsOn = post.commentsEnabled !== false;
 
   const handleLike = async () => {
     try {
@@ -189,23 +194,25 @@ function PostCard({
             )}
           </button>
 
-          <button
-            onClick={() => setShowComments((prev) => !prev)}
-            className={cn(
-              "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-md px-2 py-1",
-              showComments
-                ? "text-primary hover:bg-primary/10"
-                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-            )}
-          >
-            <MessageCircle className="size-4" />
-            {commentCount > 0 && (
-              <span className="tabular-nums">{commentCount}</span>
-            )}
-          </button>
+          {commentsOn && (
+            <button
+              onClick={() => setShowComments((prev) => !prev)}
+              className={cn(
+                "flex items-center gap-1.5 text-xs font-medium transition-colors rounded-md px-2 py-1",
+                showComments
+                  ? "text-primary hover:bg-primary/10"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+              )}
+            >
+              <MessageCircle className="size-4" />
+              {commentCount > 0 && (
+                <span className="tabular-nums">{commentCount}</span>
+              )}
+            </button>
+          )}
         </div>
 
-        {isOwner && (
+        {canDelete && (
           <button
             onClick={handleDelete}
             className="text-muted-foreground hover:text-destructive transition-colors rounded-md p-1"
@@ -216,8 +223,8 @@ function PostCard({
       </div>
 
       {/* Comments section */}
-      {showComments && (
-        <PostComments postId={post._id} currentUserId={currentUserId} />
+      {showComments && commentsOn && (
+        <PostComments postId={post._id} currentUserId={currentUserId} isAdmin={isAdmin} />
       )}
     </article>
   );
@@ -233,6 +240,7 @@ export default function NewsFeed() {
   const currentUser = useQuery(api.users.getCurrentUser);
 
   const likedPostIds = new Set(userLikes ?? []);
+  const isAdmin = currentUser?.role === "admin" || currentUser?.isSuperAdmin === true;
 
   if (status === "LoadingFirstPage") {
     return (
@@ -268,6 +276,7 @@ export default function NewsFeed() {
           post={post}
           isLiked={likedPostIds.has(post._id)}
           currentUserId={currentUser?._id}
+          isAdmin={isAdmin}
         />
       ))}
 

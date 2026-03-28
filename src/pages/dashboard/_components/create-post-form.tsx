@@ -18,8 +18,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog.tsx";
-import { Plus, ImagePlus, X } from "lucide-react";
+import { Plus, ImagePlus, X, MessageCircle } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
@@ -44,6 +45,7 @@ export default function CreatePostForm() {
   const [category, setCategory] = useState<Category>("general");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,6 +82,7 @@ export default function CreatePostForm() {
     setTitle("");
     setBody("");
     setCategory("general");
+    setCommentsEnabled(true);
     removeImage();
   }
 
@@ -113,6 +116,7 @@ export default function CreatePostForm() {
         title: title.trim(),
         body: body.trim(),
         category,
+        commentsEnabled,
         imageStorageId,
       });
       toast.success("Post published!");
@@ -229,6 +233,18 @@ export default function CreatePostForm() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Comments toggle */}
+          <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="size-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Allow comments</span>
+            </div>
+            <Switch
+              checked={commentsEnabled}
+              onCheckedChange={setCommentsEnabled}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

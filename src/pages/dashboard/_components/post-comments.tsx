@@ -28,6 +28,7 @@ function CommentItem({
   isLiked,
   likedCommentIds,
   currentUserId,
+  isAdmin,
   onReply,
 }: {
   comment: CommentData;
@@ -35,12 +36,14 @@ function CommentItem({
   isLiked: boolean;
   likedCommentIds: Set<string>;
   currentUserId: Id<"users"> | undefined;
+  isAdmin: boolean;
   onReply: (parentId: Id<"postComments">) => void;
 }) {
   const toggleLike = useMutation(api.postComments.toggleLike);
   const deleteComment = useMutation(api.postComments.deleteComment);
   const [showReplies, setShowReplies] = useState(replies.length <= 2);
   const isOwner = currentUserId === comment.authorId;
+  const canDelete = isOwner || isAdmin;
 
   const handleLike = async () => {
     try {
@@ -108,7 +111,7 @@ function CommentItem({
               Reply
             </button>
 
-            {isOwner && (
+            {canDelete && (
               <button
                 onClick={handleDelete}
                 className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
@@ -150,6 +153,7 @@ function CommentItem({
                   reply={reply}
                   isLiked={likedCommentIds.has(reply._id)}
                   currentUserId={currentUserId}
+                  isAdmin={isAdmin}
                 />
               ))}
             </>
@@ -164,14 +168,17 @@ function ReplyItem({
   reply,
   isLiked,
   currentUserId,
+  isAdmin,
 }: {
   reply: CommentData;
   isLiked: boolean;
   currentUserId: Id<"users"> | undefined;
+  isAdmin: boolean;
 }) {
   const toggleLike = useMutation(api.postComments.toggleLike);
   const deleteComment = useMutation(api.postComments.deleteComment);
   const isOwner = currentUserId === reply.authorId;
+  const canDelete = isOwner || isAdmin;
 
   const handleLike = async () => {
     try {
@@ -227,7 +234,7 @@ function ReplyItem({
               <span className="tabular-nums">{reply.likesCount}</span>
             )}
           </button>
-          {isOwner && (
+          {canDelete && (
             <button
               onClick={handleDelete}
               className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
@@ -244,9 +251,11 @@ function ReplyItem({
 export default function PostComments({
   postId,
   currentUserId,
+  isAdmin,
 }: {
   postId: Id<"posts">;
   currentUserId: Id<"users"> | undefined;
+  isAdmin: boolean;
 }) {
   const comments = useQuery(api.postComments.getByPost, { postId });
   const userCommentLikes = useQuery(api.postComments.getUserLikesByPost, { postId });
@@ -325,6 +334,7 @@ export default function PostComments({
               isLiked={likedCommentIds.has(comment._id)}
               likedCommentIds={likedCommentIds}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
               onReply={(parentId) => setReplyingTo(parentId)}
             />
           ))}

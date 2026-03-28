@@ -26,6 +26,7 @@ export const create = mutation({
       v.literal("feedback")
     ),
     pinned: v.optional(v.boolean()),
+    commentsEnabled: v.optional(v.boolean()),
     imageStorageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
@@ -55,6 +56,7 @@ export const create = mutation({
       category: args.category,
       pinned: args.pinned ?? false,
       likesCount: 0,
+      commentsEnabled: args.commentsEnabled ?? true,
       imageStorageId: args.imageStorageId,
     });
   },

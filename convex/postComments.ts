@@ -26,6 +26,11 @@ export const addComment = mutation({
       throw new ConvexError({ message: "Post not found", code: "NOT_FOUND" });
     }
 
+    // Block comments if the post author turned them off
+    if (post.commentsEnabled === false) {
+      throw new ConvexError({ message: "Comments are turned off for this post", code: "FORBIDDEN" });
+    }
+
     // If this is a reply, verify the parent comment exists and belongs to the same post
     if (args.parentId) {
       const parent = await ctx.db.get(args.parentId);
