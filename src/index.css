@@ -139,21 +139,32 @@
   }
 }
 
-/* Print styles for timesheet summary report */
+/* Print styles for timesheet reports */
 @media print {
   body {
     background: white !important;
     color: black !important;
     font-size: 10px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  /* Hide sidebar, navbar, and non-printable elements */
-  nav, aside, header, [data-sidebar], .print\\:hidden {
+  /* Hide sidebar, navbar, mobile overlay, and non-printable elements */
+  nav,
+  aside,
+  header,
+  [data-sidebar],
+  .print\:hidden,
+  .print\:\!hidden {
     display: none !important;
   }
-  /* Make the main content full width */
+  /* Remove sidebar margin from main content wrapper */
+  .lg\:ml-64 {
+    margin-left: 0 !important;
+  }
+  /* Make the main content full width with minimal margins */
   main {
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 8px !important;
     width: 100% !important;
     max-width: 100% !important;
   }
@@ -163,12 +174,17 @@
     border-collapse: collapse !important;
     font-size: 9px !important;
   }
-  th, td {
+  th,
+  td {
     padding: 4px 6px !important;
     border: 1px solid #ddd !important;
   }
   th {
     background: #f3f4f6 !important;
     font-weight: 600 !important;
+  }
+  /* Prevent page breaks inside table rows */
+  tr {
+    page-break-inside: avoid !important;
   }
 }

@@ -284,14 +284,14 @@ function DashboardShell() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r bg-card fixed inset-y-0 left-0 z-30">
+      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r bg-card fixed inset-y-0 left-0 z-30 print:!hidden">
         <SidebarContent />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden print:!hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -299,7 +299,7 @@ function DashboardShell() {
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transition-transform duration-200 lg:hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transition-transform duration-200 lg:hidden print:!hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -307,9 +307,9 @@ function DashboardShell() {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen print:!ml-0">
         {/* Mobile header */}
-        <header className="lg:hidden sticky top-0 z-20 bg-card border-b px-4 h-14 flex items-center gap-3">
+        <header className="lg:hidden sticky top-0 z-20 bg-card border-b px-4 h-14 flex items-center gap-3 print:!hidden">
           <Button
             variant="ghost"
             size="icon-sm"
