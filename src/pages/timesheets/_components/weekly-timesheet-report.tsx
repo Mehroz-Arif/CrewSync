@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Printer,
   Download,
+  FileText,
   ClipboardList,
   Check,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import {
   EmptyTitle,
   EmptyDescription as EmptyDesc,
 } from "@/components/ui/empty.tsx";
+import { exportWeeklyReportPDF } from "../_lib/export-pdf.ts";
 
 type DatePreset = "last_week" | "last_month" | "custom";
 
@@ -64,6 +66,7 @@ export default function WeeklyTimesheetReport() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const reviewTimesheet = useMutation(api.timeTracking.reviewTimesheet);
+  const org = useQuery(api.organizations.getMyOrganization);
 
   const weekStart = useMemo(() => {
     const now = addWeeks(new Date(), weekOffset);
@@ -172,6 +175,19 @@ export default function WeeklyTimesheetReport() {
 
   const handlePrint = () => window.print();
 
+  // PDF export
+  const handleExportPDF = () => {
+    if (!filtered.length) return;
+    exportWeeklyReportPDF({
+      data: filtered,
+      days,
+      weekStart,
+      weekEnd,
+      weekNumber,
+      orgName: org?.name,
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -243,6 +259,15 @@ export default function WeeklyTimesheetReport() {
         >
           <Download className="size-3.5 mr-1.5" />
           Export CSV
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleExportPDF}
+          disabled={!filtered.length}
+        >
+          <FileText className="size-3.5 mr-1.5" />
+          Export PDF
         </Button>
         <Button variant="secondary" size="sm" onClick={handlePrint}>
           <Printer className="size-3.5 mr-1.5" />

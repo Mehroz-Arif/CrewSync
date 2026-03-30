@@ -31,6 +31,7 @@ import {
   ChevronRight,
   Printer,
   Download,
+  FileText,
   ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
@@ -41,6 +42,7 @@ import {
   EmptyTitle,
   EmptyDescription as EmptyDesc,
 } from "@/components/ui/empty.tsx";
+import { exportTimesheetSummaryPDF } from "../_lib/export-pdf.ts";
 
 type DatePreset = "this_week" | "last_week" | "custom";
 
@@ -68,6 +70,7 @@ export default function TimesheetSummary() {
   const [positionFilter, setPositionFilter] = useState("all");
   const [employmentFilter, setEmploymentFilter] = useState("all");
   const tableRef = useRef<HTMLDivElement>(null);
+  const org = useQuery(api.organizations.getMyOrganization);
 
   const weekStart = useMemo(() => {
     const now = addWeeks(new Date(), weekOffset);
@@ -192,6 +195,17 @@ export default function TimesheetSummary() {
     link.click();
   };
 
+  // PDF export
+  const handleExportPDF = () => {
+    if (!filtered.length) return;
+    exportTimesheetSummaryPDF({
+      data: filtered,
+      weekStart,
+      weekEnd,
+      orgName: org?.name,
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls row */}
@@ -262,6 +276,10 @@ export default function TimesheetSummary() {
         <Button variant="secondary" size="sm" onClick={handleExportCSV} disabled={!filtered.length}>
           <Download className="size-3.5 mr-1.5" />
           Export CSV
+        </Button>
+        <Button variant="secondary" size="sm" onClick={handleExportPDF} disabled={!filtered.length}>
+          <FileText className="size-3.5 mr-1.5" />
+          Export PDF
         </Button>
         <Button variant="secondary" size="sm" onClick={handlePrint}>
           <Printer className="size-3.5 mr-1.5" />

@@ -16,8 +16,9 @@ import {
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import { format, startOfWeek, endOfWeek, addWeeks, addDays } from "date-fns";
-import { ChevronLeft, ChevronRight, Send, Clock, FileCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, Clock, FileCheck, FileText } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
+import { exportMyTimesheetPDF } from "../_lib/export-pdf.ts";
 
 /** Format minutes into "Xh Ym" */
 function formatMinutes(mins: number): string {
@@ -42,6 +43,8 @@ const STATUS_MAP = {
 
 export default function MyTimesheet() {
   const [weekOffset, setWeekOffset] = useState(0);
+  const currentUser = useQuery(api.users.getCurrentUser);
+  const org = useQuery(api.organizations.getMyOrganization);
 
   const weekStart = useMemo(() => {
     const now = addWeeks(new Date(), weekOffset);
@@ -113,6 +116,19 @@ export default function MyTimesheet() {
 
   const statusInfo = timesheet ? STATUS_MAP[timesheet.status] : null;
 
+  // PDF export
+  const handleExportPDF = () => {
+    if (!entries || entries.length === 0) return;
+    exportMyTimesheetPDF({
+      entries,
+      weekStart,
+      weekEnd,
+      userName: currentUser?.name ?? "Staff",
+      orgName: org?.name,
+      status: statusInfo?.label,
+    });
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -122,6 +138,15 @@ export default function MyTimesheet() {
             My Timesheet
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={handleExportPDF}
+              disabled={!entries || entries.length === 0}
+              title="Export PDF"
+            >
+              <FileText className="size-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon-sm"
