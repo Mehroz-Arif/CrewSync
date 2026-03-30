@@ -232,6 +232,31 @@ export default function NewConversationDialog({
               />
             </div>
 
+            {/* Select all / Deselect all */}
+            {filteredUsers.length > 0 && (
+              <button
+                type="button"
+                className="text-xs font-medium text-primary hover:underline cursor-pointer"
+                onClick={() => {
+                  const allFilteredIds = filteredUsers.map((u) => u._id);
+                  const allSelected = allFilteredIds.every((id) => selectedIds.has(id));
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (allSelected) {
+                      for (const id of allFilteredIds) next.delete(id);
+                    } else {
+                      for (const id of allFilteredIds) next.add(id);
+                    }
+                    return next;
+                  });
+                }}
+              >
+                {filteredUsers.every((u) => selectedIds.has(u._id))
+                  ? "Deselect all"
+                  : "Select all"}
+              </button>
+            )}
+
             <div className="max-h-48 overflow-y-auto space-y-0.5">
               {filteredUsers.map((u) => (
                 <label
