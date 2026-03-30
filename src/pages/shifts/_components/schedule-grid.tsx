@@ -582,6 +582,14 @@ export default function ScheduleGrid({
                         userName: employee.name ?? "Unknown",
                         date: dateStr,
                       }) : undefined}
+                      onAvailabilityClick={
+                        (cellUnavailNotes.length > 0 || cellAvailNotes.length > 0)
+                          ? () => {
+                              const entry = cellUnavailNotes[0] ?? cellAvailNotes[0];
+                              if (entry) onAvailabilityClick?.(entry);
+                            }
+                          : undefined
+                      }
                     >
                       {cellShifts.map((shift) => (
                         <ShiftBlock
@@ -621,54 +629,6 @@ export default function ScheduleGrid({
                           <span className="font-medium">{LEAVE_LABELS[l.leaveType] ?? l.leaveType}</span>
                           {l.reason && (
                             <span className="opacity-75 truncate"> {l.reason}</span>
-                          )}
-                        </button>
-                      ))}
-                      {/* Unavailability notes (admin only) */}
-                      {cellUnavailNotes.map((u, i) => (
-                        <button
-                          key={`unavail-${i}`}
-                          type="button"
-                          className="w-full text-left rounded border border-muted-foreground/20 bg-muted/60 px-1.5 py-0.5 text-[9px] text-muted-foreground hover:bg-muted hover:border-muted-foreground/40 transition-colors cursor-pointer"
-                          title={
-                            u.allDay
-                              ? `Unavailable (all day)${u.notes ? `: ${u.notes}` : ""} — Click to edit`
-                              : `Unavailable ${u.startTime ?? ""}–${u.endTime ?? ""}${u.notes ? `: ${u.notes}` : ""} — Click to edit`
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAvailabilityClick?.(u);
-                          }}
-                        >
-                          <span className="font-medium">
-                            {u.allDay ? "Unavailable" : `Unavail ${u.startTime}–${u.endTime}`}
-                          </span>
-                          {u.notes && (
-                            <span className="opacity-75 truncate"> {u.notes}</span>
-                          )}
-                        </button>
-                      ))}
-                      {/* Available notes (admin only) */}
-                      {cellAvailNotes.map((a, i) => (
-                        <button
-                          key={`avail-${i}`}
-                          type="button"
-                          className="w-full text-left rounded border border-emerald-400/40 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400/60 transition-colors cursor-pointer"
-                          title={
-                            a.allDay
-                              ? `Available (all day)${a.notes ? `: ${a.notes}` : ""} — Click to edit`
-                              : `Available ${a.startTime ?? ""}–${a.endTime ?? ""}${a.notes ? `: ${a.notes}` : ""} — Click to edit`
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAvailabilityClick?.(a);
-                          }}
-                        >
-                          <span className="font-medium">
-                            {a.allDay ? "Available" : `Avail ${a.startTime}–${a.endTime}`}
-                          </span>
-                          {a.notes && (
-                            <span className="opacity-75 truncate"> {a.notes}</span>
                           )}
                         </button>
                       ))}

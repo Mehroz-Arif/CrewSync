@@ -19,6 +19,7 @@ type DayCellProps = {
   availability?: "available" | "unavailable";
   onCellClick: () => void;
   onAddAbsence?: () => void;
+  onAvailabilityClick?: () => void;
   children: ReactNode;
 };
 
@@ -32,6 +33,7 @@ export default function DayCell({
   availability,
   onCellClick,
   onAddAbsence,
+  onAvailabilityClick,
   children,
 }: DayCellProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -53,16 +55,24 @@ export default function DayCell({
         !isOver && availability === "unavailable" && "bg-rose-500/[0.06]"
       )}
     >
-      {/* Availability dot */}
+      {/* Availability dot — clickable to edit */}
       {availability && (
-        <div className="absolute top-1 right-1">
+        <button
+          type="button"
+          className="absolute top-0.5 right-0.5 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer z-[2]"
+          title={`${availability === "available" ? "Available" : "Unavailable"} — Click to edit`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAvailabilityClick?.();
+          }}
+        >
           <div
             className={cn(
-              "size-1.5 rounded-full",
+              "size-2 rounded-full",
               availability === "available" ? "bg-emerald-500" : "bg-rose-500"
             )}
           />
-        </div>
+        </button>
       )}
 
       <div className="space-y-1">{children}</div>
