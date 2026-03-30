@@ -122,22 +122,7 @@ export default function ShiftBlock({
 
   const blockContent = (
     <>
-      {/* Status badge — top-right corner (admin only) */}
-      {isAdmin && (
-        <div className="absolute top-0.5 right-0.5 z-[1]">
-          {published ? (
-            <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-1 py-px text-[8px] font-bold uppercase tracking-wider">
-              <Send className="size-2" />
-              Live
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/25 text-amber-800 dark:text-amber-300 px-1 py-px text-[8px] font-bold uppercase tracking-wider">
-              Draft
-            </span>
-          )}
-        </div>
-      )}
-      <div className="relative z-[1] font-semibold truncate leading-tight flex items-center gap-1 pr-8">
+      <div className="relative z-[1] font-semibold truncate leading-tight flex items-center gap-1">
         <span>
           {format(parseISO(startTime), "HH:mm")} –{" "}
           {format(parseISO(endTime), "HH:mm")}
