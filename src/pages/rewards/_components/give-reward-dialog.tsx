@@ -22,8 +22,9 @@ import {
 import { cn } from "@/lib/utils.ts";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
-import { Gift } from "lucide-react";
-import { REWARD_CATEGORIES, POINT_OPTIONS } from "../_lib/categories.ts";
+import { Gift, Megaphone } from "lucide-react";
+import { Switch } from "@/components/ui/switch.tsx";
+import { REWARD_CATEGORIES, POINT_OPTIONS, getCategoryConfig } from "../_lib/categories.ts";
 
 export default function GiveRewardDialog({
   open,
@@ -35,11 +36,13 @@ export default function GiveRewardDialog({
   const currentUser = useQuery(api.users.getCurrentUser);
   const allUsers = useQuery(api.users.getAllStaff);
   const giveReward = useMutation(api.rewards.give);
+  const createPost = useMutation(api.posts.create);
 
   const [recipientId, setRecipientId] = useState("");
   const [category, setCategory] = useState("");
   const [points, setPoints] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [shareToFeed, setShareToFeed] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   // Filter out current user from potential recipients
@@ -51,6 +54,7 @@ export default function GiveRewardDialog({
     setCategory("");
     setPoints(null);
     setMessage("");
+    setShareToFeed(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +74,26 @@ export default function GiveRewardDialog({
         message: message.trim(),
         category,
       });
+
+      // Share to newsfeed if enabled
+      if (shareToFeed) {
+        const recipientName = recipient.name ?? "a teammate";
+        const catConfig = getCategoryConfig(category);
+        const catLabel = catConfig?.label ?? category;
+        const pointsText = points ? ` (+${points} pts)` : "";
+        const postTitle = `Rewarded ${recipientName} for ${catLabel}${pointsText}`;
+
+        try {
+          await createPost({
+            title: postTitle,
+            body: message.trim(),
+            category: "shoutout",
+          });
+        } catch {
+          // Silently fail on share — the reward was still given
+        }
+      }
+
       toast.success(`Reward sent to ${recipient.name ?? "teammate"}!`);
       resetForm();
       onOpenChange(false);
@@ -185,6 +209,24 @@ export default function GiveRewardDialog({
               onChange={(e) => setMessage(e.target.value)}
               disabled={isLoading}
               rows={3}
+            />
+          </div>
+
+          {/* Share to Newsfeed */}
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="flex items-center gap-3">
+              <Megaphone className="size-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Share to Newsfeed</p>
+                <p className="text-xs text-muted-foreground">
+                  Let the whole team see this recognition
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={shareToFeed}
+              onCheckedChange={setShareToFeed}
+              disabled={isLoading}
             />
           </div>
 
