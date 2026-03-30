@@ -77,14 +77,30 @@ export default function ShiftBlock({
 
   // Use position colour if available, otherwise fall back to default
   const colorHex = roleColor ?? "#64748b";
-  const colorStyle = roleColorStyles(colorHex);
+  const baseColorStyle = roleColorStyles(colorHex);
+
+  // Unpublished blocks get diagonal stripe fill; published get solid fill
+  const colorStyle = !published && isAdmin
+    ? {
+        ...baseColorStyle,
+        backgroundImage: `repeating-linear-gradient(
+          -45deg,
+          transparent,
+          transparent 4px,
+          ${colorHex}25 4px,
+          ${colorHex}25 8px
+        )`,
+        backgroundColor: `${colorHex}12`,
+      }
+    : baseColorStyle;
 
   const blockClassName = cn(
-    "group/block relative rounded-md border-l-3 px-1.5 py-1 text-[11px] select-none transition-all",
+    "group/block relative rounded-md border-l-3 px-1.5 py-1 text-[11px] select-none transition-all overflow-hidden",
     isDragging && "opacity-30 scale-95",
     isAdmin && "cursor-grab active:cursor-grabbing",
     !isAdmin && "cursor-pointer",
-    !published && isAdmin && "border-dashed"
+    // Published: subtle ring for emphasis
+    published && isAdmin && "ring-1 ring-inset ring-current/10",
   );
 
   const handleClick = (e: React.MouseEvent) => {
@@ -106,29 +122,36 @@ export default function ShiftBlock({
 
   const blockContent = (
     <>
-      <div className="font-semibold truncate leading-tight flex items-center gap-1">
+      {/* Status badge — top-right corner (admin only) */}
+      {isAdmin && (
+        <div className="absolute top-0.5 right-0.5 z-[1]">
+          {published ? (
+            <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-1 py-px text-[8px] font-bold uppercase tracking-wider">
+              <Send className="size-2" />
+              Live
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/25 text-amber-800 dark:text-amber-300 px-1 py-px text-[8px] font-bold uppercase tracking-wider">
+              Draft
+            </span>
+          )}
+        </div>
+      )}
+      <div className="relative z-[1] font-semibold truncate leading-tight flex items-center gap-1 pr-8">
         <span>
           {format(parseISO(startTime), "HH:mm")} –{" "}
           {format(parseISO(endTime), "HH:mm")}
         </span>
-        {published && isAdmin && (
-          <Send className="size-2.5 shrink-0 opacity-60" />
-        )}
         {responseIcon}
       </div>
-      <div className="flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
+      <div className="relative z-[1] flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
         <span className="truncate">
           {callSign ? `${callSign} · ${allocatedVehicle ?? vehicle}` : displayVehicle}{position ? ` · ${position}` : ""}
         </span>
       </div>
-      {!published && isAdmin && (
-        <div className="text-[9px] uppercase tracking-wider opacity-50 mt-0.5 font-medium">
-          Draft
-        </div>
-      )}
       {published && isAdmin && responseStatus === "declined" && declineReason && (
-        <div className="text-[9px] text-rose-500 truncate mt-0.5 italic" title={declineReason}>
+        <div className="relative z-[1] text-[9px] text-rose-500 truncate mt-0.5 italic" title={declineReason}>
           {declineReason}
         </div>
       )}
