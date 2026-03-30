@@ -78,29 +78,37 @@ export default function ShiftBlock({
   // Use position colour if available, otherwise fall back to default
   const colorHex = roleColor ?? "#64748b";
   const baseColorStyle = roleColorStyles(colorHex);
+  const isAccepted = published && responseStatus === "accepted";
 
-  // Unpublished blocks get diagonal stripe fill; published get solid fill
-  const colorStyle = !published && isAdmin
+  // Accepted: bold saturated fill; Unpublished: diagonal stripes; Default: subtle fill
+  const colorStyle = isAccepted
     ? {
-        ...baseColorStyle,
-        backgroundImage: `repeating-linear-gradient(
-          -45deg,
-          transparent,
-          transparent 4px,
-          ${colorHex}25 4px,
-          ${colorHex}25 8px
-        )`,
-        backgroundColor: `${colorHex}12`,
+        backgroundColor: `${colorHex}40`, // ~25% opacity – much bolder
+        borderColor: `${colorHex}90`, // ~56% opacity border
+        color: colorHex,
       }
-    : baseColorStyle;
+    : !published && isAdmin
+      ? {
+          ...baseColorStyle,
+          backgroundImage: `repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 4px,
+            ${colorHex}25 4px,
+            ${colorHex}25 8px
+          )`,
+          backgroundColor: `${colorHex}12`,
+        }
+      : baseColorStyle;
 
   const blockClassName = cn(
     "group/block relative rounded-md border-l-3 px-1.5 py-1 text-[11px] select-none transition-all overflow-hidden",
     isDragging && "opacity-30 scale-95",
     isAdmin && "cursor-grab active:cursor-grabbing",
     !isAdmin && "cursor-pointer",
-    // Published: subtle ring for emphasis
-    published && isAdmin && "ring-1 ring-inset ring-current/10",
+    // Accepted: stronger ring + border for emphasis; other published: subtle ring
+    isAccepted && "ring-1 ring-inset ring-current/25 border-l-4",
+    published && isAdmin && !isAccepted && "ring-1 ring-inset ring-current/10",
   );
 
   const handleClick = (e: React.MouseEvent) => {
