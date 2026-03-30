@@ -81,7 +81,7 @@ export default function GiveRewardDialog({
         const catConfig = getCategoryConfig(category);
         const catLabel = catConfig?.label ?? category;
         const pointsText = points ? ` (+${points} pts)` : "";
-        const postTitle = `Rewarded ${recipientName} for ${catLabel}${pointsText}`;
+        const postTitle = `Recognised ${recipientName} for ${catLabel}${pointsText}`;
 
         try {
           await createPost({
