@@ -14,7 +14,7 @@ const VALID_CATEGORIES = [
 export const give = mutation({
   args: {
     toUserId: v.id("users"),
-    points: v.number(),
+    points: v.optional(v.number()),
     message: v.string(),
     category: v.string(),
   },
@@ -34,7 +34,7 @@ export const give = mutation({
     if (args.toUserId === user._id) {
       throw new ConvexError({ code: "BAD_REQUEST", message: "You cannot reward yourself" });
     }
-    if (!VALID_POINTS.includes(args.points)) {
+    if (args.points !== undefined && !VALID_POINTS.includes(args.points)) {
       throw new ConvexError({ code: "BAD_REQUEST", message: "Invalid point amount" });
     }
     if (!VALID_CATEGORIES.includes(args.category)) {
@@ -74,7 +74,7 @@ export const getMyBalance = query({
       .query("rewards")
       .withIndex("by_to_user", (q) => q.eq("toUserId", user._id))
       .collect();
-    return rewards.reduce((sum, r) => sum + r.points, 0);
+    return rewards.reduce((sum, r) => sum + (r.points ?? 0), 0);
   },
 });
 
@@ -94,7 +94,7 @@ export const getLeaderboard = query({
     const pointsByUser = new Map<string, number>();
     for (const reward of allRewards) {
       const key = String(reward.toUserId);
-      pointsByUser.set(key, (pointsByUser.get(key) ?? 0) + reward.points);
+      pointsByUser.set(key, (pointsByUser.get(key) ?? 0) + (reward.points ?? 0));
     }
 
     return allUsers

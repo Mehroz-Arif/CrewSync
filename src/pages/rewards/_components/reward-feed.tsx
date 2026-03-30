@@ -71,12 +71,14 @@ export default function RewardFeed() {
                   <span className="font-medium">{item.fromName}</span>
                   <ArrowRight className="size-3 text-muted-foreground shrink-0" />
                   <span className="font-medium">{item.toName}</span>
-                  <Badge
-                    variant="secondary"
-                    className="ml-auto text-xs tabular-nums shrink-0"
-                  >
-                    +{item.points} pts
-                  </Badge>
+                  {item.points != null && item.points > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-auto text-xs tabular-nums shrink-0"
+                    >
+                      +{item.points} pts
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">
                   {item.message}

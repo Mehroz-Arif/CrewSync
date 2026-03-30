@@ -55,7 +55,7 @@ export default function GiveRewardDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recipientId || !category || !points || !message.trim()) return;
+    if (!recipientId || !category || !message.trim()) return;
 
     const recipient = recipients.find(
       (u) => String(u._id) === recipientId,
@@ -66,7 +66,7 @@ export default function GiveRewardDialog({
     try {
       await giveReward({
         toUserId: recipient._id,
-        points,
+        points: points ?? undefined,
         message: message.trim(),
         category,
       });
@@ -86,7 +86,7 @@ export default function GiveRewardDialog({
   };
 
   const isValid =
-    recipientId && category && points !== null && message.trim().length > 0;
+    recipientId && category && message.trim().length > 0;
 
   return (
     <Dialog
@@ -153,15 +153,15 @@ export default function GiveRewardDialog({
             </div>
           </div>
 
-          {/* Points */}
+          {/* Points (optional) */}
           <div className="space-y-2">
-            <Label>Points</Label>
+            <Label>Points <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <div className="flex gap-2">
               {POINT_OPTIONS.map((opt) => (
                 <button
                   key={opt}
                   type="button"
-                  onClick={() => setPoints(opt)}
+                  onClick={() => setPoints(points === opt ? null : opt)}
                   disabled={isLoading}
                   className={cn(
                     "flex-1 rounded-lg border py-2.5 text-sm font-semibold transition-colors",

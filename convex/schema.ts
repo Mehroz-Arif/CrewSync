@@ -161,7 +161,7 @@ export default defineSchema({
   rewards: defineTable({
     fromUserId: v.id("users"),
     toUserId: v.id("users"),
-    points: v.number(),
+    points: v.optional(v.number()),
     message: v.string(),
     category: v.string(),
   })

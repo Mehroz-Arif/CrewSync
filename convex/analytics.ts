@@ -103,7 +103,7 @@ export const getDashboardStats = query({
     // ─── Rewards stats ───────────────────────────────────────────
     const allRewards = await ctx.db.query("rewards").collect();
     const totalRewards = allRewards.length;
-    const totalPoints = allRewards.reduce((sum, r) => sum + r.points, 0);
+    const totalPoints = allRewards.reduce((sum, r) => sum + (r.points ?? 0), 0);
 
     // Top recognized (most rewards received)
     const receivedMap = new Map<string, number>();
