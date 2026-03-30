@@ -27,6 +27,7 @@ import { ShiftBlockOverlay } from "./shift-block.tsx";
 import type { UnassignedShift } from "./unassigned-pool.tsx";
 import { UnassignedShiftOverlay, DraggableUnassignedGroup, groupUnassignedShifts } from "./unassigned-pool.tsx";
 import { Package } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import AddAbsenceDialog from "./add-absence-dialog.tsx";
 
 const LEAVE_LABELS: Record<string, string> = {
@@ -175,6 +176,7 @@ export default function ScheduleGrid({
   const unassignFromShift = useMutation(api.shifts.unassignFromShift);
   const setShiftPublished = useMutation(api.shifts.setShiftPublished);
   const adminAcceptShift = useMutation(api.shifts.adminAcceptShift);
+  const navigate = useNavigate();
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
 
   // Absence dialog state
@@ -528,19 +530,29 @@ export default function ScheduleGrid({
               <Fragment key={employee._id}>
                 {/* Name cell */}
                 <div className="px-2 py-1.5 border-b border-r flex items-center gap-2 bg-muted/20">
-                  <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[10px] shrink-0">
-                    {employee.name?.charAt(0)?.toUpperCase() ?? "?"}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold truncate">
-                      {employee.name ?? "Unknown"}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/team/${employee._id}`);
+                    }}
+                    className="flex items-center gap-2 min-w-0 rounded-md hover:bg-muted/60 transition-colors px-1 py-0.5 -mx-1 -my-0.5 cursor-pointer"
+                    title={`View ${employee.name ?? "Unknown"}'s profile`}
+                  >
+                    <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[10px] shrink-0">
+                      {employee.name?.charAt(0)?.toUpperCase() ?? "?"}
                     </div>
-                    {employee.department && (
-                      <div className="text-[10px] text-muted-foreground truncate">
-                        {employee.department}
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold truncate hover:underline">
+                        {employee.name ?? "Unknown"}
                       </div>
-                    )}
-                  </div>
+                      {employee.department && (
+                        <div className="text-[10px] text-muted-foreground truncate">
+                          {employee.department}
+                        </div>
+                      )}
+                    </div>
+                  </button>
                 </div>
 
                 {/* Day cells */}
