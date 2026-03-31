@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { Truck, Send, UserMinus, Eye, EyeOff, CheckCircle2, XCircle, CircleDashed, AlertTriangle } from "lucide-react";
+import { Truck, UserMinus, Eye, EyeOff, CheckCircle2, XCircle, CircleDashed, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { roleColorStyles } from "../_lib/role-colors.ts";
 import {
@@ -10,6 +10,12 @@ import {
   ContextMenuTrigger,
   ContextMenuItem,
 } from "@/components/ui/context-menu.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip.tsx";
 
 type ShiftBlockProps = {
   membershipId: string;
@@ -139,7 +145,21 @@ export default function ShiftBlock({
         </span>
         {responseIcon}
         {restWarning && (
-          <AlertTriangle className="size-3 shrink-0 text-amber-500" title={restWarning} />
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex shrink-0 cursor-default" onClick={(e) => e.stopPropagation()}>
+                  <AlertTriangle className="size-3 text-amber-500" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-48 text-xs font-medium bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-1.5">
+                  <AlertTriangle className="size-3 shrink-0 text-amber-500" />
+                  {restWarning}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
       <div className="relative z-[1] flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
@@ -148,12 +168,6 @@ export default function ShiftBlock({
           {callSign ? `${callSign} · ${allocatedVehicle ?? vehicle}` : displayVehicle}{position ? ` · ${position}` : ""}
         </span>
       </div>
-      {restWarning && (
-        <div className="relative z-[1] text-[9px] text-amber-600 dark:text-amber-400 truncate mt-0.5 font-medium" title={restWarning}>
-          <AlertTriangle className="size-2.5 inline mr-0.5 -mt-0.5" />
-          {restWarning}
-        </div>
-      )}
       {published && isAdmin && responseStatus === "declined" && declineReason && (
         <div className="relative z-[1] text-[9px] text-rose-500 truncate mt-0.5 italic" title={declineReason}>
           {declineReason}
