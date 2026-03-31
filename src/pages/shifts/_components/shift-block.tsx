@@ -152,7 +152,7 @@ export default function ShiftBlock({
                   <AlertTriangle className="size-3 text-amber-500" />
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-48 text-xs font-medium bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800 [&_[data-slot=tooltip-arrow]]:bg-amber-50 [&_[data-slot=tooltip-arrow]]:fill-amber-50 dark:[&_[data-slot=tooltip-arrow]]:bg-amber-950 dark:[&_[data-slot=tooltip-arrow]]:fill-amber-950">
+              <TooltipContent side="top" className="max-w-48 text-xs font-medium bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800">
                 {restWarning}
               </TooltipContent>
             </Tooltip>
