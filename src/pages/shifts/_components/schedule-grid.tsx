@@ -26,7 +26,7 @@ import ShiftBlock from "./shift-block.tsx";
 import { ShiftBlockOverlay } from "./shift-block.tsx";
 import type { UnassignedShift } from "./unassigned-pool.tsx";
 import { UnassignedShiftOverlay, DraggableUnassignedGroup, groupUnassignedShifts } from "./unassigned-pool.tsx";
-import { Package, Plus } from "lucide-react";
+import { Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AddAbsenceDialog from "./add-absence-dialog.tsx";
 
@@ -137,7 +137,7 @@ function UnassignedDropCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "p-0.5 border-r bg-amber-500/[0.02] transition-colors min-h-[40px] relative group/unassigned",
+        "p-0.5 border-r bg-amber-500/[0.02] transition-colors min-h-[40px]",
         onClick && "cursor-pointer hover:bg-amber-500/[0.06]",
         isCurrentDay && "bg-amber-500/[0.05]",
         isShiftDragging && !isOver && "bg-amber-500/[0.06] ring-1 ring-inset ring-dashed ring-amber-500/20",
@@ -154,12 +154,7 @@ function UnassignedDropCell({
           </div>
         )}
       </div>
-      {/* Add hint for empty cells */}
-      {onClick && !isShiftDragging && (
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/unassigned:opacity-100 transition-opacity pointer-events-none">
-          <Plus className="size-4 text-amber-600/40 dark:text-amber-400/40" />
-        </div>
-      )}
+
     </div>
   );
 }
