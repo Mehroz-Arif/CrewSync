@@ -568,8 +568,8 @@ export default function ScheduleGrid({
                     <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[11px] shrink-0">
                       {employee.name?.charAt(0)?.toUpperCase() ?? "?"}
                     </div>
-                    <div className="min-w-0 flex flex-col">
-                      <span className="text-xs font-semibold truncate hover:underline leading-normal">
+                    <div className="min-w-0 flex flex-col items-start">
+                      <span className="text-xs font-semibold truncate hover:underline leading-normal max-w-full">
                         {employee.name ?? "Unknown"}
                       </span>
                       {totalHours > 0 && (
