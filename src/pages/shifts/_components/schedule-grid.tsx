@@ -44,6 +44,7 @@ type StaffMember = {
   name?: string;
   role?: string;
   department?: string;
+  positions?: string[];
 };
 
 export type CellShift = {
@@ -552,10 +553,27 @@ export default function ScheduleGrid({
               {staff.map((employee) => {
               const totalMins = staffHoursMap.get(employee._id) ?? 0;
               const totalHours = totalMins / 60;
+
+              // Highlight when dragging a shift whose position matches this employee
+              const dragPosition = activeDrag?.type === "shift"
+                ? activeDrag.position
+                : activeDrag?.type === "unassigned"
+                  ? activeDrag.shift.position
+                  : undefined;
+              const isPositionMatch =
+                !!dragPosition &&
+                !!employee.positions &&
+                employee.positions.includes(dragPosition);
+
               return (
               <Fragment key={employee._id}>
                 {/* Name cell */}
-                <div className="px-2 py-1.5 border-b border-r flex items-center gap-2 bg-muted/20">
+                <div
+                  className={cn(
+                    "px-2 py-1.5 border-b border-r flex items-center gap-2 bg-muted/20 transition-colors",
+                    isPositionMatch && "bg-emerald-500/10 ring-1 ring-inset ring-emerald-500/30"
+                  )}
+                >
                   <button
                     type="button"
                     onClick={(e) => {

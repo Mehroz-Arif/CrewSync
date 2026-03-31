@@ -170,6 +170,7 @@ type StaffMember = {
   name?: string;
   role?: string;
   department?: string;
+  positions?: string[];
 };
 
 type ViewRange = "1" | "3" | "7" | "14" | "month";
