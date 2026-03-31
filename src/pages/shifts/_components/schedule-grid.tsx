@@ -573,8 +573,10 @@ export default function ScheduleGrid({
                         {employee.name ?? "Unknown"}
                       </div>
                       {totalHours > 0 && (
-                        <div className="text-[10px] text-muted-foreground truncate">
-                          {totalHours.toFixed(2)} h
+                        <div className="text-[10px] text-muted-foreground/70 truncate">
+                          {totalHours % 1 === 0
+                            ? `${totalHours.toFixed(0)}.00 h`
+                            : `${totalHours.toFixed(2)} h`}
                         </div>
                       )}
                     </div>
