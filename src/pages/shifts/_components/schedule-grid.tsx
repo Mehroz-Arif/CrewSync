@@ -87,6 +87,7 @@ export type LeaveNote = {
   endDate: string;
   reason?: string;
   userName?: string;
+  status?: string;
 };
 
 type ScheduleGridProps = {
@@ -674,23 +675,32 @@ export default function ScheduleGrid({
                         />
                       ))}
                       {/* Leave badges */}
-                      {cellLeave.map((l, i) => (
+                      {cellLeave.map((l, i) => {
+                        const isPending = l.status === "pending";
+                        return (
                         <button
                           key={`leave-${i}`}
                           type="button"
-                          className="w-full text-left rounded border border-sky-400/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-700 dark:text-sky-300 hover:bg-sky-500/20 hover:border-sky-400/60 transition-colors cursor-pointer"
-                          title={`${LEAVE_LABELS[l.leaveType] ?? l.leaveType}${l.reason ? `: ${l.reason}` : ""} — Click to edit`}
+                          className={cn(
+                            "w-full text-left rounded border px-1.5 py-0.5 text-[9px] hover:opacity-80 transition-colors cursor-pointer",
+                            isPending
+                              ? "border-amber-400/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                              : "border-sky-400/40 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                          )}
+                          title={`${LEAVE_LABELS[l.leaveType] ?? l.leaveType}${isPending ? " (Pending)" : ""}${l.reason ? `: ${l.reason}` : ""} — Click to edit`}
                           onClick={(e) => {
                             e.stopPropagation();
                             onLeaveClick?.(l);
                           }}
                         >
                           <span className="font-medium">{LEAVE_LABELS[l.leaveType] ?? l.leaveType}</span>
+                          {isPending && <span className="opacity-75"> (Pending)</span>}
                           {l.reason && (
                             <span className="opacity-75 truncate"> {l.reason}</span>
                           )}
                         </button>
-                      ))}
+                        );
+                      })}
                       {/* Decline notes */}
                       {cellDeclines.map((d, i) => (
                         <div

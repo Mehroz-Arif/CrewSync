@@ -97,7 +97,7 @@ export const getAllRequests = query({
   },
 });
 
-/** Get approved leave for a date range (for showing on schedules) */
+/** Get approved and pending leave for a date range (for showing on schedules) */
 export const getApprovedByDateRange = query({
   args: {
     startDate: v.string(),
@@ -112,8 +112,15 @@ export const getApprovedByDateRange = query({
       .withIndex("by_status", (q) => q.eq("status", "approved"))
       .collect();
 
+    const pending = await ctx.db
+      .query("leaveRequests")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .collect();
+
+    const all = [...approved, ...pending];
+
     // Filter to those overlapping the date range
-    const overlapping = approved.filter(
+    const overlapping = all.filter(
       (lr) => lr.startDate <= args.endDate && lr.endDate >= args.startDate
     );
 

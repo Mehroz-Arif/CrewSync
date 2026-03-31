@@ -492,7 +492,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   }, [declines]);
 
   // Build leave data map: "userId__date" → leave entries (expand multi-day ranges)
-  type LeaveNote = { leaveRequestId: string; leaveType: string; startDate: string; endDate: string; reason?: string; userName?: string };
+  type LeaveNote = { leaveRequestId: string; leaveType: string; startDate: string; endDate: string; reason?: string; userName?: string; status?: string };
   const leaveData = useMemo(() => {
     const map = new Map<string, LeaveNote[]>();
     if (!approvedLeave) return map;
@@ -516,6 +516,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           endDate: lr.endDate,
           reason: lr.reason,
           userName: lr.userName,
+          status: lr.status,
         });
         map.set(key, existing);
         cursor = addDays(cursor, 1);
