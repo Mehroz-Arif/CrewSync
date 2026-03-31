@@ -3,12 +3,12 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import {
   startOfWeek,
-  addWeeks,
-  subWeeks,
   addDays,
   format,
   parseISO,
-  isThisWeek,
+  isToday as isDateToday,
+  getDaysInMonth,
+  startOfMonth,
 } from "date-fns";
 import {
   ChevronLeft,
@@ -16,7 +16,6 @@ import {
   CalendarDays,
   Plus,
   Send,
-
   Calendar,
   CalendarRange,
 } from "lucide-react";
@@ -24,6 +23,15 @@ import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Spinner } from "@/components/ui/spinner.tsx";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs.tsx";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar.tsx";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
@@ -164,13 +172,46 @@ type StaffMember = {
   department?: string;
 };
 
+type ViewRange = "1" | "3" | "7" | "14" | "month";
+
+const VIEW_RANGE_LABELS: Record<ViewRange, string> = {
+  "1": "1 Day",
+  "3": "3 Days",
+  "7": "1 Week",
+  "14": "2 Weeks",
+  month: "1 Month",
+};
+
 /** Admin-only weekly schedule with unassigned pool and drag-and-drop */
 function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
-  const [weekStart, setWeekStart] = useState(() =>
-    startOfWeek(new Date(), { weekStartsOn: 1 })
+  const [viewRange, setViewRange] = useState<ViewRange>("7");
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Compute rangeStart: for week views, snap to Monday; for month, snap to 1st
+  const rangeStart = useMemo(() => {
+    if (viewRange === "7" || viewRange === "14") {
+      return startOfWeek(selectedDate, { weekStartsOn: 1 });
+    }
+    if (viewRange === "month") {
+      return startOfMonth(selectedDate);
+    }
+    return selectedDate;
+  }, [selectedDate, viewRange]);
+
+  // Compute how many days to show
+  const dayCount = useMemo(() => {
+    if (viewRange === "month") return getDaysInMonth(selectedDate);
+    return Number(viewRange);
+  }, [viewRange, selectedDate]);
+
+  // Build the days array
+  const days = useMemo(
+    () => Array.from({ length: dayCount }, (_, i) => addDays(rangeStart, i)),
+    [rangeStart, dayCount]
   );
 
-  const weekEnd = addWeeks(weekStart, 1);
+  const rangeEnd = addDays(rangeStart, dayCount);
 
   // Query job titles for role colour map
   const positionOptions = useQuery(api.positions.list);
@@ -181,7 +222,9 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
   const appliedWeeksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const weekKey = weekStart.toISOString();
+    // Only auto-apply for week-aligned views
+    if (viewRange !== "7" && viewRange !== "14") return;
+    const weekKey = rangeStart.toISOString();
     if (appliedWeeksRef.current.has(weekKey)) return;
     appliedWeeksRef.current.add(weekKey);
 
@@ -196,39 +239,39 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       .catch(() => {
         // Silently ignore — no active patterns or other expected errors
       });
-  }, [weekStart, applyToWeek]);
+  }, [rangeStart, applyToWeek, viewRange]);
 
   const shifts = useQuery(api.shifts.getShiftsByDateRange, {
-    startDate: weekStart.toISOString(),
-    endDate: weekEnd.toISOString(),
+    startDate: rangeStart.toISOString(),
+    endDate: rangeEnd.toISOString(),
   });
 
   const unassigned = useQuery(api.shifts.getUnassignedByDateRange, {
-    startDate: weekStart.toISOString(),
-    endDate: weekEnd.toISOString(),
+    startDate: rangeStart.toISOString(),
+    endDate: rangeEnd.toISOString(),
   });
 
   const allAvailability = useQuery(api.availability.getAllByDateRange, {
-    startDate: format(weekStart, "yyyy-MM-dd"),
-    endDate: format(addDays(weekStart, 7), "yyyy-MM-dd"),
+    startDate: format(rangeStart, "yyyy-MM-dd"),
+    endDate: format(rangeEnd, "yyyy-MM-dd"),
   });
 
-  // Fetch vehicle allocations for the same week
+  // Fetch vehicle allocations for the same range
   const vehicleAllocations = useQuery(api.vehicleAllocations.getByDateRange, {
-    startDate: format(weekStart, "yyyy-MM-dd"),
-    endDate: format(addDays(weekStart, 6), "yyyy-MM-dd"),
+    startDate: format(rangeStart, "yyyy-MM-dd"),
+    endDate: format(addDays(rangeEnd, -1), "yyyy-MM-dd"),
   });
 
-  // Fetch shift declines for the week
+  // Fetch shift declines for the range
   const declines = useQuery(api.shifts.getDeclinesByDateRange, {
-    startDate: format(weekStart, "yyyy-MM-dd"),
-    endDate: format(addDays(weekStart, 7), "yyyy-MM-dd"),
+    startDate: format(rangeStart, "yyyy-MM-dd"),
+    endDate: format(rangeEnd, "yyyy-MM-dd"),
   });
 
-  // Fetch approved leave for the week
+  // Fetch approved leave for the range
   const approvedLeave = useQuery(api.leaveRequests.getApprovedByDateRange, {
-    startDate: format(weekStart, "yyyy-MM-dd"),
-    endDate: format(addDays(weekStart, 6), "yyyy-MM-dd"),
+    startDate: format(rangeStart, "yyyy-MM-dd"),
+    endDate: format(addDays(rangeEnd, -1), "yyyy-MM-dd"),
   });
 
   const setPublished = useMutation(api.shifts.setPublished);
@@ -416,11 +459,11 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     const map = new Map<string, LeaveNote[]>();
     if (!approvedLeave) return map;
     for (const lr of approvedLeave) {
-      // Walk each day in the leave range that overlaps with the displayed week
-      const rangeStart = format(weekStart, "yyyy-MM-dd");
-      const rangeEnd = format(addDays(weekStart, 6), "yyyy-MM-dd");
-      const effectiveStart = lr.startDate > rangeStart ? lr.startDate : rangeStart;
-      const effectiveEnd = lr.endDate < rangeEnd ? lr.endDate : rangeEnd;
+      // Walk each day in the leave range that overlaps with the displayed range
+      const rangeStartStr = format(rangeStart, "yyyy-MM-dd");
+      const rangeEndStr = format(addDays(rangeEnd, -1), "yyyy-MM-dd");
+      const effectiveStart = lr.startDate > rangeStartStr ? lr.startDate : rangeStartStr;
+      const effectiveEnd = lr.endDate < rangeEndStr ? lr.endDate : rangeEndStr;
 
       let cursor = parseISO(effectiveStart);
       const end = parseISO(effectiveEnd);
@@ -441,7 +484,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
       }
     }
     return map;
-  }, [approvedLeave, weekStart]);
+  }, [approvedLeave, rangeStart, rangeEnd]);
 
   // Check if any assigned shifts in this week are unpublished or published
   const { hasUnpublished, hasPublished } = useMemo(() => {
@@ -523,8 +566,8 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     setIsPublishing(true);
     try {
       const count = await setPublished({
-        startDate: weekStart.toISOString(),
-        endDate: weekEnd.toISOString(),
+        startDate: rangeStart.toISOString(),
+        endDate: rangeEnd.toISOString(),
         published: publish,
       });
       if (count > 0) {
@@ -547,6 +590,21 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     }
   }
 
+  const showTodayButton = !isDateToday(selectedDate);
+
+  // Format the date range label
+  const rangeLabel = useMemo(() => {
+    if (viewRange === "1") return format(rangeStart, "EEEE, MMM d, yyyy");
+    const lastDay = addDays(rangeStart, dayCount - 1);
+    if (viewRange === "month") return format(rangeStart, "MMMM yyyy");
+    return `${format(rangeStart, "MMM d")} – ${format(lastDay, "MMM d, yyyy")}`;
+  }, [rangeStart, dayCount, viewRange]);
+
+  // Navigation step function
+  function stepRange(direction: 1 | -1) {
+    setSelectedDate((d) => addDays(d, direction * dayCount));
+  }
+
   // Loading
   if (shifts === undefined || unassigned === undefined || allAvailability === undefined || vehicleAllocations === undefined) {
     return (
@@ -557,45 +615,75 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     );
   }
 
-  const isCurrentWeek = isThisWeek(weekStart, { weekStartsOn: 1 });
-
   return (
     <div className="space-y-1 -mx-2 md:-mx-3 lg:-mx-4">
       {/* Actions row */}
-      <div className="flex items-center justify-between gap-2 px-2 md:px-3 lg:px-4">
-        {/* Week navigator */}
+      <div className="flex items-center justify-between gap-2 px-2 md:px-3 lg:px-4 flex-wrap">
+        {/* Date navigator */}
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => setWeekStart((w) => subWeeks(w, 1))}
+            onClick={() => stepRange(-1)}
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <div className="text-sm font-heading font-semibold min-w-[200px] text-center">
-            {format(weekStart, "MMM d")} –{" "}
-            {format(addDays(weekStart, 6), "MMM d, yyyy")}
-          </div>
+
+          {/* Date picker popover */}
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5 min-w-[180px] justify-center font-heading font-semibold">
+                <CalendarDays className="size-4" />
+                {rangeLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarPicker
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  if (date) {
+                    setSelectedDate(date);
+                    setCalendarOpen(false);
+                  }
+                }}
+                weekStartsOn={1}
+              />
+            </PopoverContent>
+          </Popover>
+
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => setWeekStart((w) => addWeeks(w, 1))}
+            onClick={() => stepRange(1)}
           >
             <ChevronRight className="size-4" />
           </Button>
-          {!isCurrentWeek && (
+
+          {showTodayButton && (
             <Button
               variant="secondary"
               size="sm"
               className="ml-1"
-              onClick={() =>
-                setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))
-              }
+              onClick={() => setSelectedDate(new Date())}
             >
-              <CalendarDays className="size-4 mr-1.5" />
               Today
             </Button>
           )}
+
+          {/* View range selector */}
+          <Select value={viewRange} onValueChange={(v) => setViewRange(v as ViewRange)}>
+            <SelectTrigger className="w-[110px] h-8 text-xs ml-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(VIEW_RANGE_LABELS) as ViewRange[]).map((key) => (
+                <SelectItem key={key} value={key}>
+                  {VIEW_RANGE_LABELS[key]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Action buttons + tab switcher */}
@@ -634,7 +722,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
 
       {/* Grid */}
       <ScheduleGrid
-        weekStart={weekStart}
+        days={days}
         staff={staff}
         gridData={gridData}
         isAdmin={true}

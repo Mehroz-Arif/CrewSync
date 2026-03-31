@@ -13,7 +13,6 @@ import { api } from "@/convex/_generated/api.js";
 import {
   format,
   isToday,
-  addDays,
   differenceInCalendarDays,
   parseISO,
 } from "date-fns";
@@ -89,7 +88,7 @@ export type LeaveNote = {
 };
 
 type ScheduleGridProps = {
-  weekStart: Date;
+  days: Date[];
   staff: StaffMember[];
   gridData: Map<string, CellShift[]>;
   isAdmin: boolean;
@@ -160,7 +159,7 @@ function UnassignedDropCell({
 }
 
 export default function ScheduleGrid({
-  weekStart,
+  days,
   staff,
   gridData,
   isAdmin,
@@ -287,7 +286,7 @@ export default function ScheduleGrid({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const dayCount = days.length;
 
   // Group unassigned shifts by date and pattern signature
   const unassignedGroupsByDate = useMemo(
@@ -422,7 +421,7 @@ export default function ScheduleGrid({
               <div
                 className="grid"
                 style={{
-                  gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
+                  gridTemplateColumns: `150px repeat(${dayCount}, minmax(${dayCount <= 3 ? "200px" : dayCount <= 7 ? "100px" : "80px"}, 1fr))`,
                 }}
               >
                 <div className="px-2 py-1.5 border-b border-r bg-card flex items-end">
@@ -439,7 +438,7 @@ export default function ScheduleGrid({
                     )}
                   >
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                      {format(day, "EEE")}
+                      {dayCount <= 7 ? format(day, "EEE") : format(day, "EEE")}
                     </div>
                     <div
                       className={cn(
@@ -447,7 +446,7 @@ export default function ScheduleGrid({
                         isToday(day) && "text-primary"
                       )}
                     >
-                      {format(day, "d")}
+                      {dayCount > 7 ? format(day, "d MMM") : format(day, "d")}
                     </div>
                   </div>
                 ))}
@@ -486,7 +485,7 @@ export default function ScheduleGrid({
                       <div
                         className="grid"
                         style={{
-                          gridTemplateColumns: "repeat(7, minmax(100px, 1fr))",
+                          gridTemplateColumns: `repeat(${dayCount}, minmax(${dayCount <= 3 ? "200px" : dayCount <= 7 ? "100px" : "80px"}, 1fr))`,
                         }}
                       >
                         {days.map((day) => {
@@ -531,7 +530,7 @@ export default function ScheduleGrid({
             <div
               className="grid"
               style={{
-                gridTemplateColumns: "150px repeat(7, minmax(100px, 1fr))",
+                gridTemplateColumns: `150px repeat(${dayCount}, minmax(${dayCount <= 3 ? "200px" : dayCount <= 7 ? "100px" : "80px"}, 1fr))`,
               }}
             >
               {staff.map((employee) => (
