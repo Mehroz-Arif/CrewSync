@@ -814,6 +814,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
           initialStartDate={editLeaveData.startDate}
           initialEndDate={editLeaveData.endDate}
           initialReason={editLeaveData.reason}
+          initialStatus={editLeaveData.status}
         />
       )}
 
