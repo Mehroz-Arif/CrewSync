@@ -26,7 +26,7 @@ import ShiftBlock from "./shift-block.tsx";
 import { ShiftBlockOverlay } from "./shift-block.tsx";
 import type { UnassignedShift } from "./unassigned-pool.tsx";
 import { UnassignedShiftOverlay, DraggableUnassignedGroup, groupUnassignedShifts } from "./unassigned-pool.tsx";
-import { Package } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AddAbsenceDialog from "./add-absence-dialog.tsx";
 
@@ -103,6 +103,7 @@ type ScheduleGridProps = {
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
   onUnassignedShiftClick?: (shift: UnassignedShift) => void;
+  onUnassignedCellClick?: (date: string) => void;
   onLeaveClick?: (leave: LeaveNote) => void;
   onAvailabilityClick?: (entry: UnavailNote) => void;
 };
@@ -117,12 +118,14 @@ function UnassignedDropCell({
   isCurrentDay,
   isShiftDragging,
   maxHeight,
+  onClick,
   children,
 }: {
   dateStr: string;
   isCurrentDay: boolean;
   isShiftDragging: boolean;
   maxHeight?: number;
+  onClick?: () => void;
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -134,12 +137,14 @@ function UnassignedDropCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "p-0.5 border-r bg-amber-500/[0.02] transition-colors",
+        "p-0.5 border-r bg-amber-500/[0.02] transition-colors min-h-[40px] relative group/unassigned",
+        onClick && "cursor-pointer hover:bg-amber-500/[0.06]",
         isCurrentDay && "bg-amber-500/[0.05]",
         isShiftDragging && !isOver && "bg-amber-500/[0.06] ring-1 ring-inset ring-dashed ring-amber-500/20",
         isOver && "bg-amber-500/15 ring-2 ring-inset ring-amber-500/40"
       )}
       style={undefined}
+      onClick={onClick}
     >
       <div className="space-y-1">
         {children}
@@ -149,6 +154,12 @@ function UnassignedDropCell({
           </div>
         )}
       </div>
+      {/* Add hint for empty cells */}
+      {onClick && !isShiftDragging && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/unassigned:opacity-100 transition-opacity pointer-events-none">
+          <Plus className="size-4 text-amber-600/40 dark:text-amber-400/40" />
+        </div>
+      )}
     </div>
   );
 }
@@ -168,6 +179,7 @@ export default function ScheduleGrid({
   onCellClick,
   onShiftClick,
   onUnassignedShiftClick,
+  onUnassignedCellClick,
   onLeaveClick,
   onAvailabilityClick,
 }: ScheduleGridProps) {
@@ -491,6 +503,7 @@ export default function ScheduleGrid({
                               dateStr={dateStr}
                               isCurrentDay={isToday(day)}
                               isShiftDragging={isDraggingUnpublishedShift}
+                              onClick={() => onUnassignedCellClick?.(dateStr)}
                             >
                               {dayGroups.map((group) => (
                                 <DraggableUnassignedGroup

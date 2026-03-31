@@ -501,6 +501,14 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     setDialogOpen(true);
   }
 
+  function handleUnassignedCellClick(dateStr: string) {
+    setDialogMode("create");
+    setDialogDate(dateStr);
+    setDialogUserId(undefined);
+    setDialogShift(undefined);
+    setDialogOpen(true);
+  }
+
   function handleLeaveClick(leave: LeaveNoteType) {
     setEditLeaveData(leave);
     setEditLeaveOpen(true);
@@ -640,6 +648,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}
         onUnassignedShiftClick={handleUnassignedShiftClick}
+        onUnassignedCellClick={handleUnassignedCellClick}
         onLeaveClick={handleLeaveClick}
         onAvailabilityClick={handleAvailabilityClick}
       />
