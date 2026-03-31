@@ -15,6 +15,7 @@ import {
   isToday,
   differenceInCalendarDays,
   parseISO,
+  differenceInMinutes,
 } from "date-fns";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
@@ -395,6 +396,21 @@ export default function ScheduleGrid({
     [moveAssignment, assignToShift, unassignFromShift]
   );
 
+  // Calculate total scheduled hours per staff member for the visible range
+  const staffHoursMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const [cellId, cellShifts] of gridData.entries()) {
+      const userId = cellId.split("__")[0];
+      let total = map.get(userId) ?? 0;
+      for (const shift of cellShifts) {
+        const mins = differenceInMinutes(parseISO(shift.endTime), parseISO(shift.startTime));
+        total += mins;
+      }
+      map.set(userId, total);
+    }
+    return map;
+  }, [gridData]);
+
   const hasUnassigned = unassignedShifts.length > 0;
 
   // True when an unpublished assigned shift is being dragged (can be dropped to unassign)
@@ -533,7 +549,10 @@ export default function ScheduleGrid({
                 gridTemplateColumns: `150px repeat(${dayCount}, minmax(${dayCount <= 3 ? "200px" : dayCount <= 7 ? "100px" : "80px"}, 1fr))`,
               }}
             >
-              {staff.map((employee) => (
+              {staff.map((employee) => {
+              const totalMins = staffHoursMap.get(employee._id) ?? 0;
+              const totalHours = totalMins / 60;
+              return (
               <Fragment key={employee._id}>
                 {/* Name cell */}
                 <div className="px-2 py-1.5 border-b border-r flex items-center gap-2 bg-muted/20">
@@ -553,11 +572,11 @@ export default function ScheduleGrid({
                       <div className="text-xs font-semibold truncate hover:underline">
                         {employee.name ?? "Unknown"}
                       </div>
-                      {employee.department && (
-                        <div className="text-[10px] text-muted-foreground truncate">
-                          {employee.department}
-                        </div>
-                      )}
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {totalHours > 0
+                          ? `${totalHours.toFixed(2)} h`
+                          : "0 h"}
+                      </div>
                     </div>
                   </button>
                 </div>
@@ -654,7 +673,8 @@ export default function ScheduleGrid({
                   );
                 })}
               </Fragment>
-            ))}
+              );
+            })}
             </div>
           </div>
         </div>
