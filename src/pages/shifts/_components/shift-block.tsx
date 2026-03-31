@@ -153,10 +153,7 @@ export default function ShiftBlock({
                 </span>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-48 text-xs font-medium bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800">
-                <div className="flex items-center gap-1.5">
-                  <AlertTriangle className="size-3 shrink-0 text-amber-500" />
-                  {restWarning}
-                </div>
+                {restWarning}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
