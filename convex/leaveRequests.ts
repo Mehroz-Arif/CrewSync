@@ -368,6 +368,63 @@ export const adminDeleteAbsence = mutation({
   },
 });
 
+/** Admin: add absence from a shift — creates a pending leave request and unassigns the user */
+export const addAbsenceFromShift = mutation({
+  args: {
+    userId: v.id("users"),
+    membershipId: v.id("shiftMembers"),
+    leaveType: LEAVE_TYPE_VALIDATOR,
+    startDate: v.string(),
+    endDate: v.string(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ message: "Not authenticated", code: "UNAUTHENTICATED" });
+    }
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin || admin.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can add absences", code: "FORBIDDEN" });
+    }
+
+    const target = await ctx.db.get(args.userId);
+    if (!target) {
+      throw new ConvexError({ message: "User not found", code: "NOT_FOUND" });
+    }
+
+    if (args.startDate > args.endDate) {
+      throw new ConvexError({ message: "Start date must be before or equal to end date", code: "BAD_REQUEST" });
+    }
+
+    // Create a pending leave request (needs approval)
+    const requestId = await ctx.db.insert("leaveRequests", {
+      userId: args.userId,
+      leaveType: args.leaveType,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      reason: args.reason,
+      status: "pending",
+    });
+
+    // Unassign the user from the shift
+    const membership = await ctx.db.get(args.membershipId);
+    if (membership) {
+      const shift = await ctx.db.get(membership.shiftId);
+      // If the shift is published, unpublish it first so it returns to the pool
+      if (shift?.published) {
+        await ctx.db.patch(shift._id, { published: false });
+      }
+      await ctx.db.delete(args.membershipId);
+    }
+
+    return requestId;
+  },
+});
+
 /** Admin: approve or reject a leave request */
 export const review = mutation({
   args: {

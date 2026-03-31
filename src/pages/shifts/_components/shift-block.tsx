@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { Truck, UserMinus, Eye, EyeOff, CheckCircle2, XCircle, CircleDashed, AlertTriangle } from "lucide-react";
+import { Truck, CalendarOff, UserMinus, Eye, EyeOff, CheckCircle2, XCircle, CircleDashed, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { roleColorStyles } from "../_lib/role-colors.ts";
 import {
@@ -9,6 +9,7 @@ import {
   ContextMenuContent,
   ContextMenuTrigger,
   ContextMenuItem,
+  ContextMenuSeparator,
 } from "@/components/ui/context-menu.tsx";
 import {
   Tooltip,
@@ -37,6 +38,7 @@ type ShiftBlockProps = {
   onUnassign?: () => void;
   onTogglePublish?: () => void;
   onAdminAccept?: () => void;
+  onAddAbsence?: () => void;
   hasVehicleConflict?: boolean;
 };
 
@@ -60,6 +62,7 @@ export default function ShiftBlock({
   onUnassign,
   onTogglePublish,
   onAdminAccept,
+  onAddAbsence,
 }: ShiftBlockProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -229,6 +232,20 @@ export default function ShiftBlock({
             <UserMinus className="size-3.5" />
             {published ? "Unpublish to unassign" : "Unassign from shift"}
           </ContextMenuItem>
+          {onAddAbsence && (
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddAbsence();
+                }}
+              >
+                <CalendarOff className="size-3.5" />
+                Add absence
+              </ContextMenuItem>
+            </>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     );

@@ -42,6 +42,7 @@ type AddAbsenceDialogProps = {
   userId: Id<"users">;
   userName: string;
   date: string; // "YYYY-MM-DD"
+  membershipId?: Id<"shiftMembers">; // when triggered from a shift block
 };
 
 export default function AddAbsenceDialog({
@@ -50,27 +51,48 @@ export default function AddAbsenceDialog({
   userId,
   userName,
   date,
+  membershipId,
 }: AddAbsenceDialogProps) {
   const createAbsence = useMutation(api.leaveRequests.adminCreateAbsence);
+  const addAbsenceFromShift = useMutation(api.leaveRequests.addAbsenceFromShift);
   const [leaveType, setLeaveType] = useState<LeaveType>("sick");
   const [endDate, setEndDate] = useState(date);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const isFromShift = !!membershipId;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await createAbsence({
-        userId,
-        leaveType,
-        startDate: date,
-        endDate: endDate < date ? date : endDate,
-        reason: reason.trim() || undefined,
-      });
-      toast.success(`Absence added for ${userName}`);
+      const finalEndDate = endDate < date ? date : endDate;
+      const trimmedReason = reason.trim() || undefined;
+
+      if (membershipId) {
+        // Shift-level: creates pending leave request + unassigns from shift
+        await addAbsenceFromShift({
+          userId,
+          membershipId,
+          leaveType,
+          startDate: date,
+          endDate: finalEndDate,
+          reason: trimmedReason,
+        });
+        toast.success(`Absence submitted for ${userName} — pending approval. Shift returned to unassigned.`);
+      } else {
+        // Cell-level: admin creates auto-approved absence
+        await createAbsence({
+          userId,
+          leaveType,
+          startDate: date,
+          endDate: finalEndDate,
+          reason: trimmedReason,
+        });
+        toast.success(`Absence added for ${userName}`);
+      }
+
       onOpenChange(false);
-      // Reset form
       setLeaveType("sick");
       setReason("");
     } catch (error) {
@@ -84,7 +106,6 @@ export default function AddAbsenceDialog({
     }
   };
 
-  // Reset end date when the dialog opens with a new date
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
       setEndDate(date);
@@ -101,6 +122,11 @@ export default function AddAbsenceDialog({
           <DialogDescription>
             Record an absence for {userName} starting{" "}
             {format(parseISO(date), "EEE, d MMM yyyy")}
+            {isFromShift && (
+              <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                This will unassign them from the shift and create a leave request pending approval.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -161,7 +187,7 @@ export default function AddAbsenceDialog({
             </Button>
             <Button type="submit" disabled={saving}>
               {saving && <Spinner className="mr-2" />}
-              Add absence
+              {isFromShift ? "Submit absence" : "Add absence"}
             </Button>
           </DialogFooter>
         </form>

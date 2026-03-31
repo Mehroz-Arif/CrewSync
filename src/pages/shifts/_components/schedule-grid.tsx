@@ -194,6 +194,7 @@ export default function ScheduleGrid({
     userId: Id<"users">;
     userName: string;
     date: string;
+    membershipId?: Id<"shiftMembers">; // set when triggered from a shift block
   } | null>(null);
 
   // Drag-resize state for unassigned section
@@ -664,6 +665,12 @@ export default function ScheduleGrid({
                           onUnassign={() => handleUnassign(shift.membershipId)}
                           onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}
                           onAdminAccept={() => handleAdminAccept(shift.membershipId)}
+                          onAddAbsence={isAdmin ? () => setAbsenceTarget({
+                            userId: employee._id,
+                            userName: employee.name ?? "Unknown",
+                            date: dateStr,
+                            membershipId: shift.membershipId,
+                          }) : undefined}
                         />
                       ))}
                       {/* Leave badges */}
@@ -732,6 +739,7 @@ export default function ScheduleGrid({
           userId={absenceTarget.userId}
           userName={absenceTarget.userName}
           date={absenceTarget.date}
+          membershipId={absenceTarget.membershipId}
         />
       )}
     </DndContext>
