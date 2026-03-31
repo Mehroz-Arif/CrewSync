@@ -17,6 +17,7 @@ type DayCellProps = {
   isToday: boolean;
   hasShifts: boolean;
   availability?: "available" | "unavailable";
+  isPositionMatch?: boolean;
   onCellClick: () => void;
   onAddAbsence?: () => void;
   onAvailabilityClick?: () => void;
@@ -31,6 +32,7 @@ export default function DayCell({
   isToday,
   hasShifts,
   availability,
+  isPositionMatch,
   onCellClick,
   onAddAbsence,
   onAvailabilityClick,
@@ -48,11 +50,13 @@ export default function DayCell({
       className={cn(
         "min-h-[56px] p-0.5 border-b border-r relative group/cell transition-colors",
         isOver && isAdmin && "bg-primary/10 ring-1 ring-inset ring-primary/25",
-        isToday && !isOver && "bg-primary/[0.03]",
+        isToday && !isOver && !isPositionMatch && "bg-primary/[0.03]",
         isAdmin && !hasShifts && "cursor-pointer hover:bg-muted/40",
-        // Availability indicators (subtle background)
-        !isOver && availability === "available" && "bg-emerald-500/[0.06]",
-        !isOver && availability === "unavailable" && "bg-rose-500/[0.06]"
+        // Position match highlight during drag
+        isPositionMatch && !isOver && "bg-emerald-500/[0.06]",
+        // Availability indicators (subtle background) — only when not position-highlighted
+        !isOver && !isPositionMatch && availability === "available" && "bg-emerald-500/[0.06]",
+        !isOver && !isPositionMatch && availability === "unavailable" && "bg-rose-500/[0.06]"
       )}
     >
       {/* Availability dot — clickable to edit */}

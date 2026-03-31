@@ -624,6 +624,7 @@ export default function ScheduleGrid({
                       isToday={isToday(day)}
                       hasShifts={cellShifts.length > 0}
                       availability={avail}
+                      isPositionMatch={isPositionMatch}
                       onCellClick={() => onCellClick(employee._id, day)}
                       onAddAbsence={isAdmin ? () => setAbsenceTarget({
                         userId: employee._id,
