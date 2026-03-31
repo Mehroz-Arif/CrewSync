@@ -32,18 +32,38 @@ import { ConvexError } from "convex/values";
 import { cn } from "@/lib/utils.ts";
 
 const COLOR_PRESETS = [
+  // Blues
   { id: "blue", hex: "#3b82f6" },
-  { id: "red", hex: "#ef4444" },
-  { id: "green", hex: "#22c55e" },
-  { id: "purple", hex: "#a855f7" },
-  { id: "orange", hex: "#f97316" },
-  { id: "teal", hex: "#14b8a6" },
-  { id: "pink", hex: "#ec4899" },
-  { id: "indigo", hex: "#6366f1" },
-  { id: "amber", hex: "#f59e0b" },
+  { id: "sky", hex: "#0ea5e9" },
   { id: "cyan", hex: "#06b6d4" },
-  { id: "slate", hex: "#64748b" },
+  { id: "indigo", hex: "#6366f1" },
+  { id: "navy", hex: "#1e3a5f" },
+  // Greens
+  { id: "green", hex: "#22c55e" },
+  { id: "emerald", hex: "#10b981" },
+  { id: "teal", hex: "#14b8a6" },
+  { id: "lime", hex: "#84cc16" },
+  { id: "mint", hex: "#34d399" },
+  // Reds & Pinks
+  { id: "red", hex: "#ef4444" },
   { id: "rose", hex: "#f43f5e" },
+  { id: "pink", hex: "#ec4899" },
+  { id: "fuchsia", hex: "#d946ef" },
+  { id: "coral", hex: "#f97066" },
+  // Purples
+  { id: "purple", hex: "#a855f7" },
+  { id: "violet", hex: "#8b5cf6" },
+  { id: "plum", hex: "#9333ea" },
+  // Oranges & Yellows
+  { id: "orange", hex: "#f97316" },
+  { id: "amber", hex: "#f59e0b" },
+  { id: "yellow", hex: "#eab308" },
+  { id: "tangerine", hex: "#fb923c" },
+  // Neutrals & Earth tones
+  { id: "slate", hex: "#64748b" },
+  { id: "stone", hex: "#78716c" },
+  { id: "brown", hex: "#92400e" },
+  { id: "charcoal", hex: "#374151" },
 ] as const;
 
 export default function FieldsTab({ isAdmin }: { isAdmin: boolean }) {
