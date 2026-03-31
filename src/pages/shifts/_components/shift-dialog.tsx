@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import {
   Dialog,
@@ -14,6 +14,13 @@ import { Textarea } from "@/components/ui/textarea.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Checkbox } from "@/components/ui/checkbox.tsx";
 import { Spinner } from "@/components/ui/spinner.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ConvexError } from "convex/values";
@@ -62,6 +69,7 @@ export default function ShiftDialog({
   const createShift = useMutation(api.shifts.create);
   const updateShift = useMutation(api.shifts.update);
   const deleteShift = useMutation(api.shifts.remove);
+  const positionOptions = useQuery(api.positions.list);
 
   const [date, setDate] = useState(() => {
     if (shift) return format(parseISO(shift.startTime), "yyyy-MM-dd");
@@ -233,11 +241,30 @@ export default function ShiftDialog({
           {/* Position */}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Position</Label>
-            <Input
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              placeholder="Ambulance Care Assistant, Emergency Care Assistant..."
-            />
+            <Select
+              value={position || "none"}
+              onValueChange={(v) => setPosition(v === "none" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select position" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No position</SelectItem>
+                {positionOptions?.map((pos) => (
+                  <SelectItem key={pos.label} value={pos.label}>
+                    <div className="flex items-center gap-2">
+                      {pos.color && (
+                        <span
+                          className="size-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: pos.color }}
+                        />
+                      )}
+                      {pos.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Notes */}
