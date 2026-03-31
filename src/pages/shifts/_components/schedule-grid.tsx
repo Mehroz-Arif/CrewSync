@@ -565,8 +565,12 @@ export default function ScheduleGrid({
                     className="flex items-center gap-2 min-w-0 rounded-md hover:bg-muted/60 transition-colors px-1 py-0.5 -mx-1 -my-0.5 cursor-pointer"
                     title={`View ${employee.name ?? "Unknown"}'s profile`}
                   >
-                    <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[11px] shrink-0">
-                      {employee.name?.charAt(0)?.toUpperCase() ?? "?"}
+                    <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[10px] shrink-0">
+                      {(employee.name ?? "?")
+                        .split(" ")
+                        .map((w) => w.charAt(0).toUpperCase())
+                        .join("")
+                        .slice(0, 2)}
                     </div>
                     <div className="min-w-0 flex flex-col items-start">
                       <span className="text-xs font-semibold truncate hover:underline leading-normal max-w-full">
