@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { format, parseISO } from "date-fns";
-import { Truck, Send, UserMinus, Eye, EyeOff, CheckCircle2, XCircle, CircleDashed } from "lucide-react";
+import { Truck, Send, UserMinus, Eye, EyeOff, CheckCircle2, XCircle, CircleDashed, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { roleColorStyles } from "../_lib/role-colors.ts";
 import {
@@ -26,6 +26,7 @@ type ShiftBlockProps = {
   published: boolean;
   responseStatus?: "pending" | "accepted" | "declined";
   declineReason?: string;
+  restWarning?: string; // e.g. "Only 8.5h rest before this shift"
   onClick: () => void;
   onUnassign?: () => void;
   onTogglePublish?: () => void;
@@ -48,6 +49,7 @@ export default function ShiftBlock({
   published,
   responseStatus,
   declineReason,
+  restWarning,
   onClick,
   onUnassign,
   onTogglePublish,
@@ -136,6 +138,9 @@ export default function ShiftBlock({
           {format(parseISO(endTime), "HH:mm")}
         </span>
         {responseIcon}
+        {restWarning && (
+          <AlertTriangle className="size-3 shrink-0 text-amber-500" title={restWarning} />
+        )}
       </div>
       <div className="relative z-[1] flex items-center gap-1 text-[10px] opacity-75 truncate mt-0.5">
         <Truck className="size-2.5 shrink-0" />
@@ -143,6 +148,12 @@ export default function ShiftBlock({
           {callSign ? `${callSign} · ${allocatedVehicle ?? vehicle}` : displayVehicle}{position ? ` · ${position}` : ""}
         </span>
       </div>
+      {restWarning && (
+        <div className="relative z-[1] text-[9px] text-amber-600 dark:text-amber-400 truncate mt-0.5 font-medium" title={restWarning}>
+          <AlertTriangle className="size-2.5 inline mr-0.5 -mt-0.5" />
+          {restWarning}
+        </div>
+      )}
       {published && isAdmin && responseStatus === "declined" && declineReason && (
         <div className="relative z-[1] text-[9px] text-rose-500 truncate mt-0.5 italic" title={declineReason}>
           {declineReason}

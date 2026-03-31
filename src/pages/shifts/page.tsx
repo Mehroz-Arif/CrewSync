@@ -354,6 +354,43 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
     return map;
   }, [shifts, vehicleAllocationMap]);
 
+  // Compute rest period warnings: flag shifts with < 11h gap from the previous shift for the same user
+  const MIN_REST_HOURS = 11;
+  const restWarnings = useMemo(() => {
+    const warnings = new Map<string, string>();
+    if (!shifts) return warnings;
+
+    // Group all membership entries by userId
+    const userShifts = new Map<string, Array<{ membershipId: string; startTime: string; endTime: string }>>();
+    for (const shift of shifts) {
+      for (const member of shift.members) {
+        const list = userShifts.get(member.userId) ?? [];
+        list.push({
+          membershipId: member.membershipId,
+          startTime: shift.startTime,
+          endTime: shift.endTime,
+        });
+        userShifts.set(member.userId, list);
+      }
+    }
+
+    // For each user, sort shifts by start time and check rest between consecutive shifts
+    for (const [, entries] of userShifts) {
+      if (entries.length < 2) continue;
+      entries.sort((a, b) => a.startTime.localeCompare(b.startTime));
+      for (let i = 1; i < entries.length; i++) {
+        const prevEnd = new Date(entries[i - 1].endTime).getTime();
+        const currStart = new Date(entries[i].startTime).getTime();
+        const restHours = (currStart - prevEnd) / (1000 * 60 * 60);
+        if (restHours >= 0 && restHours < MIN_REST_HOURS) {
+          const restLabel = restHours.toFixed(1);
+          warnings.set(entries[i].membershipId, `Only ${restLabel}h rest`);
+        }
+      }
+    }
+    return warnings;
+  }, [shifts]);
+
   // Build availability map — for cells with multiple entries, "unavailable" takes priority
   const availabilityData = useMemo(() => {
     const map = new Map<string, "available" | "unavailable">();
@@ -734,6 +771,7 @@ function AdminScheduleView({ staff }: { staff: StaffMember[] }) {
         declineData={declineData}
         leaveData={leaveData}
         roleColorMap={roleColorMap}
+        restWarnings={restWarnings}
         onCellClick={handleCellClick}
         onShiftClick={handleShiftClick}
         onUnassignedShiftClick={handleUnassignedShiftClick}

@@ -101,6 +101,7 @@ type ScheduleGridProps = {
   declineData?: Map<string, DeclineNote[]>;
   leaveData?: Map<string, LeaveNote[]>;
   roleColorMap: Record<string, string>; // position label → hex colour
+  restWarnings?: Map<string, string>; // membershipId → warning message
   onCellClick: (userId: Id<"users">, date: Date) => void;
   onShiftClick: (shift: CellShift) => void;
   onUnassignedShiftClick?: (shift: UnassignedShift) => void;
@@ -172,6 +173,7 @@ export default function ScheduleGrid({
   declineData,
   leaveData,
   roleColorMap,
+  restWarnings,
   onCellClick,
   onShiftClick,
   onUnassignedShiftClick,
@@ -657,6 +659,7 @@ export default function ScheduleGrid({
                           published={shift.published}
                           responseStatus={shift.responseStatus}
                           declineReason={shift.declineReason}
+                          restWarning={restWarnings?.get(shift.membershipId)}
                           onClick={() => onShiftClick(shift)}
                           onUnassign={() => handleUnassign(shift.membershipId)}
                           onTogglePublish={() => handleTogglePublish(shift.shiftId as Id<"shifts">, shift.published)}
