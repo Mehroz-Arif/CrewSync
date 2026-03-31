@@ -562,21 +562,19 @@ export default function ScheduleGrid({
                       e.stopPropagation();
                       navigate(`/team/${employee._id}`);
                     }}
-                    className="flex items-center gap-2 min-w-0 rounded-md hover:bg-muted/60 transition-colors px-1 py-0.5 -mx-1 -my-0.5 cursor-pointer"
+                    className="flex items-start gap-2 min-w-0 rounded-md hover:bg-muted/60 transition-colors px-1 py-0.5 -mx-1 -my-0.5 cursor-pointer"
                     title={`View ${employee.name ?? "Unknown"}'s profile`}
                   >
-                    <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[10px] shrink-0">
+                    <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-[10px] shrink-0 mt-0.5">
                       {employee.name?.charAt(0)?.toUpperCase() ?? "?"}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold truncate hover:underline">
+                      <div className="text-xs font-semibold truncate leading-tight hover:underline">
                         {employee.name ?? "Unknown"}
                       </div>
                       {totalHours > 0 && (
-                        <div className="text-[10px] text-muted-foreground/70 truncate">
-                          {totalHours % 1 === 0
-                            ? `${totalHours.toFixed(0)}.00 h`
-                            : `${totalHours.toFixed(2)} h`}
+                        <div className="text-[10px] text-muted-foreground/70 leading-tight">
+                          {totalHours.toFixed(2)} h
                         </div>
                       )}
                     </div>
