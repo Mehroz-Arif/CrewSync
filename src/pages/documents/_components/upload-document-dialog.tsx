@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import { toast } from "sonner";
-import { Upload, FileUp } from "lucide-react";
+import { Upload, FileUp, Rss } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Spinner } from "@/components/ui/spinner.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
 import { formatFileSize } from "../_lib/file-utils.ts";
 
 type Props = {
@@ -29,6 +30,8 @@ export default function UploadDocumentDialog({ open, onOpenChange, folderId }: P
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [publishToFeed, setPublishToFeed] = useState(false);
+  const [feedTitle, setFeedTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const generateUploadUrl = useMutation(api.documents.generateUploadUrl);
@@ -78,16 +81,20 @@ export default function UploadDocumentDialog({ open, onOpenChange, folderId }: P
           fileType: file.type,
           fileSize: file.size,
           description: description.trim() || undefined,
+          publishToFeed,
+          feedTitle: feedTitle.trim() || undefined,
         });
       }
 
       toast.success(
         files.length === 1
-          ? "Document uploaded"
-          : `${files.length} documents uploaded`,
+          ? `Document uploaded${publishToFeed ? " and posted to feed" : ""}`
+          : `${files.length} documents uploaded${publishToFeed ? " and posted to feed" : ""}`,
       );
       setFiles([]);
       setDescription("");
+      setPublishToFeed(false);
+      setFeedTitle("");
       onOpenChange(false);
     } catch {
       toast.error("Upload failed. Please try again.");
@@ -99,6 +106,8 @@ export default function UploadDocumentDialog({ open, onOpenChange, folderId }: P
   const reset = () => {
     setFiles([]);
     setDescription("");
+    setPublishToFeed(false);
+    setFeedTitle("");
   };
 
   return (
@@ -170,6 +179,39 @@ export default function UploadDocumentDialog({ open, onOpenChange, folderId }: P
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Publish to news feed toggle */}
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Rss className="size-4 text-primary" />
+                <div>
+                  <Label htmlFor="publish-feed" className="text-sm font-medium cursor-pointer">
+                    Publish to News Feed
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Notify the team about this document
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="publish-feed"
+                checked={publishToFeed}
+                onCheckedChange={setPublishToFeed}
+              />
+            </div>
+            {publishToFeed && (
+              <div className="space-y-2 pt-1">
+                <Label htmlFor="feed-title">Post title (optional)</Label>
+                <Input
+                  id="feed-title"
+                  placeholder="e.g. New safety policy now available"
+                  value={feedTitle}
+                  onChange={(e) => setFeedTitle(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>

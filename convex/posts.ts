@@ -88,6 +88,16 @@ export const list = query({
           ? await ctx.storage.getUrl(post.imageStorageId)
           : null;
 
+        // Resolve linked document info
+        let documentInfo: { name: string; url: string | null; fileType: string } | null = null;
+        if (post.documentId) {
+          const doc = await ctx.db.get(post.documentId);
+          if (doc) {
+            const docUrl = await ctx.storage.getUrl(doc.storageId);
+            documentInfo = { name: doc.name, url: docUrl, fileType: doc.fileType };
+          }
+        }
+
         // For system posts (birthday, feedback), use #team[orgName] as author
         let displayName = author?.name ?? "Unknown";
         let isSystemPost = false;
@@ -108,6 +118,7 @@ export const list = query({
           authorAvatarUrl: isSystemPost ? undefined : author?.avatarUrl,
           authorDepartment: isSystemPost ? undefined : author?.department,
           imageUrl,
+          documentInfo,
         };
       })
     );

@@ -13,6 +13,8 @@ import {
   MessageCircle,
   Cake,
   Hash,
+  FileText,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -87,6 +89,7 @@ function PostCard({
     authorDepartment?: string;
     authorId: Id<"users">;
     imageUrl?: string | null;
+    documentInfo?: { name: string; url: string | null; fileType: string } | null;
   };
   isLiked: boolean;
   currentUserId: Id<"users"> | undefined;
@@ -194,6 +197,32 @@ function PostCard({
             className="w-full max-h-80 object-cover"
             loading="lazy"
           />
+        </div>
+      )}
+
+      {/* Document attachment */}
+      {post.documentInfo && (
+        <div className="rounded-lg border bg-muted/40 p-3 flex items-center gap-3">
+          <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <FileText className="size-4 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{post.documentInfo.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {post.documentInfo.fileType.split("/").pop()?.toUpperCase() ?? "File"}
+            </p>
+          </div>
+          {post.documentInfo.url && (
+            <a
+              href={post.documentInfo.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 rounded-md p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              title="Download document"
+            >
+              <Download className="size-4" />
+            </a>
+          )}
         </div>
       )}
 

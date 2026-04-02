@@ -187,6 +187,8 @@ export const uploadDocument = mutation({
     fileType: v.string(),
     fileSize: v.number(),
     description: v.optional(v.string()),
+    publishToFeed: v.optional(v.boolean()),
+    feedTitle: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -195,7 +197,7 @@ export const uploadDocument = mutation({
     if (!user) throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
     if (user.role !== "admin") throw new ConvexError({ code: "FORBIDDEN", message: "Only admins can upload documents" });
 
-    return await ctx.db.insert("documents", {
+    const docId = await ctx.db.insert("documents", {
       name: args.name,
       folderId: args.folderId,
       storageId: args.storageId,
@@ -204,6 +206,22 @@ export const uploadDocument = mutation({
       uploadedBy: user._id,
       description: args.description,
     });
+
+    // Optionally publish an announcement to the news feed
+    if (args.publishToFeed) {
+      await ctx.db.insert("posts", {
+        authorId: user._id,
+        title: args.feedTitle?.trim() || `New document: ${args.name}`,
+        body: args.description?.trim() || `A new document "${args.name}" has been uploaded and is now available in Documents.`,
+        category: "announcement",
+        pinned: false,
+        likesCount: 0,
+        commentsEnabled: true,
+        documentId: docId,
+      });
+    }
+
+    return docId;
   },
 });
 

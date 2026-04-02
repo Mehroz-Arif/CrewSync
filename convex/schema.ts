@@ -65,6 +65,7 @@ export default defineSchema({
     commentsEnabled: v.optional(v.boolean()), // false = comments turned off
     birthdayUserId: v.optional(v.id("users")), // links birthday posts to the birthday person
     imageStorageId: v.optional(v.id("_storage")),
+    documentId: v.optional(v.id("documents")),
   }).index("by_author", ["authorId"]),
 
   postLikes: defineTable({
