@@ -23,6 +23,7 @@ import type * as profiles from "../profiles.js";
 import type * as recognitions from "../recognitions.js";
 import type * as rewards from "../rewards.js";
 import type * as shiftPatterns from "../shiftPatterns.js";
+import type * as shiftSwaps from "../shiftSwaps.js";
 import type * as shifts from "../shifts.js";
 import type * as superAdmin from "../superAdmin.js";
 import type * as timeTracking from "../timeTracking.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   recognitions: typeof recognitions;
   rewards: typeof rewards;
   shiftPatterns: typeof shiftPatterns;
+  shiftSwaps: typeof shiftSwaps;
   shifts: typeof shifts;
   superAdmin: typeof superAdmin;
   timeTracking: typeof timeTracking;

@@ -356,6 +356,26 @@ export default defineSchema({
     .index("by_user_and_period", ["userId", "periodStart"])
     .index("by_status", ["status"]),
 
+  // Shift swap requests between staff members
+  shiftSwaps: defineTable({
+    requesterUserId: v.id("users"),
+    requesterShiftId: v.id("shifts"),
+    requesterMembershipId: v.id("shiftMembers"),
+    targetUserId: v.id("users"),
+    targetShiftId: v.id("shifts"),
+    targetMembershipId: v.id("shiftMembers"),
+    reason: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("cancelled")
+    ),
+  })
+    .index("by_requester", ["requesterUserId"])
+    .index("by_target", ["targetUserId"])
+    .index("by_status", ["status"]),
+
   // Leave / time-off requests
   leaveRequests: defineTable({
     userId: v.id("users"),

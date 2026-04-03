@@ -18,6 +18,7 @@ import {
   Send,
   Calendar,
   CalendarRange,
+  ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -32,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
@@ -47,6 +49,7 @@ import MonthlyCalendar from "./_components/monthly-calendar.tsx";
 import WeeklyCalendar from "./_components/weekly-calendar.tsx";
 import PatternsTab from "./_components/patterns-tab.tsx";
 import VehicleAllocationsTab from "./_components/vehicle-allocations-tab.tsx";
+import ShiftSwapsSection from "./_components/shift-swaps-section.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 import { buildRoleColorMap } from "./_lib/role-colors.ts";
 
@@ -76,9 +79,13 @@ export default function ShiftsPage() {
   );
 }
 
-/** Staff view with Week/Month toggle */
+/** Staff view with Week/Month/Swaps toggle */
 function StaffScheduleView() {
-  const [view, setView] = useState<"week" | "month">("month");
+  const [view, setView] = useState<"week" | "month" | "swaps">("month");
+
+  // Get swap count for badge
+  const swapData = useQuery(api.shiftSwaps.getMySwapRequests);
+  const pendingIncomingCount = swapData?.received.filter((r) => r.status === "pending").length ?? 0;
 
   return (
     <div className="space-y-2">
@@ -103,11 +110,27 @@ function StaffScheduleView() {
             <Calendar className="size-4" />
             Month
           </Button>
+          <Button
+            variant={view === "swaps" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setView("swaps")}
+            className="gap-1.5 relative"
+          >
+            <ArrowLeftRight className="size-4" />
+            Swaps
+            {pendingIncomingCount > 0 && (
+              <Badge variant="default" className="absolute -top-1.5 -right-1.5 size-4 p-0 flex items-center justify-center text-[9px]">
+                {pendingIncomingCount}
+              </Badge>
+            )}
+          </Button>
         </div>
       </div>
 
       {/* View content */}
-      {view === "week" ? <WeeklyCalendar /> : <MonthlyCalendar />}
+      {view === "week" && <WeeklyCalendar />}
+      {view === "month" && <MonthlyCalendar />}
+      {view === "swaps" && <ShiftSwapsSection />}
     </div>
   );
 }

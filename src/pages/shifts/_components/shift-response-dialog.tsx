@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Check,
   X as XIcon,
+  ArrowLeftRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -57,12 +58,14 @@ type ShiftResponseDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   shift: ShiftForResponse | null;
+  onRequestSwap?: () => void;
 };
 
 export default function ShiftResponseDialog({
   open,
   onOpenChange,
   shift,
+  onRequestSwap,
 }: ShiftResponseDialogProps) {
   const isMobile = useIsMobile();
 
@@ -80,7 +83,7 @@ export default function ShiftResponseDialog({
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-2">
-            <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} />
+            <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} onRequestSwap={onRequestSwap} />
           </div>
           <DrawerFooter />
         </DrawerContent>
@@ -97,7 +100,7 @@ export default function ShiftResponseDialog({
             {format(parseISO(shift.startTime), "EEEE, MMM d yyyy")}
           </DialogDescription>
         </DialogHeader>
-        <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} />
+        <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} onRequestSwap={onRequestSwap} />
       </DialogContent>
     </Dialog>
   );
@@ -107,9 +110,11 @@ export default function ShiftResponseDialog({
 function ShiftResponseContent({
   shift,
   onClose,
+  onRequestSwap,
 }: {
   shift: ShiftForResponse;
   onClose: () => void;
+  onRequestSwap?: () => void;
 }) {
   const respondToShift = useMutation(api.shifts.respondToShift);
   const [showDecline, setShowDecline] = useState(false);
@@ -196,11 +201,22 @@ function ShiftResponseContent({
 
       {/* Current status display */}
       {shift.responseStatus === "accepted" && (
-        <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-4 py-3">
-          <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-            You have accepted this shift
-          </span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-4 py-3">
+            <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              You have accepted this shift
+            </span>
+          </div>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="w-full gap-2"
+            onClick={() => onRequestSwap?.()}
+          >
+            <ArrowLeftRight className="size-4" />
+            Request Swap
+          </Button>
         </div>
       )}
 
