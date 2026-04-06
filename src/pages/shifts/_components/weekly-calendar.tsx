@@ -32,6 +32,7 @@ import { ConvexError } from "convex/values";
 import AvailabilityDialog from "./availability-dialog.tsx";
 import ShiftResponseDialog from "./shift-response-dialog.tsx";
 import SwapRequestDialog from "./swap-request-dialog.tsx";
+import RequestCoverDialog from "./request-cover-dialog.tsx";
 import type { ShiftForResponse } from "./shift-response-dialog.tsx";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
@@ -66,6 +67,7 @@ export default function WeeklyCalendar() {
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<ShiftForResponse | null>(null);
   const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [coverDialogOpen, setCoverDialogOpen] = useState(false);
 
   const weekEnd = addDays(weekStart, 7);
 
@@ -473,6 +475,10 @@ export default function WeeklyCalendar() {
           setShiftDialogOpen(false);
           setSwapDialogOpen(true);
         }}
+        onRequestCover={() => {
+          setShiftDialogOpen(false);
+          setCoverDialogOpen(true);
+        }}
       />
 
       {/* Swap Request Dialog */}
@@ -484,6 +490,20 @@ export default function WeeklyCalendar() {
           shiftId={selectedShift._id}
           shiftStartTime={selectedShift.startTime}
           shiftEndTime={selectedShift.endTime}
+        />
+      )}
+
+      {/* Cover Request Dialog */}
+      {selectedShift && (
+        <RequestCoverDialog
+          open={coverDialogOpen}
+          onOpenChange={setCoverDialogOpen}
+          membershipId={selectedShift.membershipId}
+          shiftStartTime={selectedShift.startTime}
+          shiftEndTime={selectedShift.endTime}
+          shiftCallSign={selectedShift.callSign}
+          shiftVehicle={selectedShift.vehicle}
+          shiftPosition={selectedShift.position}
         />
       )}
     </div>

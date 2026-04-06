@@ -14,6 +14,7 @@ import {
   Check,
   X as XIcon,
   ArrowLeftRight,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Dialog,
@@ -59,6 +60,7 @@ type ShiftResponseDialogProps = {
   onOpenChange: (open: boolean) => void;
   shift: ShiftForResponse | null;
   onRequestSwap?: () => void;
+  onRequestCover?: () => void;
 };
 
 export default function ShiftResponseDialog({
@@ -66,6 +68,7 @@ export default function ShiftResponseDialog({
   onOpenChange,
   shift,
   onRequestSwap,
+  onRequestCover,
 }: ShiftResponseDialogProps) {
   const isMobile = useIsMobile();
 
@@ -83,7 +86,7 @@ export default function ShiftResponseDialog({
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-2">
-            <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} onRequestSwap={onRequestSwap} />
+            <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} onRequestSwap={onRequestSwap} onRequestCover={onRequestCover} />
           </div>
           <DrawerFooter />
         </DrawerContent>
@@ -100,7 +103,7 @@ export default function ShiftResponseDialog({
             {format(parseISO(shift.startTime), "EEEE, MMM d yyyy")}
           </DialogDescription>
         </DialogHeader>
-        <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} onRequestSwap={onRequestSwap} />
+        <ShiftResponseContent shift={shift} onClose={() => onOpenChange(false)} onRequestSwap={onRequestSwap} onRequestCover={onRequestCover} />
       </DialogContent>
     </Dialog>
   );
@@ -111,10 +114,12 @@ function ShiftResponseContent({
   shift,
   onClose,
   onRequestSwap,
+  onRequestCover,
 }: {
   shift: ShiftForResponse;
   onClose: () => void;
   onRequestSwap?: () => void;
+  onRequestCover?: () => void;
 }) {
   const respondToShift = useMutation(api.shifts.respondToShift);
   const [showDecline, setShowDecline] = useState(false);
@@ -208,15 +213,26 @@ function ShiftResponseContent({
               You have accepted this shift
             </span>
           </div>
-          <Button
-            size="lg"
-            variant="secondary"
-            className="w-full gap-2"
-            onClick={() => onRequestSwap?.()}
-          >
-            <ArrowLeftRight className="size-4" />
-            Request Swap
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="lg"
+              variant="secondary"
+              className="flex-1 gap-2"
+              onClick={() => onRequestSwap?.()}
+            >
+              <ArrowLeftRight className="size-4" />
+              Swap
+            </Button>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="flex-1 gap-2"
+              onClick={() => onRequestCover?.()}
+            >
+              <ShieldCheck className="size-4" />
+              Request Cover
+            </Button>
+          </div>
         </div>
       )}
 

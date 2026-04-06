@@ -18,6 +18,7 @@ import {
   LayoutGrid,
   HandHelping,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -35,6 +36,7 @@ import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import { SwapBoardPostings, MySwapPostings } from "./swap-board.tsx";
+import { CoverRequestBoard, MyCoverRequests } from "./cover-board.tsx";
 
 type ShiftInfo = {
   startTime: string;
@@ -45,18 +47,19 @@ type ShiftInfo = {
 } | null;
 
 export default function ShiftSwapsSection() {
-  const [tab, setTab] = useState<"board" | "activity">("board");
+  const [tab, setTab] = useState<"board" | "cover" | "activity">("board");
 
   const boardCounts = useQuery(api.swapBoard.getBoardCounts);
   const swapData = useQuery(api.shiftSwaps.getMySwapRequests);
+  const coverCounts = useQuery(api.coverRequests.getCoverCounts);
 
   const pendingDirectCount = swapData?.received.filter((r) => r.status === "pending").length ?? 0;
-  const totalActivityBadge = (boardCounts?.pendingOfferCount ?? 0) + pendingDirectCount;
+  const totalActivityBadge = (boardCounts?.pendingOfferCount ?? 0) + pendingDirectCount + (coverCounts?.myOpenCount ?? 0);
 
   return (
     <div className="space-y-4">
       {/* Tab toggle */}
-      <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1 w-fit">
+      <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1 w-fit flex-wrap">
         <Button
           variant={tab === "board" ? "secondary" : "ghost"}
           size="sm"
@@ -68,6 +71,20 @@ export default function ShiftSwapsSection() {
           {(boardCounts?.boardCount ?? 0) > 0 && (
             <Badge variant="default" className="absolute -top-1.5 -right-1.5 size-4 p-0 flex items-center justify-center text-[9px]">
               {boardCounts?.boardCount}
+            </Badge>
+          )}
+        </Button>
+        <Button
+          variant={tab === "cover" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setTab("cover")}
+          className="gap-1.5 relative"
+        >
+          <ShieldCheck className="size-4" />
+          Cover
+          {(coverCounts?.openCount ?? 0) > 0 && (
+            <Badge variant="default" className="absolute -top-1.5 -right-1.5 size-4 p-0 flex items-center justify-center text-[9px]">
+              {coverCounts?.openCount}
             </Badge>
           )}
         </Button>
@@ -89,8 +106,12 @@ export default function ShiftSwapsSection() {
 
       {/* Content */}
       {tab === "board" && <SwapBoardPostings />}
+      {tab === "cover" && <CoverRequestBoard />}
       {tab === "activity" && (
         <div className="space-y-6">
+          {/* Cover requests */}
+          <MyCoverRequests />
+
           {/* Board-based postings & offers */}
           <MySwapPostings />
 

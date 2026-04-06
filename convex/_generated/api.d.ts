@@ -11,6 +11,7 @@
 import type * as analytics from "../analytics.js";
 import type * as availability from "../availability.js";
 import type * as calendarEvents from "../calendarEvents.js";
+import type * as coverRequests from "../coverRequests.js";
 import type * as documents from "../documents.js";
 import type * as feedback from "../feedback.js";
 import type * as giftShop from "../giftShop.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   availability: typeof availability;
   calendarEvents: typeof calendarEvents;
+  coverRequests: typeof coverRequests;
   documents: typeof documents;
   feedback: typeof feedback;
   giftShop: typeof giftShop;

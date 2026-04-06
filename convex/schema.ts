@@ -460,6 +460,24 @@ export default defineSchema({
     .index("by_posting", ["postingId"])
     .index("by_user", ["userId"]),
 
+  // Shift cover requests — staff ask qualified colleagues to cover their shift
+  coverRequests: defineTable({
+    requesterId: v.id("users"),
+    shiftId: v.id("shifts"),
+    membershipId: v.id("shiftMembers"),
+    reason: v.optional(v.string()),
+    status: v.union(
+      v.literal("open"),
+      v.literal("claimed"),
+      v.literal("cancelled")
+    ),
+    claimedByUserId: v.optional(v.id("users")),
+    claimedAt: v.optional(v.string()), // ISO 8601
+  })
+    .index("by_status", ["status"])
+    .index("by_requester", ["requesterId"])
+    .index("by_shift", ["shiftId"]),
+
   // Leave / time-off requests
   leaveRequests: defineTable({
     userId: v.id("users"),

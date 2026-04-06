@@ -373,3 +373,59 @@ export const getMySwapRequests = query({
     };
   },
 });
+
+/** Admin report: Get all direct shift swaps */
+export const getAllForReport = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can view swap reports", code: "FORBIDDEN" });
+    }
+
+    const allSwaps = await ctx.db.query("shiftSwaps").collect();
+
+    const enriched = await Promise.all(
+      allSwaps.map(async (swap) => {
+        const requester = await ctx.db.get(swap.requesterUserId);
+        const target = await ctx.db.get(swap.targetUserId);
+        const requesterShift = await ctx.db.get(swap.requesterShiftId);
+        const targetShift = await ctx.db.get(swap.targetShiftId);
+
+        return {
+          _id: swap._id,
+          _creationTime: swap._creationTime,
+          status: swap.status,
+          reason: swap.reason,
+          requesterName: requester?.name ?? "Unknown",
+          requesterId: swap.requesterUserId,
+          targetName: target?.name ?? "Unknown",
+          targetId: swap.targetUserId,
+          requesterShift: requesterShift
+            ? {
+                startTime: requesterShift.startTime,
+                endTime: requesterShift.endTime,
+                vehicle: requesterShift.vehicle,
+                callSign: requesterShift.callSign,
+              }
+            : null,
+          targetShift: targetShift
+            ? {
+                startTime: targetShift.startTime,
+                endTime: targetShift.endTime,
+                vehicle: targetShift.vehicle,
+                callSign: targetShift.callSign,
+              }
+            : null,
+        };
+      })
+    );
+
+    return enriched.sort((a, b) => b._creationTime - a._creationTime);
+  },
+});

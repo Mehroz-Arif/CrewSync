@@ -510,3 +510,78 @@ export const getBoardCounts = query({
     return { boardCount, pendingOfferCount };
   },
 });
+
+/** Admin report: Get all swap board postings with details */
+export const getAllPostingsForReport = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ message: "User not logged in", code: "UNAUTHENTICATED" });
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!currentUser || currentUser.role !== "admin") {
+      throw new ConvexError({ message: "Only admins can view swap reports", code: "FORBIDDEN" });
+    }
+
+    const allPostings = await ctx.db.query("swapPostings").collect();
+
+    const enriched = await Promise.all(
+      allPostings.map(async (posting) => {
+        const user = await ctx.db.get(posting.userId);
+        const shift = await ctx.db.get(posting.shiftId);
+
+        const offers = await ctx.db
+          .query("swapOffers")
+          .withIndex("by_posting", (q) => q.eq("postingId", posting._id))
+          .collect();
+
+        const enrichedOffers = await Promise.all(
+          offers.map(async (offer) => {
+            const offerer = await ctx.db.get(offer.userId);
+            const offerShift = await ctx.db.get(offer.shiftId);
+            return {
+              _id: offer._id,
+              status: offer.status,
+              note: offer.note,
+              offererName: offerer?.name ?? "Unknown",
+              offererId: offer.userId,
+              shift: offerShift
+                ? {
+                    startTime: offerShift.startTime,
+                    endTime: offerShift.endTime,
+                    vehicle: offerShift.vehicle,
+                    callSign: offerShift.callSign,
+                  }
+                : null,
+            };
+          })
+        );
+
+        return {
+          _id: posting._id,
+          _creationTime: posting._creationTime,
+          status: posting.status,
+          note: posting.note,
+          posterName: user?.name ?? "Unknown",
+          posterId: posting.userId,
+          shift: shift
+            ? {
+                startTime: shift.startTime,
+                endTime: shift.endTime,
+                vehicle: shift.vehicle,
+                callSign: shift.callSign,
+                position: shift.position ?? shift.staffRole,
+              }
+            : null,
+          offers: enrichedOffers,
+          offerCount: offers.length,
+          acceptedOffer: enrichedOffers.find((o) => o.status === "accepted"),
+        };
+      })
+    );
+
+    return enriched.sort((a, b) => b._creationTime - a._creationTime);
+  },
+});
