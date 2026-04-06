@@ -218,24 +218,24 @@ export default function ShiftDialog({
             </div>
           </div>
 
-          {/* Vehicle */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Vehicle</Label>
-            <Input
-              value={vehicle}
-              onChange={(e) => setVehicle(e.target.value)}
-              placeholder="Engine 7 — Pumper Truck"
-            />
-          </div>
-
-          {/* Call Sign */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Call Sign</Label>
-            <Input
-              value={callSign}
-              onChange={(e) => setCallSign(e.target.value)}
-              placeholder="Alpha 1, Bravo 2..."
-            />
+          {/* Vehicle & Call Sign */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Vehicle</Label>
+              <Input
+                value={vehicle}
+                onChange={(e) => setVehicle(e.target.value)}
+                placeholder="Engine 7 — Pumper Truck"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Call Sign</Label>
+              <Input
+                value={callSign}
+                onChange={(e) => setCallSign(e.target.value)}
+                placeholder="Alpha 1, Bravo 2..."
+              />
+            </div>
           </div>
 
           {/* Position */}
