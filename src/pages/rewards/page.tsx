@@ -9,11 +9,13 @@ import PointsBalanceCard from "./_components/points-balance-card.tsx";
 import GiveRewardDialog from "./_components/give-reward-dialog.tsx";
 import NominateColleagueDialog from "./_components/nominate-colleague-dialog.tsx";
 import NominationsList from "./_components/nominations-list.tsx";
+import GiftShop from "./_components/gift-shop.tsx";
+import RedemptionsList from "./_components/redemptions-list.tsx";
 import Leaderboard from "./_components/leaderboard.tsx";
 import RewardFeed from "./_components/reward-feed.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
-type Tab = "rewards" | "nominations";
+type Tab = "rewards" | "gift-shop" | "nominations" | "redemptions";
 
 export default function RewardsPage() {
   const [giveDialogOpen, setGiveDialogOpen] = useState(false);
@@ -21,17 +23,24 @@ export default function RewardsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("rewards");
 
   const currentUser = useQuery(api.users.getCurrentUser);
-  const pendingCount = useQuery(api.rewardNominations.pendingCount);
+  const pendingNominations = useQuery(api.rewardNominations.pendingCount);
+  const pendingRedemptions = useQuery(api.giftShop.pendingRedemptionCount);
   const { isPreviewingAsStaff } = useStaffPreview();
 
   const isAdmin = currentUser?.role === "admin" && !isPreviewingAsStaff;
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
     { id: "rewards", label: "Rewards" },
+    { id: "gift-shop", label: "Gift Shop" },
     {
       id: "nominations",
       label: "Nominations",
-      badge: isAdmin && pendingCount ? pendingCount : undefined,
+      badge: isAdmin && pendingNominations ? pendingNominations : undefined,
+    },
+    {
+      id: "redemptions",
+      label: "Redemptions",
+      badge: isAdmin && pendingRedemptions ? pendingRedemptions : undefined,
     },
   ];
 
@@ -67,13 +76,13 @@ export default function RewardsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "relative px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2",
+              "relative px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap shrink-0",
               activeTab === tab.id
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -107,9 +116,11 @@ export default function RewardsPage() {
         </>
       )}
 
-      {activeTab === "nominations" && (
-        <NominationsList isAdmin={isAdmin} />
-      )}
+      {activeTab === "gift-shop" && <GiftShop isAdmin={isAdmin} />}
+
+      {activeTab === "nominations" && <NominationsList isAdmin={isAdmin} />}
+
+      {activeTab === "redemptions" && <RedemptionsList isAdmin={isAdmin} />}
     </div>
   );
 }

@@ -5,9 +5,16 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Trophy } from "lucide-react";
 
 export default function PointsBalanceCard() {
-  const balance = useQuery(api.rewards.getMyBalance);
+  const balanceData = useQuery(api.giftShop.getAvailableBalance);
+  // Fallback to legacy balance query while gift shop data loads
+  const legacyBalance = useQuery(api.rewards.getMyBalance);
 
-  if (balance === undefined) {
+  const available = balanceData?.available ?? legacyBalance ?? 0;
+  const totalEarned = balanceData?.totalEarned;
+  const totalSpent = balanceData?.totalSpent;
+  const isLoading = balanceData === undefined && legacyBalance === undefined;
+
+  if (isLoading) {
     return <Skeleton className="h-32 w-full rounded-xl" />;
   }
 
@@ -18,11 +25,18 @@ export default function PointsBalanceCard() {
       <CardContent className="relative p-6 text-primary-foreground">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium opacity-80">Your Reward Points</p>
+            <p className="text-sm font-medium opacity-80">Available Points</p>
             <p className="text-4xl font-heading font-bold mt-1 tabular-nums">
-              {balance}
+              {available}
             </p>
-            <p className="text-xs opacity-60 mt-1">Keep up the great work!</p>
+            {totalEarned !== undefined && totalSpent !== undefined && totalSpent > 0 && (
+              <p className="text-xs opacity-60 mt-1">
+                {totalEarned} earned · {totalSpent} redeemed
+              </p>
+            )}
+            {(!totalSpent || totalSpent === 0) && (
+              <p className="text-xs opacity-60 mt-1">Keep up the great work!</p>
+            )}
           </div>
           <Trophy className="size-14 opacity-20" />
         </div>

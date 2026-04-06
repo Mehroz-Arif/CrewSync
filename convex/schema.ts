@@ -188,6 +188,39 @@ export default defineSchema({
     .index("by_nominated_by", ["nominatedBy"])
     .index("by_nominee", ["nomineeId"]),
 
+  // Gift catalog managed by admins
+  rewardGifts: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    pointsCost: v.number(),
+    category: v.union(
+      v.literal("voucher"),
+      v.literal("time_off"),
+      v.literal("merchandise"),
+      v.literal("experience")
+    ),
+    imageStorageId: v.optional(v.id("_storage")),
+    stock: v.optional(v.number()), // undefined = unlimited
+    active: v.boolean(),
+  }).index("by_active", ["active"]),
+
+  // Redemption records
+  giftRedemptions: defineTable({
+    userId: v.id("users"),
+    giftId: v.id("rewardGifts"),
+    pointsSpent: v.number(),
+    status: v.union(
+      v.literal("pending"),    // waiting for admin to fulfill
+      v.literal("fulfilled"),  // admin marked as fulfilled
+      v.literal("cancelled")   // cancelled by admin
+    ),
+    fulfilledBy: v.optional(v.id("users")),
+    fulfilledAt: v.optional(v.string()), // ISO 8601
+    adminNote: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
+
   shiftPatterns: defineTable({
     name: v.string(),
     patternType: v.union(v.literal("weekly"), v.literal("rotation")),
