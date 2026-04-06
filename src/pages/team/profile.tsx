@@ -29,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.t
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import EditProfileDialog from "./_components/edit-profile-dialog.tsx";
 import AdminEditProfileDialog from "./_components/admin-edit-profile-dialog.tsx";
+import ProfileRewardsSection from "./_components/profile-rewards-section.tsx";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
@@ -301,6 +302,9 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Rewards & Recognition */}
+          <ProfileRewardsSection userId={userId as Id<"users">} />
         </div>
       </div>
 

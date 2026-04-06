@@ -135,3 +135,83 @@ export const getRecentActivity = query({
     }));
   },
 });
+
+/** Get a specific user's rewards summary (for profile view) */
+export const getUserRewardsSummary = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not logged in" });
+    }
+
+    // Rewards received
+    const received = await ctx.db
+      .query("rewards")
+      .withIndex("by_to_user", (q) => q.eq("toUserId", args.userId))
+      .collect();
+
+    // Rewards given
+    const given = await ctx.db
+      .query("rewards")
+      .withIndex("by_from_user", (q) => q.eq("fromUserId", args.userId))
+      .collect();
+
+    const totalPointsReceived = received.reduce((sum, r) => sum + (r.points ?? 0), 0);
+    const totalPointsGiven = given.reduce((sum, r) => sum + (r.points ?? 0), 0);
+
+    // Category breakdown for received
+    const categoryMap = new Map<string, number>();
+    for (const r of received) {
+      categoryMap.set(r.category, (categoryMap.get(r.category) ?? 0) + 1);
+    }
+    const categoryBreakdown = Array.from(categoryMap.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Recent received rewards with names
+    const allUsers = await ctx.db.query("users").collect();
+    const nameMap = new Map(allUsers.map((u) => [String(u._id), u.name ?? "Unknown"]));
+
+    const recentReceived = received
+      .sort((a, b) => b._creationTime - a._creationTime)
+      .slice(0, 5)
+      .map((r) => ({
+        _id: r._id,
+        _creationTime: r._creationTime,
+        fromName: nameMap.get(String(r.fromUserId)) ?? "Unknown",
+        points: r.points,
+        message: r.message,
+        category: r.category,
+      }));
+
+    // Recognitions received
+    const recognitions = await ctx.db
+      .query("recognitions")
+      .withIndex("by_recipient", (q) => q.eq("recipientId", args.userId))
+      .collect();
+
+    const recentRecognitions = recognitions
+      .sort((a, b) => b._creationTime - a._creationTime)
+      .slice(0, 5)
+      .map((r) => ({
+        _id: r._id,
+        _creationTime: r._creationTime,
+        givenByName: nameMap.get(String(r.givenById)) ?? "Unknown",
+        title: r.title,
+        message: r.message,
+        badge: r.badge,
+      }));
+
+    return {
+      totalPointsReceived,
+      totalPointsGiven,
+      rewardsReceivedCount: received.length,
+      rewardsGivenCount: given.length,
+      recognitionsCount: recognitions.length,
+      categoryBreakdown,
+      recentReceived,
+      recentRecognitions,
+    };
+  },
+});
