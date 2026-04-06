@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 import StatCard from "./_components/stat-card.tsx";
 import { BarChartCard, PieChartCard, RankingListCard } from "./_components/charts.tsx";
+import CoverSwapsReport from "./_components/cover-swaps-report.tsx";
 
 function ReportsContent() {
   const currentUser = useQuery(api.users.getCurrentUser);
@@ -234,6 +235,11 @@ function ReportsContent() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Cover & Swaps Report */}
+      <div className="border-t pt-6">
+        <CoverSwapsReport />
       </div>
     </div>
   );
