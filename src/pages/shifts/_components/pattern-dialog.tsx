@@ -667,19 +667,21 @@ function PatternCrewSearchList({
 }) {
   const [search, setSearch] = useState("");
 
+  const hasQuery = search.trim().length > 0;
+
   const { selected, filtered } = useMemo(() => {
     const q = search.toLowerCase().trim();
     const sel = staff.filter((m) => selectedMembers.has(m._id));
     const rest = staff.filter((m) => !selectedMembers.has(m._id));
     const matchingRest = q
       ? rest.filter((m) => (m.name ?? "").toLowerCase().includes(q))
-      : rest;
+      : [];
     return { selected: sel, filtered: matchingRest };
   }, [staff, selectedMembers, search]);
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      <div className="px-3 py-2 border-b">
+      <div className="px-3 py-2">
         <Input
           placeholder="Search team members..."
           value={search}
@@ -687,51 +689,53 @@ function PatternCrewSearchList({
           className="h-8 text-sm"
         />
       </div>
-      <div className="max-h-36 overflow-y-auto divide-y">
-        {selected.map((member) => (
-          <label
-            key={member._id}
-            className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors bg-primary/5"
-          >
-            <Checkbox
-              checked={true}
-              onCheckedChange={() => onToggle(member._id)}
-            />
-            <span className="text-sm font-medium">
-              {member.name ?? "Unknown"}
-            </span>
-            {member.role === "admin" && (
-              <span className="text-[10px] text-muted-foreground ml-auto">
-                Admin
+      {(selected.length > 0 || hasQuery) && (
+        <div className="max-h-36 overflow-y-auto divide-y border-t">
+          {selected.map((member) => (
+            <label
+              key={member._id}
+              className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors bg-primary/5"
+            >
+              <Checkbox
+                checked={true}
+                onCheckedChange={() => onToggle(member._id)}
+              />
+              <span className="text-sm font-medium">
+                {member.name ?? "Unknown"}
               </span>
-            )}
-          </label>
-        ))}
-        {filtered.map((member) => (
-          <label
-            key={member._id}
-            className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors"
-          >
-            <Checkbox
-              checked={false}
-              onCheckedChange={() => onToggle(member._id)}
-            />
-            <span className="text-sm">
-              {member.name ?? "Unknown"}
-            </span>
-            {member.role === "admin" && (
-              <span className="text-[10px] text-muted-foreground ml-auto">
-                Admin
+              {member.role === "admin" && (
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  Admin
+                </span>
+              )}
+            </label>
+          ))}
+          {filtered.map((member) => (
+            <label
+              key={member._id}
+              className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors"
+            >
+              <Checkbox
+                checked={false}
+                onCheckedChange={() => onToggle(member._id)}
+              />
+              <span className="text-sm">
+                {member.name ?? "Unknown"}
               </span>
-            )}
-          </label>
-        ))}
-        {filtered.length === 0 && selected.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-3">
-            No members found
-          </p>
-        )}
-      </div>
+              {member.role === "admin" && (
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  Admin
+                </span>
+              )}
+            </label>
+          ))}
+          {hasQuery && filtered.length === 0 && selected.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-3">
+              No members found
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
