@@ -83,9 +83,13 @@ export default function ShiftsPage() {
 function StaffScheduleView() {
   const [view, setView] = useState<"week" | "month" | "swaps">("month");
 
-  // Get swap count for badge
+  // Get swap count for badge (direct swaps + board activity)
   const swapData = useQuery(api.shiftSwaps.getMySwapRequests);
-  const pendingIncomingCount = swapData?.received.filter((r) => r.status === "pending").length ?? 0;
+  const boardCounts = useQuery(api.swapBoard.getBoardCounts);
+  const pendingIncomingCount =
+    (swapData?.received.filter((r) => r.status === "pending").length ?? 0) +
+    (boardCounts?.boardCount ?? 0) +
+    (boardCounts?.pendingOfferCount ?? 0);
 
   return (
     <div className="space-y-2">

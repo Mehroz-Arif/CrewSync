@@ -28,6 +28,7 @@ import type * as shiftPatterns from "../shiftPatterns.js";
 import type * as shiftSwaps from "../shiftSwaps.js";
 import type * as shifts from "../shifts.js";
 import type * as superAdmin from "../superAdmin.js";
+import type * as swapBoard from "../swapBoard.js";
 import type * as timeTracking from "../timeTracking.js";
 import type * as users from "../users.js";
 import type * as vehicleAllocations from "../vehicleAllocations.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   shiftSwaps: typeof shiftSwaps;
   shifts: typeof shifts;
   superAdmin: typeof superAdmin;
+  swapBoard: typeof swapBoard;
   timeTracking: typeof timeTracking;
   users: typeof users;
   vehicleAllocations: typeof vehicleAllocations;

@@ -428,6 +428,38 @@ export default defineSchema({
     .index("by_target", ["targetUserId"])
     .index("by_status", ["status"]),
 
+  // Swap board postings — staff post shifts they want to swap
+  swapPostings: defineTable({
+    userId: v.id("users"),
+    shiftId: v.id("shifts"),
+    membershipId: v.id("shiftMembers"),
+    note: v.optional(v.string()),
+    status: v.union(
+      v.literal("open"),
+      v.literal("matched"),
+      v.literal("cancelled")
+    ),
+  })
+    .index("by_status", ["status"])
+    .index("by_user", ["userId"]),
+
+  // Offers on swap board postings
+  swapOffers: defineTable({
+    postingId: v.id("swapPostings"),
+    userId: v.id("users"),
+    shiftId: v.id("shifts"),
+    membershipId: v.id("shiftMembers"),
+    note: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("cancelled")
+    ),
+  })
+    .index("by_posting", ["postingId"])
+    .index("by_user", ["userId"]),
+
   // Leave / time-off requests
   leaveRequests: defineTable({
     userId: v.id("users"),

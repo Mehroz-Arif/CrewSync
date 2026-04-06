@@ -14,6 +14,10 @@ import {
   Ban,
   Inbox,
   SendHorizonal,
+  Megaphone,
+  LayoutGrid,
+  HandHelping,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -30,6 +34,7 @@ import { cn } from "@/lib/utils.ts";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
+import { SwapBoardPostings, MySwapPostings } from "./swap-board.tsx";
 
 type ShiftInfo = {
   startTime: string;
@@ -40,12 +45,72 @@ type ShiftInfo = {
 } | null;
 
 export default function ShiftSwapsSection() {
+  const [tab, setTab] = useState<"board" | "activity">("board");
+
+  const boardCounts = useQuery(api.swapBoard.getBoardCounts);
+  const swapData = useQuery(api.shiftSwaps.getMySwapRequests);
+
+  const pendingDirectCount = swapData?.received.filter((r) => r.status === "pending").length ?? 0;
+  const totalActivityBadge = (boardCounts?.pendingOfferCount ?? 0) + pendingDirectCount;
+
+  return (
+    <div className="space-y-4">
+      {/* Tab toggle */}
+      <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1 w-fit">
+        <Button
+          variant={tab === "board" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setTab("board")}
+          className="gap-1.5 relative"
+        >
+          <LayoutGrid className="size-4" />
+          Swap Board
+          {(boardCounts?.boardCount ?? 0) > 0 && (
+            <Badge variant="default" className="absolute -top-1.5 -right-1.5 size-4 p-0 flex items-center justify-center text-[9px]">
+              {boardCounts?.boardCount}
+            </Badge>
+          )}
+        </Button>
+        <Button
+          variant={tab === "activity" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setTab("activity")}
+          className="gap-1.5 relative"
+        >
+          <HandHelping className="size-4" />
+          My Activity
+          {totalActivityBadge > 0 && (
+            <Badge variant="default" className="absolute -top-1.5 -right-1.5 size-4 p-0 flex items-center justify-center text-[9px]">
+              {totalActivityBadge}
+            </Badge>
+          )}
+        </Button>
+      </div>
+
+      {/* Content */}
+      {tab === "board" && <SwapBoardPostings />}
+      {tab === "activity" && (
+        <div className="space-y-6">
+          {/* Board-based postings & offers */}
+          <MySwapPostings />
+
+          {/* Direct swap requests (legacy) */}
+          <DirectSwapsSection />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Direct Swap Requests (existing logic) ─────────────────────────────────
+
+function DirectSwapsSection() {
   const swapData = useQuery(api.shiftSwaps.getMySwapRequests);
 
   if (swapData === undefined) {
     return (
-      <div className="space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => (
+      <div className="space-y-3">
+        {Array.from({ length: 2 }).map((_, i) => (
           <Skeleton key={i} className="h-24 w-full rounded-xl" />
         ))}
       </div>
@@ -53,46 +118,32 @@ export default function ShiftSwapsSection() {
   }
 
   const { sent, received } = swapData;
-
-  // Filter to show pending first, then recent resolved ones
   const pendingReceived = received.filter((r) => r.status === "pending");
   const resolvedReceived = received.filter((r) => r.status !== "pending");
   const pendingSent = sent.filter((s) => s.status === "pending");
   const resolvedSent = sent.filter((s) => s.status !== "pending");
 
   const hasAny = sent.length > 0 || received.length > 0;
-
-  if (!hasAny) {
-    return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <ArrowLeftRight />
-          </EmptyMedia>
-          <EmptyTitle>No shift swaps</EmptyTitle>
-          <EmptyDescription>
-            You can request a swap from any accepted shift by tapping on it and choosing "Request Swap"
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
+  if (!hasAny) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Incoming requests */}
+    <div className="space-y-4">
+      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        Direct Swap Requests
+      </h3>
+
+      {/* Incoming */}
       {(pendingReceived.length > 0 || resolvedReceived.length > 0) && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Inbox className="size-4 text-primary" />
-            <h3 className="text-sm font-heading font-semibold">Incoming Requests</h3>
+            <span className="text-sm font-heading font-semibold">Incoming</span>
             {pendingReceived.length > 0 && (
               <Badge variant="default" className="text-[10px] px-1.5 py-0">
                 {pendingReceived.length}
               </Badge>
             )}
           </div>
-
           {pendingReceived.map((swap) => (
             <IncomingSwapCard key={swap._id} swap={swap} />
           ))}
@@ -102,19 +153,18 @@ export default function ShiftSwapsSection() {
         </div>
       )}
 
-      {/* Outgoing requests */}
+      {/* Outgoing */}
       {(pendingSent.length > 0 || resolvedSent.length > 0) && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <SendHorizonal className="size-4 text-muted-foreground" />
-            <h3 className="text-sm font-heading font-semibold">Your Requests</h3>
+            <span className="text-sm font-heading font-semibold">Your Requests</span>
             {pendingSent.length > 0 && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                 {pendingSent.length} pending
               </Badge>
             )}
           </div>
-
           {pendingSent.map((swap) => (
             <OutgoingSwapCard key={swap._id} swap={swap} />
           ))}
@@ -127,7 +177,8 @@ export default function ShiftSwapsSection() {
   );
 }
 
-/** Compact shift info display */
+// ─── Shared Components ───────────────────────────────────────────────────────
+
 function ShiftInfoBlock({ shift, label }: { shift: ShiftInfo; label: string }) {
   if (!shift) return <span className="text-xs text-muted-foreground italic">Shift deleted</span>;
   return (
@@ -158,7 +209,6 @@ type EnrichedSwap = {
   _creationTime: number;
 };
 
-/** Card for an incoming pending swap request (the current user is the target) */
 function IncomingSwapCard({ swap }: { swap: EnrichedSwap }) {
   const respondToSwap = useMutation(api.shiftSwaps.respondToSwap);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,25 +233,18 @@ function IncomingSwapCard({ swap }: { swap: EnrichedSwap }) {
     <div className="rounded-xl border border-primary/30 bg-primary/[0.03] p-4 space-y-3">
       <div className="flex items-center gap-2">
         <ArrowLeftRight className="size-4 text-primary" />
-        <span className="text-xs font-semibold">
-          {swap.requesterName} wants to swap
-        </span>
+        <span className="text-xs font-semibold">{swap.requesterName} wants to swap</span>
       </div>
-
-      {/* Swap details */}
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
         <ShiftInfoBlock shift={swap.requesterShift} label="Their shift" />
         <ArrowRight className="size-4 text-muted-foreground" />
         <ShiftInfoBlock shift={swap.targetShift} label="Your shift" />
       </div>
-
       {swap.reason && (
         <p className="text-xs text-muted-foreground italic px-1">
           &ldquo;{swap.reason}&rdquo;
         </p>
       )}
-
-      {/* Actions */}
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -227,7 +270,6 @@ function IncomingSwapCard({ swap }: { swap: EnrichedSwap }) {
   );
 }
 
-/** Card for an outgoing pending swap request (current user is requester) */
 function OutgoingSwapCard({ swap }: { swap: EnrichedSwap }) {
   const cancelSwap = useMutation(api.shiftSwaps.cancelSwap);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -253,25 +295,20 @@ function OutgoingSwapCard({ swap }: { swap: EnrichedSwap }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ArrowLeftRight className="size-4 text-muted-foreground" />
-          <span className="text-xs font-semibold">
-            Swap request to {swap.targetName}
-          </span>
+          <span className="text-xs font-semibold">Swap request to {swap.targetName}</span>
         </div>
         <Badge variant="secondary" className="text-[10px]">Pending</Badge>
       </div>
-
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
         <ShiftInfoBlock shift={swap.requesterShift} label="Your shift" />
         <ArrowRight className="size-4 text-muted-foreground" />
         <ShiftInfoBlock shift={swap.targetShift} label="Their shift" />
       </div>
-
       {swap.reason && (
         <p className="text-xs text-muted-foreground italic px-1">
           &ldquo;{swap.reason}&rdquo;
         </p>
       )}
-
       <Button
         size="sm"
         variant="ghost"
@@ -286,14 +323,7 @@ function OutgoingSwapCard({ swap }: { swap: EnrichedSwap }) {
   );
 }
 
-/** Card for a resolved (accepted/declined/cancelled) swap */
-function ResolvedSwapCard({
-  swap,
-  type,
-}: {
-  swap: EnrichedSwap;
-  type: "sent" | "received";
-}) {
+function ResolvedSwapCard({ swap, type }: { swap: EnrichedSwap; type: "sent" | "received" }) {
   const statusConfig = {
     accepted: {
       icon: <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />,
@@ -313,12 +343,7 @@ function ResolvedSwapCard({
       color: "text-muted-foreground",
       bg: "border-border bg-muted/20",
     },
-    pending: {
-      icon: null,
-      label: "Pending",
-      color: "",
-      bg: "",
-    },
+    pending: { icon: null, label: "Pending", color: "", bg: "" },
   } as const;
 
   const config = statusConfig[swap.status];
