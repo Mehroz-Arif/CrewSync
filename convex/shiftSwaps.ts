@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel.d.ts";
+import type { Doc, Id } from "./_generated/dataModel.d.ts";
 import { checkUserShiftOverlap } from "./shifts";
 
 /** Get accepted shifts from other staff members that could be swapped with.

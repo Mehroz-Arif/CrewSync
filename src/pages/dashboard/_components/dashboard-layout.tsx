@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   BarChart3,
   Ban,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
@@ -27,7 +29,7 @@ import { api } from "@/convex/_generated/api.js";
 import { SignInButton } from "@/components/ui/signin.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { useAuth } from "@/hooks/use-auth.ts";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   StaffPreviewProvider,
   useStaffPreview,
@@ -120,7 +122,15 @@ const NAV_ITEMS = [
   },
 ];
 
-function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
+function SidebarContent({
+  onItemClick,
+  collapsed = false,
+  onToggleCollapse,
+}: {
+  onItemClick?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const { removeUser } = useAuth();
@@ -133,7 +143,7 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Staff preview banner */}
-      {isRealAdmin && isPreviewingAsStaff && (
+      {isRealAdmin && isPreviewingAsStaff && !collapsed && (
         <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 flex items-center gap-2">
           <Eye className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
           <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
@@ -141,11 +151,22 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           </span>
         </div>
       )}
+      {isRealAdmin && isPreviewingAsStaff && collapsed && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 py-2 flex items-center justify-center">
+          <Eye className="size-3.5 text-amber-600 dark:text-amber-400" />
+        </div>
+      )}
 
       {/* Logo */}
-      <div className="p-4 border-b flex items-center justify-center">
+      <div className={cn("border-b flex items-center justify-center", collapsed ? "p-3" : "p-4")}>
         <a href="/" className="flex items-center justify-center">
-          {organization?.logoUrl ? (
+          {collapsed ? (
+            <div className="size-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+              <span className="text-primary-foreground font-heading font-black text-xs">
+                CS
+              </span>
+            </div>
+          ) : organization?.logoUrl ? (
             <img
               src={organization.logoUrl}
               alt={`${organization.name} logo`}
@@ -167,48 +188,56 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
       </div>
 
       {/* User info */}
-      <div className="p-4 border-b">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-sm">
+      <div className={cn("border-b", collapsed ? "p-2 flex justify-center" : "p-4")}>
+        {collapsed ? (
+          <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-xs" title={user?.name ?? "User"}>
             {user?.name?.charAt(0)?.toUpperCase() ?? "?"}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">
-              {user?.name ?? "Loading..."}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {isPreviewingAsStaff ? "Team Member (preview)" : isSuperAdmin ? "Super Admin" : user?.role === "admin" ? "Admin" : "Team Member"}
-            </p>
-          </div>
-        </div>
-        {/* View toggle for admins */}
-        {isRealAdmin && (
-          <button
-            onClick={togglePreview}
-            className={cn(
-              "mt-3 flex items-center gap-2 w-full rounded-lg px-3 py-2 text-xs font-medium transition-colors",
-              isPreviewingAsStaff
-                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-bold text-sm">
+                {user?.name?.charAt(0)?.toUpperCase() ?? "?"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">
+                  {user?.name ?? "Loading..."}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {isPreviewingAsStaff ? "Team Member (preview)" : isSuperAdmin ? "Super Admin" : user?.role === "admin" ? "Admin" : "Team Member"}
+                </p>
+              </div>
+            </div>
+            {/* View toggle for admins */}
+            {isRealAdmin && (
+              <button
+                onClick={togglePreview}
+                className={cn(
+                  "mt-3 flex items-center gap-2 w-full rounded-lg px-3 py-2 text-xs font-medium transition-colors",
+                  isPreviewingAsStaff
+                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                {isPreviewingAsStaff ? (
+                  <>
+                    <ShieldCheck className="size-3.5" />
+                    Switch to Admin View
+                  </>
+                ) : (
+                  <>
+                    <Eye className="size-3.5" />
+                    Preview as Team Member
+                  </>
+                )}
+              </button>
             )}
-          >
-            {isPreviewingAsStaff ? (
-              <>
-                <ShieldCheck className="size-3.5" />
-                Switch to Admin View
-              </>
-            ) : (
-              <>
-                <Eye className="size-3.5" />
-                Preview as Team Member
-              </>
-            )}
-          </button>
+          </>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className={cn("flex-1 space-y-1 overflow-y-auto", collapsed ? "p-2" : "p-3")}>
         {NAV_ITEMS.filter((item) => {
           if ("superAdminOnly" in item && item.superAdminOnly) {
             return isSuperAdmin;
@@ -217,7 +246,6 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
             return isRealAdmin && !isPreviewingAsStaff;
           }
           if ("hideFromSubcontractors" in item && item.hideFromSubcontractors) {
-            // Hide from non-admin subcontractors
             if (!isRealAdmin && user?.employmentType === "subcontractor") {
               return false;
             }
@@ -225,7 +253,6 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
           return true;
         }).map((item) => {
           const isActive = location.pathname === item.path;
-          // Show "My Schedule" instead of "Shifts" for team members
           const displayLabel =
             item.path === "/shifts" && (!isRealAdmin || isPreviewingAsStaff)
               ? "My Schedule"
@@ -243,8 +270,10 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
                 }
                 onItemClick?.();
               }}
+              title={collapsed ? displayLabel : undefined}
               className={cn(
-                "flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center w-full rounded-lg text-sm font-medium transition-colors",
+                collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5",
                 isActive
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -252,8 +281,8 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
               )}
             >
               <item.icon className="size-5 shrink-0" />
-              <span>{displayLabel}</span>
-              {!item.enabled && (
+              {!collapsed && <span>{displayLabel}</span>}
+              {!collapsed && !item.enabled && (
                 <span className="ml-auto text-[10px] uppercase tracking-wider opacity-70">
                   Soon
                 </span>
@@ -263,30 +292,95 @@ function SidebarContent({ onItemClick }: { onItemClick?: () => void }) {
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="p-3 border-t">
+      {/* Bottom actions */}
+      <div className={cn("border-t", collapsed ? "p-2 space-y-1" : "p-3 space-y-1")}>
+        {/* Collapse toggle (desktop only) */}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "flex items-center w-full rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+              collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+            )}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="size-5 shrink-0" />
+            ) : (
+              <>
+                <PanelLeftClose className="size-5 shrink-0" />
+                <span>Collapse</span>
+              </>
+            )}
+          </button>
+        )}
+        {/* Sign out */}
         <button
           onClick={async () => {
             await removeUser();
           }}
-          className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+          title={collapsed ? "Sign Out" : undefined}
+          className={cn(
+            "flex items-center w-full rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
+            collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+          )}
         >
           <LogOut className="size-5 shrink-0" />
-          <span>Sign Out</span>
+          {!collapsed && <span>Sign Out</span>}
         </button>
       </div>
     </div>
   );
 }
 
+const SIDEBAR_STORAGE_KEY = "crewsync-sidebar-collapsed";
+
 function DashboardShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapse = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  }, []);
+
+  // Sync state if localStorage changes in another tab
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key === SIDEBAR_STORAGE_KEY) {
+        setCollapsed(e.newValue === "true");
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const sidebarWidth = collapsed ? "w-[68px]" : "w-64";
+  const mainMargin = collapsed ? "lg:ml-[68px]" : "lg:ml-64";
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r bg-card fixed inset-y-0 left-0 z-30 print:!hidden">
-        <SidebarContent />
+      <aside
+        className={cn(
+          "hidden lg:flex shrink-0 flex-col border-r bg-card fixed inset-y-0 left-0 z-30 print:!hidden transition-[width] duration-200 ease-in-out",
+          sidebarWidth
+        )}
+      >
+        <SidebarContent collapsed={collapsed} onToggleCollapse={toggleCollapse} />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -308,7 +402,7 @@ function DashboardShell() {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen print:!ml-0">
+      <div className={cn("flex-1 flex flex-col min-h-screen print:!ml-0 transition-[margin] duration-200 ease-in-out", mainMargin)}>
         {/* Mobile header */}
         <header className="lg:hidden sticky top-0 z-20 bg-card border-b px-4 h-14 flex items-center gap-3 print:!hidden">
           <Button
