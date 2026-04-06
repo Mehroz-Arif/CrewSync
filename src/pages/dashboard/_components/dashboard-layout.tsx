@@ -80,7 +80,6 @@ const NAV_ITEMS = [
     icon: Trophy,
     path: "/rewards",
     enabled: true,
-    adminOnly: true,
   },
   {
     label: "Documents",
