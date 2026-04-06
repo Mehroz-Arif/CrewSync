@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import {
@@ -601,27 +601,11 @@ export default function PatternDialog({
           {/* Crew assignment */}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Default Crew</Label>
-            <div className="border rounded-lg max-h-36 overflow-y-auto divide-y">
-              {staff.map((member) => (
-                <label
-                  key={member._id}
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedMembers.has(member._id)}
-                    onCheckedChange={() => toggleMember(member._id)}
-                  />
-                  <span className="text-sm">
-                    {member.name ?? "Unknown"}
-                  </span>
-                  {member.role === "admin" && (
-                    <span className="text-[10px] text-muted-foreground ml-auto">
-                      Admin
-                    </span>
-                  )}
-                </label>
-              ))}
-            </div>
+            <PatternCrewSearchList
+              staff={staff}
+              selectedMembers={selectedMembers}
+              onToggle={toggleMember}
+            />
           </div>
         </div>
 
@@ -669,5 +653,85 @@ export default function PatternDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function PatternCrewSearchList({
+  staff,
+  selectedMembers,
+  onToggle,
+}: {
+  staff: StaffMember[];
+  selectedMembers: Set<string>;
+  onToggle: (uid: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  const { selected, filtered } = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const sel = staff.filter((m) => selectedMembers.has(m._id));
+    const rest = staff.filter((m) => !selectedMembers.has(m._id));
+    const matchingRest = q
+      ? rest.filter((m) => (m.name ?? "").toLowerCase().includes(q))
+      : rest;
+    return { selected: sel, filtered: matchingRest };
+  }, [staff, selectedMembers, search]);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div className="px-3 py-2 border-b">
+        <Input
+          placeholder="Search team members..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8 text-sm"
+        />
+      </div>
+      <div className="max-h-36 overflow-y-auto divide-y">
+        {selected.map((member) => (
+          <label
+            key={member._id}
+            className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors bg-primary/5"
+          >
+            <Checkbox
+              checked={true}
+              onCheckedChange={() => onToggle(member._id)}
+            />
+            <span className="text-sm font-medium">
+              {member.name ?? "Unknown"}
+            </span>
+            {member.role === "admin" && (
+              <span className="text-[10px] text-muted-foreground ml-auto">
+                Admin
+              </span>
+            )}
+          </label>
+        ))}
+        {filtered.map((member) => (
+          <label
+            key={member._id}
+            className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer transition-colors"
+          >
+            <Checkbox
+              checked={false}
+              onCheckedChange={() => onToggle(member._id)}
+            />
+            <span className="text-sm">
+              {member.name ?? "Unknown"}
+            </span>
+            {member.role === "admin" && (
+              <span className="text-[10px] text-muted-foreground ml-auto">
+                Admin
+              </span>
+            )}
+          </label>
+        ))}
+        {filtered.length === 0 && selected.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-3">
+            No members found
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
