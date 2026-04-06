@@ -505,4 +505,9 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_status", ["status"])
     .index("by_user_and_status", ["userId", "status"]),
+
+  platformSettings: defineTable({
+    key: v.string(), // e.g. "fieldLabels"
+    value: v.string(), // JSON-encoded settings
+  }).index("by_key", ["key"]),
 });

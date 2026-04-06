@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
+import { useFieldLabels } from "@/hooks/use-field-labels.ts";
 import {
   Dialog,
   DialogContent,
@@ -70,6 +71,7 @@ export default function ShiftDialog({
   const updateShift = useMutation(api.shifts.update);
   const deleteShift = useMutation(api.shifts.remove);
   const positionOptions = useQuery(api.positions.list);
+  const fieldLabels = useFieldLabels();
 
   const [date, setDate] = useState(() => {
     if (shift) return format(parseISO(shift.startTime), "yyyy-MM-dd");
@@ -221,7 +223,7 @@ export default function ShiftDialog({
           {/* Vehicle & Call Sign */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Vehicle</Label>
+              <Label className="text-xs font-medium">{fieldLabels.vehicle.label}</Label>
               <Input
                 value={vehicle}
                 onChange={(e) => setVehicle(e.target.value)}
@@ -229,7 +231,7 @@ export default function ShiftDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Call Sign</Label>
+              <Label className="text-xs font-medium">{fieldLabels.callSign.label}</Label>
               <Input
                 value={callSign}
                 onChange={(e) => setCallSign(e.target.value)}

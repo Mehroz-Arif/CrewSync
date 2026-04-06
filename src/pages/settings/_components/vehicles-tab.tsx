@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import { toast } from "sonner";
+import { useFieldLabels } from "@/hooks/use-field-labels.ts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils.ts";
 
 export default function VehiclesTab() {
   const vehicles = useQuery(api.vehicles.listAll);
+  const fieldLabels = useFieldLabels();
   const createVehicle = useMutation(api.vehicles.create);
   const updateVehicle = useMutation(api.vehicles.update);
   const removeVehicle = useMutation(api.vehicles.remove);
@@ -130,7 +132,7 @@ export default function VehiclesTab() {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Truck className="size-4" />
-          Vehicle List
+          {fieldLabels.vehicle.label} List
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Manage your fleet of vehicles. These appear in vehicle allocation

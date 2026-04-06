@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
+import { useFieldLabels } from "@/hooks/use-field-labels.ts";
 import {
   Dialog,
   DialogContent,
@@ -102,6 +103,7 @@ export default function PatternDialog({
   const createPattern = useMutation(api.shiftPatterns.create);
   const updatePattern = useMutation(api.shiftPatterns.update);
   const deletePattern = useMutation(api.shiftPatterns.remove);
+  const fieldLabels = useFieldLabels();
   const positionOptions = useQuery(api.positions.list);
 
   const [name, setName] = useState(() => pattern?.name ?? "");
@@ -566,7 +568,7 @@ export default function PatternDialog({
 
           {/* Vehicle */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Vehicle</Label>
+            <Label className="text-xs font-medium">{fieldLabels.vehicle.label}</Label>
             <Input
               value={vehicle}
               onChange={(e) => setVehicle(e.target.value)}
@@ -577,7 +579,7 @@ export default function PatternDialog({
           {/* Call Sign */}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">
-              Call Sign
+              {fieldLabels.callSign.label}
               <span className="text-muted-foreground font-normal ml-1">(optional)</span>
             </Label>
             <Input

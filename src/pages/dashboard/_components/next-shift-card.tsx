@@ -1,11 +1,13 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { CalendarClock, Clock, Truck, Radio, StickyNote } from "lucide-react";
+import { CalendarClock, Clock, StickyNote } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useFieldLabels } from "@/hooks/use-field-labels.ts";
 
 export default function NextShiftCard() {
   const nextShift = useQuery(api.shifts.getNextShift);
+  const fieldLabels = useFieldLabels();
 
   // Loading state
   if (nextShift === undefined) {
@@ -84,11 +86,11 @@ export default function NextShiftCard() {
         {/* Vehicle */}
         <div className="flex items-start gap-3">
           <div className="size-9 rounded-lg bg-chart-4/10 flex items-center justify-center shrink-0 mt-0.5">
-            <Truck className="size-4 text-chart-4" />
+            <fieldLabels.vehicle.Icon className="size-4 text-chart-4" />
           </div>
           <div>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              Allocated Vehicle
+              Allocated {fieldLabels.vehicle.label}
             </p>
             <p className="text-sm font-semibold mt-0.5">
               {nextShift.allocatedVehicle ?? nextShift.vehicle}
@@ -100,11 +102,11 @@ export default function NextShiftCard() {
         {nextShift.callSign && (
           <div className="flex items-start gap-3">
             <div className="size-9 rounded-lg bg-chart-3/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Radio className="size-4 text-chart-3" />
+              <fieldLabels.callSign.Icon className="size-4 text-chart-3" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                Call Sign
+                {fieldLabels.callSign.label}
               </p>
               <p className="text-sm font-semibold mt-0.5">{nextShift.callSign}</p>
             </div>

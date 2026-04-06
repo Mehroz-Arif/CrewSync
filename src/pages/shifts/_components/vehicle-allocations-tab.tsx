@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
+import { useFieldLabels } from "@/hooks/use-field-labels.ts";
 import {
   startOfWeek,
   addWeeks,
@@ -54,6 +55,7 @@ import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 
 export default function VehicleAllocationsTab() {
+  const fieldLabels = useFieldLabels();
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
@@ -239,7 +241,7 @@ export default function VehicleAllocationsTab() {
               <th className="sticky left-0 z-10 bg-card px-3 py-2.5 text-left font-heading font-semibold text-xs text-muted-foreground w-28">
                 <div className="flex items-center gap-1.5">
                   <Radio className="size-3.5" />
-                  Call Sign
+                  {fieldLabels.callSign.label}
                 </div>
               </th>
               {weekDates.map((date) => {

@@ -18,6 +18,7 @@ import type * as giftShop from "../giftShop.js";
 import type * as leaveRequests from "../leaveRequests.js";
 import type * as messaging from "../messaging.js";
 import type * as organizations from "../organizations.js";
+import type * as platformSettings from "../platformSettings.js";
 import type * as positions from "../positions.js";
 import type * as postComments from "../postComments.js";
 import type * as posts from "../posts.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   leaveRequests: typeof leaveRequests;
   messaging: typeof messaging;
   organizations: typeof organizations;
+  platformSettings: typeof platformSettings;
   positions: typeof positions;
   postComments: typeof postComments;
   posts: typeof posts;
