@@ -174,6 +174,7 @@ export const getUserRewardsSummary = query({
     const nameMap = new Map(allUsers.map((u) => [String(u._id), u.name ?? "Unknown"]));
 
     const recentReceived = received
+      .filter((r) => r.fromUserId !== args.userId) // exclude admin-issued self-rewards
       .sort((a, b) => b._creationTime - a._creationTime)
       .slice(0, 5)
       .map((r) => ({
