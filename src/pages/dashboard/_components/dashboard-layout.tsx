@@ -125,11 +125,9 @@ const NAV_ITEMS = [
 function SidebarContent({
   onItemClick,
   collapsed = false,
-  onToggleCollapse,
 }: {
   onItemClick?: () => void;
   collapsed?: boolean;
-  onToggleCollapse?: () => void;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -292,29 +290,8 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Bottom actions */}
-      <div className={cn("border-t", collapsed ? "p-2 space-y-1" : "p-3 space-y-1")}>
-        {/* Collapse toggle (desktop only) */}
-        {onToggleCollapse && (
-          <button
-            onClick={onToggleCollapse}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={cn(
-              "flex items-center w-full rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-              collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
-            )}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="size-5 shrink-0" />
-            ) : (
-              <>
-                <PanelLeftClose className="size-5 shrink-0" />
-                <span>Collapse</span>
-              </>
-            )}
-          </button>
-        )}
-        {/* Sign out */}
+      {/* Sign out */}
+      <div className={cn("border-t", collapsed ? "p-2" : "p-3")}>
         <button
           onClick={async () => {
             await removeUser();
@@ -380,7 +357,19 @@ function DashboardShell() {
           sidebarWidth
         )}
       >
-        <SidebarContent collapsed={collapsed} onToggleCollapse={toggleCollapse} />
+        <SidebarContent collapsed={collapsed} />
+        {/* Edge toggle button */}
+        <button
+          onClick={toggleCollapse}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute top-1/2 -translate-y-1/2 -right-3 z-40 size-6 rounded-full border bg-card shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="size-3.5" />
+          ) : (
+            <PanelLeftClose className="size-3.5" />
+          )}
+        </button>
       </aside>
 
       {/* Mobile sidebar overlay */}
