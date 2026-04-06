@@ -118,11 +118,13 @@ export const getRecentActivity = query({
       throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not logged in" });
     }
 
-    const rewards = await ctx.db.query("rewards").order("desc").take(20);
+    const rewards = await ctx.db.query("rewards").order("desc").take(50);
+    // Filter out admin-issued self-rewards (bonus allocations)
+    const filtered = rewards.filter((r) => String(r.fromUserId) !== String(r.toUserId)).slice(0, 20);
     const allUsers = await ctx.db.query("users").collect();
     const nameMap = new Map(allUsers.map((u) => [String(u._id), u.name ?? "Unknown"]));
 
-    return rewards.map((r) => ({
+    return filtered.map((r) => ({
       _id: r._id,
       _creationTime: r._creationTime,
       fromUserId: r.fromUserId,
