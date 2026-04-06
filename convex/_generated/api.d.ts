@@ -21,6 +21,7 @@ import type * as postComments from "../postComments.js";
 import type * as posts from "../posts.js";
 import type * as profiles from "../profiles.js";
 import type * as recognitions from "../recognitions.js";
+import type * as rewardNominations from "../rewardNominations.js";
 import type * as rewards from "../rewards.js";
 import type * as shiftPatterns from "../shiftPatterns.js";
 import type * as shiftSwaps from "../shiftSwaps.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   posts: typeof posts;
   profiles: typeof profiles;
   recognitions: typeof recognitions;
+  rewardNominations: typeof rewardNominations;
   rewards: typeof rewards;
   shiftPatterns: typeof shiftPatterns;
   shiftSwaps: typeof shiftSwaps;

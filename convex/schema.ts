@@ -169,6 +169,25 @@ export default defineSchema({
     .index("by_to_user", ["toUserId"])
     .index("by_from_user", ["fromUserId"]),
 
+  rewardNominations: defineTable({
+    nominatedBy: v.id("users"), // teammate who suggested the reward
+    nomineeId: v.id("users"), // colleague being nominated
+    reason: v.string(),
+    category: v.string(),
+    suggestedPoints: v.optional(v.number()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected")
+    ),
+    reviewedBy: v.optional(v.id("users")),
+    reviewedAt: v.optional(v.string()), // ISO 8601
+    reviewNote: v.optional(v.string()),
+  })
+    .index("by_status", ["status"])
+    .index("by_nominated_by", ["nominatedBy"])
+    .index("by_nominee", ["nomineeId"]),
+
   shiftPatterns: defineTable({
     name: v.string(),
     patternType: v.union(v.literal("weekly"), v.literal("rotation")),
