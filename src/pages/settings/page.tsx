@@ -6,6 +6,7 @@ import OrganizationTab from "./_components/organization-tab.tsx";
 import TeamMembersTab from "./_components/team-members-tab.tsx";
 import FieldsTab from "./_components/fields-tab.tsx";
 import VehiclesTab from "./_components/vehicles-tab.tsx";
+import FieldLabelsSettings from "./_components/field-labels-settings.tsx";
 import { useStaffPreview } from "@/hooks/use-staff-preview.tsx";
 
 export default function SettingsPage() {
@@ -38,6 +39,7 @@ export default function SettingsPage() {
           <TabsTrigger value="team">Team Members</TabsTrigger>
           {isAdmin && <TabsTrigger value="fields">Positions</TabsTrigger>}
           {isAdmin && <TabsTrigger value="vehicles">Vehicles</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="field-labels">Field Labels</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="organization" className="mt-6">
@@ -60,6 +62,14 @@ export default function SettingsPage() {
         {isAdmin && (
           <TabsContent value="vehicles" className="mt-6">
             <VehiclesTab />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="field-labels" className="mt-6">
+            <div className="max-w-xl">
+              <FieldLabelsSettings />
+            </div>
           </TabsContent>
         )}
       </Tabs>

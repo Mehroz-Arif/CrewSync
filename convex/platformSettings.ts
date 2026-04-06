@@ -37,7 +37,7 @@ export const getFieldLabels = query({
   },
 });
 
-/** Update field labels (super admin only) */
+/** Update field labels (org admin or super admin) */
 export const updateFieldLabels = mutation({
   args: {
     vehicle: v.optional(v.object({ label: v.string(), icon: v.string() })),
@@ -53,8 +53,8 @@ export const updateFieldLabels = mutation({
       .query("users")
       .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
-    if (!user || !user.isSuperAdmin) {
-      throw new ConvexError({ code: "FORBIDDEN", message: "Super admin access required" });
+    if (!user || (user.role !== "admin" && !user.isSuperAdmin)) {
+      throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
     }
 
     // Get existing or start fresh

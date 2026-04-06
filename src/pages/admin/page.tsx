@@ -61,7 +61,6 @@ import type { Id } from "@/convex/_generated/dataModel.d.ts";
 import PlatformStatsCards from "./_components/platform-stats.tsx";
 import CreateOrgDialog from "./_components/create-org-dialog.tsx";
 import EditOrgDialog from "./_components/edit-org-dialog.tsx";
-import FieldLabelsSettings from "./_components/field-labels-settings.tsx";
 
 export default function SuperAdminPage() {
   const isSuperAdmin = useQuery(api.superAdmin.isSuperAdmin);
@@ -214,7 +213,6 @@ export default function SuperAdminPage() {
         <TabsList>
           <TabsTrigger value="organizations">Organizations</TabsTrigger>
           <TabsTrigger value="users">All Users</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         {/* Organizations Tab */}
@@ -461,12 +459,6 @@ export default function SuperAdminPage() {
           )}
         </TabsContent>
 
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="mt-6">
-          <div className="max-w-xl">
-            <FieldLabelsSettings />
-          </div>
-        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
