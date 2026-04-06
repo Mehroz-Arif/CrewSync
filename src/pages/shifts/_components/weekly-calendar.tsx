@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import AvailabilityDialog from "./availability-dialog.tsx";
 import ShiftResponseDialog from "./shift-response-dialog.tsx";
+import SwapRequestDialog from "./swap-request-dialog.tsx";
 import type { ShiftForResponse } from "./shift-response-dialog.tsx";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
@@ -64,6 +65,7 @@ export default function WeeklyCalendar() {
   // Shift response dialog state (mobile)
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<ShiftForResponse | null>(null);
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
 
   const weekEnd = addDays(weekStart, 7);
 
@@ -467,7 +469,23 @@ export default function WeeklyCalendar() {
         open={shiftDialogOpen}
         onOpenChange={setShiftDialogOpen}
         shift={selectedShift}
+        onRequestSwap={() => {
+          setShiftDialogOpen(false);
+          setSwapDialogOpen(true);
+        }}
       />
+
+      {/* Swap Request Dialog */}
+      {selectedShift && (
+        <SwapRequestDialog
+          open={swapDialogOpen}
+          onOpenChange={setSwapDialogOpen}
+          membershipId={selectedShift.membershipId}
+          shiftId={selectedShift._id}
+          shiftStartTime={selectedShift.startTime}
+          shiftEndTime={selectedShift.endTime}
+        />
+      )}
     </div>
   );
 }

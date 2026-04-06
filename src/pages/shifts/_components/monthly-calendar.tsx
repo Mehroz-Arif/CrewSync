@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import AvailabilityDialog from "./availability-dialog.tsx";
 import ShiftResponseDialog from "./shift-response-dialog.tsx";
+import SwapRequestDialog from "./swap-request-dialog.tsx";
 import type { ShiftForResponse } from "./shift-response-dialog.tsx";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
@@ -69,6 +70,7 @@ export default function MonthlyCalendar() {
   // Shift response dialog state
   const [shiftDialogOpen, setShiftDialogOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<ShiftForResponse | null>(null);
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
 
   // Date range for the calendar grid (includes partial weeks)
   const monthStart = startOfMonth(currentMonth);
@@ -637,7 +639,23 @@ export default function MonthlyCalendar() {
         open={shiftDialogOpen}
         onOpenChange={setShiftDialogOpen}
         shift={selectedShift}
+        onRequestSwap={() => {
+          setShiftDialogOpen(false);
+          setSwapDialogOpen(true);
+        }}
       />
+
+      {/* Swap Request Dialog */}
+      {selectedShift && (
+        <SwapRequestDialog
+          open={swapDialogOpen}
+          onOpenChange={setSwapDialogOpen}
+          membershipId={selectedShift.membershipId}
+          shiftId={selectedShift._id}
+          shiftStartTime={selectedShift.startTime}
+          shiftEndTime={selectedShift.endTime}
+        />
+      )}
     </div>
   );
 }
