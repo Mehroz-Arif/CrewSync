@@ -123,7 +123,7 @@ function StaffScheduleView() {
             className="gap-1.5 relative"
           >
             <ArrowLeftRight className="size-4" />
-            Swaps
+            Cover & Swaps
             {pendingIncomingCount > 0 && (
               <Badge variant="default" className="absolute -top-1.5 -right-1.5 size-4 p-0 flex items-center justify-center text-[9px]">
                 {pendingIncomingCount}
