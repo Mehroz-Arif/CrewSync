@@ -305,6 +305,49 @@ export const cancelRedemption = mutation({
   },
 });
 
+// ─── Admin: issue a gift directly to a user ─────────────────────────
+
+/** Admin: issue a gift to a user (creates a fulfilled redemption) */
+export const issueGift = mutation({
+  args: {
+    userId: v.id("users"),
+    giftId: v.id("rewardGifts"),
+    adminNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ code: "UNAUTHENTICATED", message: "Not logged in" });
+    const admin = await ctx.db.query("users").withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).unique();
+    if (!admin) throw new ConvexError({ code: "NOT_FOUND", message: "User not found" });
+    if (admin.role !== "admin") throw new ConvexError({ code: "FORBIDDEN", message: "Admin access required" });
+
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) throw new ConvexError({ code: "NOT_FOUND", message: "Target user not found" });
+
+    const gift = await ctx.db.get(args.giftId);
+    if (!gift) throw new ConvexError({ code: "NOT_FOUND", message: "Gift not found" });
+
+    // Decrement stock if applicable
+    if (gift.stock !== undefined && gift.stock <= 0) {
+      throw new ConvexError({ code: "BAD_REQUEST", message: "This gift is out of stock" });
+    }
+    if (gift.stock !== undefined) {
+      await ctx.db.patch(args.giftId, { stock: gift.stock - 1 });
+    }
+
+    // Create a fulfilled redemption (no points deducted — admin-issued)
+    await ctx.db.insert("giftRedemptions", {
+      userId: args.userId,
+      giftId: args.giftId,
+      pointsSpent: 0,
+      status: "fulfilled",
+      fulfilledBy: admin._id,
+      fulfilledAt: new Date().toISOString(),
+      adminNote: args.adminNote?.trim() || "Issued by admin",
+    });
+  },
+});
+
 // ─── Balance that accounts for spent points ──────────────────────────
 
 /** Get available points balance (earned minus spent) */

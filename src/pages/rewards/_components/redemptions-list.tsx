@@ -38,9 +38,11 @@ import {
   CheckCircle2,
   XCircle,
   Coins,
+  GiftIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Id } from "@/convex/_generated/dataModel.d.ts";
+import IssueGiftDialog from "./issue-gift-dialog.tsx";
 
 type Redemption = {
   _id: Id<"giftRedemptions">;
@@ -63,6 +65,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
 
 export default function RedemptionsList({ isAdmin }: { isAdmin: boolean }) {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [issueOpen, setIssueOpen] = useState(false);
   const redemptions = useQuery(api.giftShop.listRedemptions, {
     statusFilter: statusFilter === "all" ? undefined : statusFilter,
   });
@@ -79,21 +82,29 @@ export default function RedemptionsList({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="fulfilled">Fulfilled</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-        <span className="text-sm text-muted-foreground">
-          {redemptions.length} redemption{redemptions.length !== 1 ? "s" : ""}
-        </span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="fulfilled">Fulfilled</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">
+            {redemptions.length} redemption{redemptions.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        {isAdmin && (
+          <Button size="sm" onClick={() => setIssueOpen(true)}>
+            <GiftIcon className="size-4 mr-1.5" />
+            Issue Gift
+          </Button>
+        )}
       </div>
 
       {redemptions.length === 0 ? (
@@ -116,6 +127,10 @@ export default function RedemptionsList({ isAdmin }: { isAdmin: boolean }) {
             <RedemptionCard key={r._id} redemption={r} isAdmin={isAdmin} />
           ))}
         </div>
+      )}
+
+      {isAdmin && (
+        <IssueGiftDialog open={issueOpen} onOpenChange={setIssueOpen} />
       )}
     </div>
   );
