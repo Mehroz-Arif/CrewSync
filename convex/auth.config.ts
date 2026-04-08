@@ -1,10 +1,6 @@
-import { AuthConfig } from "convex/server";
+import { getAuthConfigProvider } from "@convex-dev/better-auth/auth-config";
+import type { AuthConfig } from "convex/server";
 
 export default {
-  providers: [
-    {
-      domain: process.env.HERCULES_OIDC_AUTHORITY!,
-      applicationID: process.env.HERCULES_OIDC_CLIENT_ID!,
-    },
-  ],
+  providers: [getAuthConfigProvider()],
 } satisfies AuthConfig;

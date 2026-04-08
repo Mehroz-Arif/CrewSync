@@ -16,7 +16,6 @@ node_modules
 tsconfig.tsbuildinfo
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -27,4 +26,4 @@ tsconfig.tsbuildinfo
 *.sw?
 
 # Environment variables
-.env*
+config.bat
