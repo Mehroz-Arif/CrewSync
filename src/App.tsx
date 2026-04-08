@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { DefaultProviders } from "./components/providers/default.tsx";
-import AuthCallback from "./pages/auth/Callback.tsx";
+import Login from "./pages/auth/Login.tsx";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import DashboardLayout from "./pages/dashboard/_components/dashboard-layout.tsx";
@@ -26,7 +26,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/login" element={<Login />} />
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/shifts" element={<ShiftsPage />} />

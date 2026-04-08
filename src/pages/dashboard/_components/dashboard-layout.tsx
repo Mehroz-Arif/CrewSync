@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { SignInButton } from "@/components/ui/signin.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
@@ -453,10 +453,17 @@ export default function DashboardLayout() {
 /** Checks if the current user is suspended and blocks access if so */
 function SuspensionGate() {
   const currentUser = useQuery(api.users.getCurrentUser);
+  const updateCurrentUser = useMutation(api.users.updateCurrentUser);
   const { removeUser } = useAuth();
 
-  // Still loading user data
-  if (currentUser === undefined) {
+  useEffect(() => {
+    if (currentUser === null) {
+      updateCurrentUser().catch(console.error);
+    }
+  }, [currentUser, updateCurrentUser]);
+
+  // Still loading user data or syncing new user
+  if (currentUser === undefined || currentUser === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="space-y-4 w-full max-w-sm">
